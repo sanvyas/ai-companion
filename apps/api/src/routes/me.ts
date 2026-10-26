@@ -3,7 +3,8 @@ import { AgeBody, CompanionUpdate, ConsentUpdate, MeUpdate, PrivacyUpdate, Trust
 import type { Ctx } from '../context.js';
 import { forbidden } from '../errors.js';
 import { parse, uid } from '../http.js';
-import { cancelDeletion, deleteTrusted, getMe, putTrusted, requestDeletion, updateCompanion, updateConsent, updateMe, updatePrivacy } from '../services/profile.js';
+import { withUser } from '../db/pool.js';
+import { cancelDeletion, deleteTrusted, getMe, getTrusted, putTrusted, requestDeletion, updateCompanion, updateConsent, updateMe, updatePrivacy } from '../services/profile.js';
 import { exportAll } from '../services/export.js';
 import { pauseAsMinor } from '../services/users.js';
 
@@ -53,6 +54,12 @@ export function meRoutes(app: FastifyInstance, ctx: Ctx) {
   app.put('/trusted-contact', auth, async (req, reply) => {
     await putTrusted(ctx, uid(req), parse(TrustedContact, req.body));
     return reply.code(204).send();
+  });
+  // The crisis screen needs a number it can dial. Only the owner can read it; /me never returns it.
+  app.get('/trusted-contact/dial', auth, async (req, reply) => {
+    const userId = uid(req);
+    const t = await withUser(ctx.db, userId, tx => getTrusted(ctx, tx, userId));
+    return t ? { name: t.name, phone: t.phone, relation: t.relation } : reply.code(204).send();
   });
   app.delete('/trusted-contact', auth, async (req, reply) => {
     await deleteTrusted(ctx, uid(req));

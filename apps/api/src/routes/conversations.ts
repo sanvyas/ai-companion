@@ -6,7 +6,8 @@ import type { Ctx } from '../context.js';
 import { verifyAccess } from '../auth/tokens.js';
 import { AppError } from '../errors.js';
 import { parse, uid } from '../http.js';
-import { createConversation, endConversation, handleSilence, handleTurn, listConversations, listMessages, openSession, type LiveSession } from '../services/conversations.js';
+import { handleTurn, createConversation, endConversation, handleOpening, handleSilence, listConversations, listMessages, needsOpening, openSession, type LiveSession } from '../services/conversations.js';
+import { VoiceBridge } from '../services/voice.js';
 import { withIdempotency } from '../services/idempotency.js';
 
 const TURNS_PER_MINUTE = 20;
@@ -17,7 +18,7 @@ export function conversationRoutes(app: FastifyInstance, ctx: Ctx) {
   app.post('/conversations', auth, async (req, reply) =>
     withIdempotency(ctx, req, reply, async () => {
       const b = parse(CreateConversationBody, req.body);
-      return { status: 201, body: await createConversation(ctx, uid(req), b.mode, b.continueFrom) };
+      return { status: 201, body: await createConversation(ctx, uid(req), b.mode, b.continueFrom, b.first) };
     }));
 
   app.post('/walks', auth, async (req, reply) =>
@@ -35,8 +36,8 @@ export function conversationRoutes(app: FastifyInstance, ctx: Ctx) {
 
   app.post('/conversations/:id/end', auth, async req => {
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
-    parse(EndFeedback, req.body ?? {});
-    return endConversation(ctx, uid(req), id);
+    const fb = parse(EndFeedback, req.body ?? {});
+    return endConversation(ctx, uid(req), id, fb.feeling);
   });
 
   // ---- WebSocket: text turns now, voice transcripts through the same pipeline ----------------------------
@@ -51,6 +52,7 @@ export function conversationRoutes(app: FastifyInstance, ctx: Ctx) {
   }, (socket: WebSocket, req) => {
     const { id } = req.params as { id: string };
     let session: LiveSession | null = null;
+    let voice: VoiceBridge | null = null;
     let userId: string | null = null;
     const stamps: number[] = [];
     let chain: Promise<void> = Promise.resolve();
@@ -61,7 +63,9 @@ export function conversationRoutes(app: FastifyInstance, ctx: Ctx) {
     // Credentials travel in the first frame, not the URL, so tokens stay out of access logs.
     const authTimer = setTimeout(() => { if (!session) socket.close(4001, 'auth_timeout'); }, 5000);
 
-    socket.on('message', raw => {
+    socket.on('message', (raw, isBinary) => {
+      // Binary frames are microphone audio (PCM16 mono 16 kHz) once voice_start has been sent.
+      if (isBinary) { if (voice) voice.audio(raw as Buffer); return; }
       let msg: ReturnType<typeof ClientMsg.safeParse>;
       try { msg = ClientMsg.safeParse(JSON.parse(raw.toString())); } catch { return fail('bad_message', 'That message wasn’t understood.'); }
       if (!msg.success) return fail('bad_message', 'That message wasn’t understood.');
@@ -77,8 +81,10 @@ export function conversationRoutes(app: FastifyInstance, ctx: Ctx) {
             userId = a.userId;
             const s = await openSession(ctx, a.userId, id);
             session = s;
+            voice = new VoiceBridge(ctx, s, socket, send);
             clearTimeout(authTimer);
             send({ type: 'ready', conversationId: id, mode: s.mode, companion: s.companion, voice: { serverStt: !!ctx.stt, serverTts: !!ctx.tts }, opening: s.opening });
+            if (needsOpening(s)) chain = chain.then(() => handleOpening(ctx, s, mm => voice!.emit(mm))).catch(e => ctx.log.warn({ err: (e as Error).message }, 'opening failed'));
           } catch (e) {
             const ae = e instanceof AppError ? e : null;
             fail(ae?.code ?? 'internal', ae?.message ?? 'Something went wrong.', true);
@@ -90,7 +96,9 @@ export function conversationRoutes(app: FastifyInstance, ctx: Ctx) {
       if (!session || !userId) return fail('unauthorized', 'Please sign in again.', true);
       const s = session;
 
-      if (m.type === 'interrupt') { s.abort?.abort(); return; }
+      if (m.type === 'interrupt') { voice?.interrupt(); s.abort?.abort(); return; }
+      if (m.type === 'voice_start') { chain = chain.then(() => voice!.start(m.language)).catch(e => ctx.log.warn({ err: (e as Error).message }, 'voice_start failed')); return; }
+      if (m.type === 'voice_stop') { voice?.stop(); return; }
       if (m.type === 'end') {
         chain = chain.then(async () => {
           try {
@@ -112,7 +120,7 @@ export function conversationRoutes(app: FastifyInstance, ctx: Ctx) {
 
       chain = chain.then(async () => {
         try {
-          if (m.type === 'turn') await handleTurn(ctx, s, m.text, send, m.clientId);
+          if (m.type === 'turn') await handleTurn(ctx, s, m.text, mm => voice!.emit(mm), m.clientId);
           else if (m.type === 'silence') await handleSilence(ctx, s, m.seconds, send);
         } catch (e) {
           ctx.log.error({ err: (e as Error).message }, 'turn failed');
@@ -121,7 +129,7 @@ export function conversationRoutes(app: FastifyInstance, ctx: Ctx) {
       });
     });
 
-    socket.on('close', () => { clearTimeout(authTimer); session?.abort?.abort(); });
+    socket.on('close', () => { clearTimeout(authTimer); voice?.close(); session?.abort?.abort(); });
     socket.on('error', () => { clearTimeout(authTimer); });
   });
 }

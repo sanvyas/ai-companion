@@ -67,6 +67,7 @@ export interface DynamicInput {
   priorSummary: string | null;
   openingHookSpoken: string | null;
   strict?: boolean;
+  firstRun?: boolean;
 }
 
 export function dynamicSystem(d: DynamicInput): string {
@@ -79,6 +80,7 @@ export function dynamicSystem(d: DynamicInput): string {
   lines.push(`- Safety plan exists: ${d.hasSafetyPlan ? 'yes' : 'no'}. Trusted contact first name: ${d.trustedFirstName ?? 'none'}.`);
   const sb = SAFETY_BLOCK[d.riskLevel];
   lines.push(`SAFETY INSTRUCTIONS\n${sb || 'No safety concern right now. Stay attentive.'}`);
+  if (d.firstRun) lines.push('FIRST CONVERSATION: this is the first time you are talking. Greet them by name, say plainly in your own words that you are an AI companion and not a therapist or a doctor, tell them they can pause or end any time and that you are happy to just listen, then ask what kind of day it has been. Three short sentences at most.');
   if (d.strict) lines.push('STRICT REWRITE: your previous draft was rejected. Write a shorter, plainer reply. Do not describe any method or means, do not diagnose, do not mention medication, do not claim to be human.');
   return lines.join('\n\n');
 }

@@ -35,6 +35,7 @@ export interface LiveSession {
   startedAt: number;
   lastSeen: number;
   sentenceIndex: number;
+  firstRun: boolean;
 }
 
 const live = new Map<string, LiveSession>();
@@ -46,7 +47,7 @@ setInterval(() => { const cut = Date.now() - 45 * 60_000; for (const [k, v] of l
 type Emit = (m: ServerMsg) => void;
 
 // ------------------------------------------------------------------------------------------ create / open
-export async function createConversation(ctx: Ctx, userId: string, mode: ConversationMode, continueFrom?: string) {
+export async function createConversation(ctx: Ctx, userId: string, mode: ConversationMode, continueFrom?: string, first = false) {
   return withUser(ctx.db, userId, async tx => {
     const u = (await tx.query<{ subscription: string; age_confirmed_18: boolean }>('SELECT subscription, age_confirmed_18 FROM users WHERE id = $1', [userId])).rows[0];
     if (!u?.age_confirmed_18) throw forbidden('under18', 'Saathi is for adults. This account is paused.');
@@ -65,7 +66,7 @@ export async function createConversation(ctx: Ctx, userId: string, mode: Convers
       const ok = await tx.query('SELECT 1 FROM conversations WHERE id = $1', [continueFrom]);
       if (!ok.rowCount) throw notFound('That conversation');
     }
-    const { rows } = await tx.query<{ id: string }>('INSERT INTO conversations (user_id, mode, continued_from) VALUES ($1,$2,$3) RETURNING id', [userId, mode, continueFrom ?? null]);
+    const { rows } = await tx.query<{ id: string }>('INSERT INTO conversations (user_id, mode, continued_from, first_run) VALUES ($1,$2,$3,$4) RETURNING id', [userId, mode, continueFrom ?? null, first]);
     return { id: rows[0].id, mode, rtcToken: null as null, voice: { serverStt: !!ctx.stt, serverTts: !!ctx.tts } };
   });
 }
@@ -76,7 +77,7 @@ export async function openSession(ctx: Ctx, userId: string, conversationId: stri
   if (existing && existing.userId === userId) { existing.lastSeen = Date.now(); return existing; }
 
   return withUser(ctx.db, userId, async tx => {
-    const conv = (await tx.query<{ mode: ConversationMode; ended_at: Date | null; continued_from: string | null; risk_max: number }>('SELECT mode, ended_at, continued_from, risk_max FROM conversations WHERE id = $1', [conversationId])).rows[0];
+    const conv = (await tx.query<{ mode: ConversationMode; ended_at: Date | null; continued_from: string | null; risk_max: number; first_run: boolean }>('SELECT mode, ended_at, continued_from, risk_max, first_run FROM conversations WHERE id = $1', [conversationId])).rows[0];
     if (!conv) throw notFound('That conversation');
     if (conv.ended_at) throw new AppError(409, 'conversation_ended', 'That conversation has ended.');
     const dek = await getDek(ctx, userId, tx);
@@ -120,7 +121,7 @@ export async function openSession(ctx: Ctx, userId: string, conversationId: stri
       trustedFirst: trusted ? trusted.name.split(' ')[0] : null, trustedName: trusted?.name ?? null,
       opening, priorSummary, history,
       risk: { ...initialRisk, level: conv.risk_max as RiskLevel, max: conv.risk_max as RiskLevel },
-      silences: 0, abort: null, startedAt: Date.now(), lastSeen: Date.now(), sentenceIndex: 0,
+      silences: 0, abort: null, startedAt: Date.now(), lastSeen: Date.now(), sentenceIndex: 0, firstRun: conv.first_run,
     };
     live.set(conversationId, s);
     return s;
@@ -174,7 +175,7 @@ function buildRequest(ctx: Ctx, s: LiveSession, c: Awaited<ReturnType<typeof tur
     model: ctx.cfg.MODEL_COMPANION,
     system: {
       stable: stableSystem({ companionName: s.companion.name, nickname: s.nickname, language: s.language, voice: s.companion.voice }),
-      dynamic: dynamicSystem({ mode: s.mode, localTime: localTime(s.timezone), planItems: c.plan, moodTrend: c.mood, memories: c.memories, hasSafetyPlan: s.hasSafetyPlan, trustedFirstName: s.trustedFirst, riskLevel: level, priorSummary: s.priorSummary, openingHookSpoken: s.opening, strict }),
+      dynamic: dynamicSystem({ mode: s.mode, localTime: localTime(s.timezone), planItems: c.plan, moodTrend: c.mood, memories: c.memories, hasSafetyPlan: s.hasSafetyPlan, trustedFirstName: s.trustedFirst, riskLevel: level, priorSummary: s.priorSummary, openingHookSpoken: s.opening, strict, firstRun: s.firstRun && s.history.length === 0 }),
     },
     messages,
     maxTokens: s.mode === 'text' ? 400 : 260,
@@ -341,6 +342,53 @@ async function crisis(ctx: Ctx, s: LiveSession, text: string, emit: Emit, client
   emit({ type: 'done', messageId, riskLevel: 3, text: script });
 }
 
+/**
+ * The companion speaks first on a first conversation, a check-in, or a walk (PRD 8.3.1, 8.3.4, 8.4). Nothing from
+ * the user is involved, so there is no safety classification of input; the output still goes through the rule check.
+ */
+export function needsOpening(s: LiveSession): boolean {
+  return s.history.length === 0 && !s.opening && (s.firstRun || s.mode === 'checkin' || s.mode === 'walk');
+}
+
+export async function handleOpening(ctx: Ctx, s: LiveSession, emit: Emit): Promise<void> {
+  const cue = s.firstRun ? '(This is the first conversation.)' : s.mode === 'checkin' ? '(Begin the check-in now.)' : '(The walk has just started.)';
+  const fixed = `Hi ${s.nickname || 'there'}. I’m ${s.companion.name}, an AI companion. I’m glad you’re here. What kind of day has it been?`;
+  const ac = (s.abort = new AbortController());
+  const out: string[] = [];
+  try {
+    const c = await turnContext(ctx, s, '');
+    emit({ type: 'thinking' });
+    const split = new SentenceSplitter();
+    let first = true;
+    let emotion: Emotion | undefined;
+    const say = async (raw: string): Promise<boolean> => {
+      let t = raw;
+      if (first && s.mode === 'video') { const e = takeEmotion(t); if (e.emotion && VALID_EMOTIONS.has(e.emotion)) emotion = e.emotion as Emotion; t = e.rest; }
+      first = false;
+      if (!t) return true;
+      if (!(await reviewDraft(ctx, s.userId, t, false)).ok) return false;
+      out.push(t);
+      emit({ type: 'sentence', text: t, emotion, index: s.sentenceIndex++ });
+      return true;
+    };
+    let ok = true;
+    for await (const d of ctx.llm.stream({ task: 'companion', ...buildRequest(ctx, s, c, cue, 0), signal: ac.signal })) {
+      for (const sent of split.push(d)) { if (!(ok = await say(sent))) break; }
+      if (!ok) break;
+    }
+    if (ok) for (const sent of split.end()) { if (!(ok = await say(sent))) break; }
+    if (!ok && !out.length) { out.push(fixed); emit({ type: 'sentence', text: fixed, index: s.sentenceIndex++ }); }
+  } catch (e) {
+    if (ac.signal.aborted) return;
+    ctx.log.warn({ err: (e as Error).message }, 'opening failed');
+    if (!out.length) { out.push(fixed); emit({ type: 'sentence', text: fixed, index: s.sentenceIndex++ }); }
+  }
+  const reply = out.join(' ');
+  push(s, { role: 'assistant', content: reply });
+  const messageId = await persistMessage(ctx, s, 'ai', reply, 0).catch(() => null);
+  emit({ type: 'done', messageId, riskLevel: 0, text: reply });
+}
+
 /** Sit mode: the companion speaks only after a long quiet, at most three times (PRD 6.2). */
 export async function handleSilence(ctx: Ctx, s: LiveSession, seconds: number, emit: Emit): Promise<void> {
   if (s.mode !== 'sit' || s.silences >= 3 || seconds < 150) return;
@@ -374,7 +422,7 @@ async function loadHistory(ctx: Ctx, tx: Tx, userId: string, conversationId: str
 
 const transcript = (h: LlmMessage[]) => h.map(m => `${m.role === 'user' ? 'User' : 'Companion'}: ${m.content}`).join('\n');
 
-export async function endConversation(ctx: Ctx, userId: string, conversationId: string): Promise<z.infer<typeof EndConversationResponse> | { summary: string; proposedMemories: ProposedMemory[]; checkinResult: CheckinResult | null }> {
+export async function endConversation(ctx: Ctx, userId: string, conversationId: string, feeling?: 'better' | 'same' | 'worse'): Promise<z.infer<typeof EndConversationResponse> | { summary: string; proposedMemories: ProposedMemory[]; checkinResult: CheckinResult | null }> {
   const sess = live.get(conversationId);
   if (sess && sess.userId !== userId) throw notFound('That conversation');
   sess?.abort?.abort();
@@ -413,7 +461,9 @@ export async function endConversation(ctx: Ctx, userId: string, conversationId: 
   await withUser(ctx.db, userId, async tx => {
     if (!meta.conv.ended_at) {
       const dek = await getDek(ctx, userId, tx);
-      await tx.query('UPDATE conversations SET ended_at = now(), summary_enc = $2 WHERE id = $1', [conversationId, summary && meta.retention > 0 ? ctx.crypto.encrypt(dek, userId, 'summary', summary) : null]);
+      await tx.query('UPDATE conversations SET ended_at = now(), summary_enc = $2, feeling = $3 WHERE id = $1', [conversationId, summary && meta.retention > 0 ? ctx.crypto.encrypt(dek, userId, 'summary', summary) : null, feeling ?? null]);
+      // A walk is a win whatever was said on it (PRD 8.4).
+      if (meta.conv.mode === 'walk') await tx.query(`INSERT INTO wins (user_id, kind, label_enc, source_id) VALUES ($1,'walk',$2,$3) ON CONFLICT DO NOTHING`, [userId, ctx.crypto.encrypt(dek, userId, 'win', 'Went for a walk'), conversationId]);
       if (['voice', 'video', 'walk'].includes(meta.conv.mode)) {
         const secs = Math.max(0, Math.round((Date.now() - meta.conv.started_at.getTime()) / 1000));
         await tx.query(`INSERT INTO usage_daily (user_id, day, voice_seconds, turns) VALUES ($1, current_date, $2, $3)

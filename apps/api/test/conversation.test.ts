@@ -304,3 +304,44 @@ describe('ending a conversation', () => {
     expect(two.headers['idempotent-replay']).toBe('true');
   });
 });
+
+describe('the companion speaks first when it should', () => {
+  it('first conversation: introduces itself as an AI before the user says anything', async () => {
+    const a = await signIn(t);
+    const r = await t.app.inject({ method: 'POST', url: '/conversations', headers: a.headers, payload: { mode: 'voice', first: true } });
+    const { chat } = await connect(port, r.json().id, a.accessToken);
+    t.llm.calls.length = 0;
+    const done = await chat.next('done');
+    expect(done.type).toBe('done');
+    const call = t.llm.calls.find(c => c.task === 'companion')!;
+    expect(call.system).toContain('FIRST CONVERSATION');
+    expect(call.system).toContain('an AI companion and not a therapist');
+    chat.close();
+  });
+
+  it('check-in: the companion opens; an ordinary text chat waits for the person', async () => {
+    const a = await signIn(t);
+    const ci = (await t.app.inject({ method: 'POST', url: '/conversations', headers: a.headers, payload: { mode: 'checkin' } })).json().id;
+    const c1 = await connect(port, ci, a.accessToken);
+    expect((await c1.chat.next('done')).type).toBe('done');
+    c1.chat.close();
+
+    const tx = (await t.app.inject({ method: 'POST', url: '/conversations', headers: a.headers, payload: { mode: 'text' } })).json().id;
+    const c2 = await connect(port, tx, a.accessToken);
+    await new Promise(r => setTimeout(r, 300));
+    expect(c2.chat.msgs.map(m => m.type)).toEqual([]);
+    c2.chat.close();
+  });
+
+  it('a reply that fails the output check at the opening is replaced by the fixed greeting', async () => {
+    const a = await signIn(t);
+    const id = (await t.app.inject({ method: 'POST', url: '/conversations', headers: a.headers, payload: { mode: 'voice', first: true } })).json().id;
+    t.llm.reply = () => 'I am a real person and I am so happy you are here.';
+    const { chat } = await connect(port, id, a.accessToken);
+    const done = (await chat.next('done')) as unknown as { text: string };
+    t.llm.reply = null;
+    expect(done.text).toContain('an AI companion');
+    expect(done.text).not.toMatch(/real person/);
+    chat.close();
+  });
+});

@@ -72,3 +72,4 @@ export type Helpline = z.infer<typeof Helpline>;
 export type CalmItem = z.infer<typeof CalmItem>;
 export type OutsideEvent = z.infer<typeof OutsideEvent>;
 export type NotificationPrefs = z.infer<typeof NotificationPrefs>;
+export type Letter = z.infer<typeof Letter>;

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { ConversationMode, Emotion, RiskLevel, Theme, Uuid } from './common.js';
 
-export const CreateConversationBody = z.object({ mode: ConversationMode, continueFrom: Uuid.optional() });
+export const CreateConversationBody = z.object({ mode: ConversationMode, continueFrom: Uuid.optional(), first: z.boolean().optional() });
 export const ConversationCreated = z.object({
   id: Uuid,
   mode: ConversationMode,
@@ -46,7 +46,10 @@ export const ClientMsg = z.discriminatedUnion('type', [
   z.object({ type: z.literal('auth'), token: z.string() }),
   z.object({ type: z.literal('turn'), text: z.string().trim().min(1).max(4000), clientId: z.string().max(64).optional(), source: z.enum(['typed', 'dictated', 'voice']).default('typed') }),
   z.object({ type: z.literal('silence'), seconds: z.number().int().min(1).max(3600) }),
-  z.object({ type: z.literal('interrupt') }), // barge-in: stop generating
+  z.object({ type: z.literal('interrupt') }), // barge-in: stop generating and speaking
+  /** Server STT: begin streaming PCM16 mono 16 kHz as binary frames. */
+  z.object({ type: z.literal('voice_start'), language: z.enum(['en-IN', 'hi-IN']).default('en-IN') }),
+  z.object({ type: z.literal('voice_stop') }),
   z.object({ type: z.literal('end') }),
   z.object({ type: z.literal('ping') }),
 ]);
@@ -64,6 +67,11 @@ export const ServerMsg = z.discriminatedUnion('type', [
   /** The user said they are under 18: account paused, show youth resources. */
   z.object({ type: z.literal('minor') }),
   z.object({ type: z.literal('error'), code: z.string(), message: z.string() }),
+  z.object({ type: z.literal('transcript'), text: z.string(), final: z.boolean() }),
+  /** Server TTS: binary PCM16 mono frames follow, then audio_end. */
+  z.object({ type: z.literal('audio_start'), sampleRate: z.number(), index: z.number().int() }),
+  z.object({ type: z.literal('audio_end'), index: z.number().int() }),
+  z.object({ type: z.literal('visemes'), index: z.number().int(), cues: z.array(z.object({ t: z.number(), v: z.string() })) }),
   z.object({ type: z.literal('pong') }),
 ]);
 
@@ -72,3 +80,5 @@ export type ServerMsg = z.infer<typeof ServerMsg>;
 export type ProposedMemory = z.infer<typeof ProposedMemory>;
 export type CheckinResult = z.infer<typeof CheckinResult>;
 export type ConversationItem = z.infer<typeof ConversationItem>;
+export type EndConversationResponse = z.infer<typeof EndConversationResponse>;
+export type ConversationCreated = z.infer<typeof ConversationCreated>;

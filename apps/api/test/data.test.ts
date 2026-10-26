@@ -276,3 +276,31 @@ describe('calm, outside, notifications, billing', () => {
     expect(r.json().error.code).toBe('billing_unavailable');
   });
 });
+
+describe('app bootstrap helpers', () => {
+  it('public config says what is connected, without sign-in', async () => {
+    const r = (await t.app.inject({ method: 'GET', url: '/public-config' })).json();
+    expect(r).toMatchObject({ otp: true, google: false, googleClientId: null, llm: true, stt: false, tts: false });
+  });
+
+  it('only the owner can fetch the trusted contact number to dial', async () => {
+    const a = await signIn(t);
+    const b = await signIn(t);
+    expect((await j(a, 'GET', '/trusted-contact/dial')).statusCode).toBe(204);
+    await j(a, 'PUT', '/trusted-contact', { name: 'Priya', phone: '+919811122233', relation: 'sister' });
+    expect((await j(a, 'GET', '/trusted-contact/dial')).json()).toEqual({ name: 'Priya', phone: '+919811122233', relation: 'sister' });
+    expect((await j(b, 'GET', '/trusted-contact/dial')).statusCode).toBe(204);
+    expect((await t.app.inject({ method: 'GET', url: '/trusted-contact/dial' })).statusCode).toBe(401);
+  });
+
+  it('ending a walk records a win once, and the feeling tap is stored', async () => {
+    const a = await signIn(t);
+    const c = (await j(a, 'POST', '/walks')).json();
+    expect(c.mode).toBe('walk');
+    const end = await j(a, 'POST', `/conversations/${c.id}/end`, { feeling: 'better' });
+    expect(end.statusCode).toBe(200);
+    expect((await j(a, 'GET', '/insights')).json().wins.filter((w: { kind: string }) => w.kind === 'walk')).toHaveLength(1);
+    const row = await withSystem(t.ctx.db, tx => tx.query('SELECT feeling FROM conversations WHERE id=$1', [c.id]));
+    expect(row.rows[0].feeling).toBe('better');
+  });
+});

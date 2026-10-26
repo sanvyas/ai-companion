@@ -4,6 +4,8 @@ import { withSystem } from '../db/pool.js';
 import { listHelplines } from '../services/helplines.js';
 
 export function publicRoutes(app: FastifyInstance, ctx: Ctx) {
+  // What the sign-in screen needs before anyone is signed in.
+  app.get('/public-config', async () => ({ otp: ctx.otp.canSend, google: !!ctx.cfg.GOOGLE_CLIENT_ID, googleClientId: ctx.cfg.GOOGLE_CLIENT_ID ?? null, llm: ctx.llm.configured, stt: !!ctx.stt, tts: !!ctx.tts, push: ctx.push.enabled }));
   app.get('/healthz', async () => ({ ok: true }));
   app.get('/readyz', async (_req, reply) => {
     try {
