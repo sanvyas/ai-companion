@@ -2,77 +2,78 @@
 
 An AI companion for adults in India who feel lonely, stressed or low: talk by voice, video or text, journal privately, calm down, and take small steps outside. **A wellness companion, not a therapist, doctor or crisis service.**
 
-This repo is the front end, built from the Claude Design handoff (`design/saathi-app-v2.dc.html`) and the product spec (`docs/PRD.md`). There is **no backend yet**: every external dependency sits behind a mock or a clearly marked `TODO(...)`.
+Product spec: [`docs/PRD.md`](docs/PRD.md). Design source: `design/`.
 
-## Run it
+This is a real application: phone sign-in, an encrypted Postgres database, an API server, Claude for conversations, a safety pipeline on every turn, a scheduler for check-ins and letters, web push, and a React PWA. Three things are deliberately **not connected yet** because the vendor is yours to choose: the SMS/WhatsApp provider for sign-in codes, server-side speech (STT/TTS), and outbound phone calls. Each is one interface to implement ([`docs/PROVIDERS.md`](docs/PROVIDERS.md)). Until then the app uses the browser's own speech engines for voice, and Google sign-in can stand in for phone codes.
+
+## What you need to give it
+
+| Key | Where from | Needed for |
+|---|---|---|
+| `DATABASE_URL` | Supabase project in **Mumbai (ap-south-1)**: Settings > Database > Session pooler | everything |
+| `ANTHROPIC_API_KEY` | console.anthropic.com | conversations, safety classifier, journal reading, summaries, letters |
+| `JWT_SECRET`, `DATA_KEK`, `PHONE_HASH_KEY`, `OTP_PEPPER` | `npm run gen:secrets -w @saathi/api` (you generate them; back up `DATA_KEK`) | auth, encryption |
+| `GOOGLE_CLIENT_ID` | Google Cloud Console, OAuth Web client (optional) | "Continue with Google" |
+| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | `npx web-push generate-vapid-keys` (optional) | push notifications |
+
+Step by step: [`docs/SETUP.md`](docs/SETUP.md).
+
+## Run it locally
 
 ```bash
 npm install
-npm run dev          # http://localhost:5173
-npm run dev -- --host   # open on your phone, same network
-npm run verify       # typecheck + tests + production build
+cp apps/api/.env.example apps/api/.env      # fill in DATABASE_URL, ANTHROPIC_API_KEY, secrets
+npm run db:migrate                          # applies migrations, loads helplines + calm catalogue
+npm run dev:api                             # http://localhost:8787
+npm run dev:web                             # http://localhost:5173
+npm run verify                              # typecheck + all tests + production build
 ```
 
-Add `?demo` to the URL for the **prototype navigator**: the design's side rail, a time-of-day switch, reduce-motion and spoken-voice toggles, and shortcuts to states that normally arrive from outside the app (lock-screen notifications, an incoming call, the crisis screen). It is not mounted without `?demo`.
+In development the sign-in code is printed in the API log and shown on screen (`OTP_PROVIDER=console`). Production refuses that.
 
-## What's here
+`http://localhost:5173/?demo` runs the UI against an in-memory stand-in with seeded data and a scripted companion, for design review. It talks to nothing.
 
-React 18 + Vite + TypeScript, no UI or state library. Mobile-first; on a wide screen the app sits in a centred phone-width column.
+## How it fits together
 
-| Area | Where |
-|---|---|
-| Onboarding: welcome, honest intro, age gate and under-18 exit, language, name, companion, consent | `src/screens/Onboarding.tsx` |
-| Today, Talk, voice/video/"just sit"/check-in calls, text chat | `src/screens/{Today,Talk,Call,Chat}.tsx` |
-| Outside: small step, Walk with me, events, hobbies | `src/screens/Outside.tsx` |
-| Journal: entries, write / talk it out, "What I noticed" review, Insights | `src/screens/Journal.tsx` |
-| You: memory, privacy centre, reminders, look & voice studio | `src/screens/{You,Studio}.tsx` |
-| Calm: meditate, sleep stories, mixable sounds, full-screen player with sleep timer | `src/screens/Calm.tsx`, `src/overlays/Full.tsx` |
-| Safety: support sheet, helplines, level 2 care card, level 3 crisis screen, breathe | `src/overlays/*`, `src/domain/safety.ts` |
-| Notifications, lock screen and incoming call (demo simulations) | `src/screens/Lock.tsx` |
-| Pure rules (tested) | `src/domain/safety.ts`, `src/domain/journal.ts` |
-| Adapter boundary for the LLM / safety service (mock only) | `src/providers/companion.ts` |
-| Audio: browser TTS, generated ambient loops, dictation | `src/audio/*` |
+```
+apps/web         React + Vite PWA (service worker for push + offline shell)
+apps/api         Fastify API + WebSocket conversations + scheduler (same process, RUN_WORKER)
+packages/contracts   Zod schemas shared by API and web
+packages/domain  Pure, tested rules: safety classifier, output check, journal analysis, notification rules
+```
 
-## Safety behaviour (PRD §6.4, §8.10)
+- **Data.** Postgres with row-level security on every table, keyed on the signed-in user. The API connects as the owner and, per request, drops to a no-`BYPASSRLS` role (`saathi_app`) and sets the user id. Journal text, memories, summaries and phone numbers are encrypted with a per-user key wrapped by `DATA_KEK` (AES-256-GCM). Phones are looked up by a keyed hash, and masked in responses.
+- **Auth.** Phone code (hashed, 5 attempts, 30 s resend, 5/hour) or Google ID token. 15-minute access token + rotating refresh token with reuse detection. 18+ gate; an under-18 disclosure in conversation pauses the account.
+- **Conversations.** WebSocket per conversation. Every user turn goes through a keyword pre-filter (English, Hinglish, Hindi) and a Claude Haiku classifier concurrently with reply generation; the classifier result gates what is shown or spoken. **Level 3 never reaches the model**: a fixed, reviewed script and the crisis screen are shown instead. Level 2 buffers the reply, checks each sentence, and shows the care card. Replies are checked sentence by sentence for diagnoses, medication advice, claims to be human, and so on.
+- **Memory.** Consent-gated, top-k retrieval, hidden items never injected, journal analysis writes nothing until you press Done, sensitive items start unticked.
+- **Scheduler.** Check-ins (9 a.m. / 9 p.m. local), Sunday letter, quiet-week message, retention and account-purge jobs. Idempotent jobs table with deterministic keys. At most 2 push + 1 call a day, quiet hours 10 p.m. to 8 a.m., back-off when ignored, silence after a quiet week, generic lock-screen text unless previews are on.
+- **Voice.** Server STT/TTS slots exist (PCM over the same WebSocket, barge-in under 200 ms, amplitude-driven lip-sync). With none configured the web app uses the browser's `SpeechRecognition` and `speechSynthesis` through the same pipeline.
 
-- **Level 1/2/3 pre-filter** in English, Hinglish and Hindi (`classify`). Level 2 shows the care card; level 3 takes over with the crisis screen and the **fixed, reviewed script** instead of an AI turn.
-- The crisis screen has no Escape or back-gesture dismissal. "I'm safe right now" needs a second confirmation. Helpline buttons are real `tel:` links (Tele-MANAS 14416, 112).
+## Safety behaviour (PRD 6.4, 8.10)
+
+- Level 2 shows the care card; level 3 takes over with the crisis screen and the fixed script, recorded server-side as a safety event.
+- No Escape or back-gesture dismissal on the crisis screen. "I'm safe right now" needs a second confirmation. Helpline buttons are real `tel:` links; Tele-MANAS 14416 and 112 are built into the app so they work offline.
 - Risk decays only after 3 calm turns; level 3 never auto-decays.
-- **"Need help?" is on every primary screen** and the support sheet has a one-tap Tele-MANAS call.
-- The paywall is never shown after any distress signal in the session. Safety features are never gated.
-- A user who says they are under 18 mid-chat is routed to the under-18 exit. Asking "are you human?", medication questions and romantic cues get the PRD's honest / decline / boundary replies.
-- The client pre-filter is deliberately sensitive and is **not a substitute for the server classifier** (not built).
+- "Need help?" is on every primary screen. The paywall is never shown after any distress signal in the session. Safety features are never gated.
+- Helplines in the database carry a `verified_at` column that is empty. **Have a person verify each number and set it before launch.**
 
-## Privacy behaviour (PRD §5)
+## Privacy behaviour (PRD 5)
 
-- Nothing is pre-ticked at consent. "Saathi can learn from this" on a journal entry defaults to your Remember setting, which defaults to off.
-- "Just for me" entries skip analysis entirely. "Keep it just for me" after review discards the analysis. **Nothing reaches Memory until Done.** Sensitive proposed memories (health, trauma, religion, finances…) start unsaved.
-- Only low-sensitivity **preferences** persist to `localStorage`. Journal text, memories, chat and mood are held in memory only, because the PRD requires per-user encryption we don't have client-side. A reload resets them to the demo seed.
-- "Delete everything" clears everything held on the device.
+- Nothing is pre-ticked at consent. Voice recordings are never stored. Transcript retention is the user's choice (0 = not kept).
+- Only display preferences (reduce motion, captions, language) live in the browser. Journal, memories, chat and mood are never persisted client-side.
+- Export (JSON download) and delete (30-day grace, then purge) are in the app.
+- Supabase's own Data API is not used; migration 0009 locks its roles out of every table. Switch the Data API off anyway (see SETUP).
 
-## Accessibility
+## Known limitations
 
-axe-core (WCAG 2.1 A/AA) was run against all 43 states reachable from the navigator with zero violations. Dialogs trap focus and the content behind them is `inert`; switches and radios expose state to assistive tech; mood uses shape and colour; reduce motion is honoured from the OS and an in-app setting.
-
-## Where I followed the PRD over the prototype
-
-1. **Consent defaults to all off** (prototype pre-ticked "Remember me").
-2. **Crisis screen** uses the PRD's fixed copy and "I'm safe right now" + confirm, not the prototype's "Back to conversation".
-3. **Breathe** is in 4 · hold 2 · out 6 with a breath counter (prototype: 3 s / 3 s).
-4. **Under-18 exit** lists KIRAN and Childline 1098 as well as Tele-MANAS.
-5. **Memory** gains the master "Remember" switch and a double-confirm "Forget everything".
-6. **Device voice picker** is shown only in `?demo` (PRD: dev only).
-7. The prototype's journal sample ("…sleep before one tonight") tripped its own crisis regex on the word "tonight". The classifier now needs intent, and a test pins that sample to *not* crisis.
-8. Sheets now stack above the full-screen player (in the prototype "Need help?" in the player opened behind it).
-9. **Walk** shows elapsed time rather than the prototype's invented step count; real steps need the health adapter.
-10. The prototype's phone frame, fake status bar and `window.claude` journal call are dropped; safe-area insets replace the status-bar padding.
-
-## Stubs (`TODO(...)` in code, nothing here is faked as done)
-
-Auth/OTP, real conversation LLM + server safety classifier, WebRTC voice/video, streaming STT, production TTS with visemes, recorded Calm content and gapless loops, events feed and RSVP, billing (**"Try Plus" does not start a trial**), push/VoIP notifications and the scheduler, remote-config helplines, trusted-contact number storage, encrypted sync/offline queue, i18n (UI copy is English only; PRD wants en / hinglish / hi).
-
-Not yet built from the PRD: end-of-call memory review and "a bit better / same / worse" tap, long-press "Remember this" in chat, safety-plan editing, Sunday letter generation, service worker / offline, analytics events, app lock and screenshot blocking (native), Hindi narration.
+- No SMS/WhatsApp vendor, STT/TTS vendor or telephony vendor yet (by choice). Outbound check-in *calls* therefore don't happen; in-app cards and web push do.
+- No billing. "Try Plus" says it isn't available. Plus-gated features are not enforced beyond the voice-minutes limit setting.
+- Web push only. iOS needs the PWA installed to the home screen. No native app, app lock or screenshot blocking.
+- Memory retrieval is lexical (no embeddings yet). Refresh token is in `localStorage` (a native app or cookie flow would be stronger).
+- UI copy is English only (the language setting changes how the companion speaks, not the UI labels).
+- Helpline list and Calm content are starter data; real recorded audio for Calm does not exist (narration uses the browser voice).
+- Events are only the development demo listings until a partner feed or ops tooling exists.
 
 ## Tests
 
-`npm test` runs 58 tests: the safety classifier (EN / Hinglish / Hindi, false-positive guards, decay rules), journal analysis limits and sensitivity, and app-level flows (onboarding defaults, help on every tab, level 2 / 3 chat, crisis can't be escaped, paywall guard, journal review writes nothing until Done, preferences-only persistence, delete-everything).
+`npm test`: 109 API tests (RLS isolation, encryption, auth and token rotation, the safety pipeline end to end over WebSocket, voice bridge, scheduler and notification rules, data routes), 87 domain tests (classifier, output check, journal analysis, rhythms, notification rules), and 21 web tests (onboarding, help on every tab, level 2 and 3, crisis cannot be dismissed, paywall guard, journal review writes nothing until Done, preferences-only persistence, delete everything). API tests need a Postgres: set `TEST_DATABASE_ADMIN_URL` (a superuser URL; a throwaway database is created per run).

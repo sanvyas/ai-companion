@@ -77,6 +77,12 @@ describe('row-level security', () => {
     expect(ok.rowCount).toBe(1);
   });
 
+  it('every table has row security on, so a hosted Data API role can read nothing by default', async () => {
+    const r = await withSystem(db, tx => tx.query(`SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+      WHERE n.nspname='public' AND c.relkind='r' AND NOT c.relrowsecurity AND c.relname NOT IN ('calm_items','events','helplines')`));
+    expect(r.rows).toEqual([]);
+  });
+
   it('safety_events is write-only and audit_log is append-only for the app role', async () => {
     const u = await makeUser('4444');
     await withUser(db, u.id, tx => tx.query(`INSERT INTO safety_events (user_id, level, mode, source) VALUES ($1,3,'text','prefilter')`, [u.id]));
