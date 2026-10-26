@@ -3,3 +3,4 @@ export * from './journal';
 export * from './output';
 export * from './sentences';
 export * from './insights';
+export * from './notifications';

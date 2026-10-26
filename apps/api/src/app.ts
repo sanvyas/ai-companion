@@ -16,7 +16,7 @@ import { authRoutes } from './routes/auth.js';
 import { meRoutes } from './routes/me.js';
 import { conversationRoutes } from './routes/conversations.js';
 import { dataRoutes } from './routes/data.js';
-import { notificationRoutes } from './routes/notifications.js';
+import { inboxRoutes, notificationRoutes } from './routes/notifications.js';
 import { publicRoutes } from './routes/public.js';
 
 export interface BuildOpts { db?: Db; overrides?: Partial<Ctx> }
@@ -70,6 +70,7 @@ export async function buildApp(cfg: Config, opts: BuildOpts = {}): Promise<{ app
   conversationRoutes(app, ctx);
   dataRoutes(app, ctx);
   notificationRoutes(app, ctx);
+  inboxRoutes(app, ctx);
 
   app.addHook('onClose', async () => { if (!opts.db) await db.end(); });
   return { app, ctx };
