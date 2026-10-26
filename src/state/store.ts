@@ -176,7 +176,7 @@ export function initialState(withPrefs = true): AppState {
     priv: { anon: false, lock: true, discreet: false, hide: true, preview: false }, retention: '90 days',
     msgs: [{ who: 'ai', text: 'Hey Aarav. I’m here.' }, { who: 'ai', text: 'How did the interview prep go today?' }],
     draft: '', typing: false, careCard: false, turn: 0, risk: initialRisk,
-    reduceMotion: false, voiceAudio: true, todOverride: null, demo: params.has('demo'),
+    reduceMotion: false, voiceAudio: true, todOverride: null, demo: params.has('demo') || import.meta.env.VITE_DEMO === '1',
   };
   const merged = { ...base, ...prefs, consent: { ...base.consent, ...prefs.consent }, chan: { ...base.chan, ...prefs.chan }, priv: { ...base.priv, ...prefs.priv } };
   merged.screen = merged.onboarded ? 'today' : 'welcome';
