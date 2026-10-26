@@ -71,18 +71,18 @@ export const Card = ({ children, style, pad = 20, gap = 12 }: { children: ReactN
   <div style={{ background: C.white, borderRadius: 28, padding: pad, boxShadow: shadow.cardSoft, ...flex('column', gap), ...style }}>{children}</div>
 );
 
-type BtnProps = { children: ReactNode; onClick?: (e: MouseEvent<HTMLButtonElement>) => void; style?: CSSProperties; disabled?: boolean; ariaLabel?: string; href?: string };
+type BtnProps = { children: ReactNode; onClick?: (e: MouseEvent<HTMLButtonElement>) => void; style?: CSSProperties; disabled?: boolean; ariaLabel?: string; href?: string; type?: 'button' | 'submit' };
 
-export const PrimaryButton = ({ children, onClick, style, disabled, ariaLabel }: BtnProps) => (
-  <button onClick={onClick} aria-label={ariaLabel} aria-disabled={disabled} style={{ height: 56, borderRadius: 28, border: 'none', background: C.teal, color: C.white, fontSize: 17, fontWeight: 600, ...style }}>{children}</button>
+export const PrimaryButton = ({ children, onClick, style, disabled, ariaLabel, type = 'button' }: BtnProps) => (
+  <button type={type} onClick={onClick} aria-label={ariaLabel} disabled={disabled} style={{ height: 56, borderRadius: 28, border: 'none', background: C.teal, color: C.white, fontSize: 17, fontWeight: 600, ...style }}>{children}</button>
 );
 
-export const OutlineButton = ({ children, onClick, style }: BtnProps) => (
-  <button onClick={onClick} style={{ height: 52, borderRadius: 26, border: `1.5px solid ${C.teal}`, background: C.white, color: C.teal, fontSize: 17, fontWeight: 600, ...style }}>{children}</button>
+export const OutlineButton = ({ children, onClick, style, type = 'button' }: BtnProps) => (
+  <button type={type} onClick={onClick} style={{ height: 52, borderRadius: 26, border: `1.5px solid ${C.teal}`, background: C.white, color: C.teal, fontSize: 17, fontWeight: 600, ...style }}>{children}</button>
 );
 
-export const TextButton = ({ children, onClick, style }: BtnProps) => (
-  <button onClick={onClick} style={{ height: 48, background: 'none', border: 'none', color: C.teal, fontSize: 17, fontWeight: 600, ...style }}>{children}</button>
+export const TextButton = ({ children, onClick, style, type = 'button' }: BtnProps) => (
+  <button type={type} onClick={onClick} style={{ height: 48, background: 'none', border: 'none', color: C.teal, fontSize: 17, fontWeight: 600, ...style }}>{children}</button>
 );
 
 /** A real phone call link. Calls always go through the OS dialer (PRD §8.10). */

@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { C, serif, type TimeOfDay } from '../theme';
-import { clearPrefs, initialState, resetState, set, useStore } from '../state/store';
-import { analyzeJournal, go, openBreathe, openPaywall, showCrisis, startJournal, teardownAll } from '../state/actions';
+import { getState, set, useStore } from '../state/store';
+import { go, loadOutside, openBreathe, openChat, openPaywall, showCrisis, startCall, startJournal, startWalkFlow, updatePrivacy } from '../state/actions';
 import type { NotifKind } from '../state/store';
 
-// Prototype navigator (the side rail from the design). Only mounted with ?demo so the shipped UI stays clean.
+// Demo navigator. Only mounted with ?demo (in-memory demo data, no server), so the shipped app stays clean.
 // It also reaches states that normally arrive from outside the app: OS notifications, a CallKit call, crisis levels.
 const SAMPLE = 'Work was a lot today. My manager moved the deadline again and I didn’t say anything. Priya texted, that helped a bit. I want to sleep before one tonight.';
 
@@ -16,16 +16,16 @@ export function DemoPanel() {
   const tod = useStore(s => s.todOverride);
   const reduce = useStore(s => s.reduceMotion);
   const voiceAudio = useStore(s => s.voiceAudio);
-  const preview = useStore(s => s.priv.preview);
+  const preview = useStore(s => s.me?.privacy.lockScreenPreviews ?? false);
 
   const groups: { group: string; desc: string; items: Item[] }[] = [
     { group: 'First open', desc: 'Onboarding, in order.', items: [['Welcome', () => go('welcome')], ['Honest intro', () => go('intro')], ['Age check', () => go('age')], ['Language', () => go('lang')], ['Name and sign-in', () => go('name')], ['Your companion', () => go('companion')], ['Consent', () => go('consent')], ['Under-18 exit', () => go('under')]] },
-    { group: 'Today', desc: 'Home: companion, mood, plan.', items: [['Today', () => go('today')], ['Quiet card in the app', () => go('today', { inApp: true })]] },
-    { group: 'Talk', desc: 'Every way to talk, loud or quiet.', items: [['Talk', () => go('talk')], ['Voice call', () => go('call', { callMode: 'voice', micOk: true })], ['Avatar video call', () => go('call', { callMode: 'video', micOk: true })], ['Text chat', () => go('chat')], ['Just sit with me', () => go('call', { callMode: 'sit' })]] },
-    { group: 'Outside', desc: 'Small steps, walks, meetups.', items: [['Outside', () => go('outside')], ['Event detail', () => { go('outside'); set({ sheet: 'event', eventId: 'walk', eventStage: 'detail' }); }], ['Walk with me', () => go('walk', { walkEnded: false })]] },
-    { group: 'Journal', desc: 'Entries, dictation, insights.', items: [['Journal entries', () => go('journal')], ['Write an entry', () => startJournal('write')], ['Talk it out (dictation)', () => startJournal('speak')], ['What I noticed (sample)', () => { go('jcompose', { jMode: 'write', jText: SAMPLE, jStage: 'edit', jShare: true }); setTimeout(() => analyzeJournal(SAMPLE), 50); }], ['Insights', () => go('journey')], ['Weekly letter', () => { go('journey'); set({ sheet: 'letter' }); }]] },
+    { group: 'Today', desc: 'Home: companion, mood, plan.', items: [['Today', () => go('today')], ['Quiet card in the app', () => { go('today'); set({ cards: [{ id: 'demo-card', kind: 'checkin' }] }); }]] },
+    { group: 'Talk', desc: 'Every way to talk, loud or quiet.', items: [['Talk', () => go('talk')], ['Voice call', () => { set({ micOk: true }); void startCall('voice'); }], ['Avatar video call', () => { set({ micOk: true }); void startCall('video'); }], ['Text chat', () => void openChat()], ['Just sit with me', () => void startCall('sit')]] },
+    { group: 'Outside', desc: 'Small steps, walks, meetups.', items: [['Outside', () => go('outside')], ['Event detail', () => { go('outside'); void loadOutside().then(() => { const e = getState().events[0]; if (e) set({ sheet: 'event', eventId: e.id, eventStage: 'detail' }); }); }], ['Walk with me', () => void startWalkFlow()]] },
+    { group: 'Journal', desc: 'Entries, dictation, insights.', items: [['Journal entries', () => go('journal')], ['Write an entry', () => startJournal('write')], ['Talk it out (dictation)', () => startJournal('speak')], ['Journal with sample text', () => go('jcompose', { jMode: 'write', jText: SAMPLE, jStage: 'edit', jShare: true })], ['Insights', () => go('journey')], ['Weekly letter', () => { go('journey'); set({ sheet: 'letter' }); }]] },
     { group: 'You', desc: 'Companion, reminders, privacy.', items: [['You', () => go('you')], ['Memory', () => go('memory')], ['Avatar and voice studio', () => go('studio')], ['Reminder settings', () => go('notifs')], ['Privacy Center', () => go('privacy')], ['Paywall', openPaywall]] },
-    { group: 'Notifications', desc: 'What arrives outside the app.', items: [['Check-in notification', sim('checkin')], ['Plan reminder', sim('plan')], ['Event: time to leave', sim('leave')], ['Follow-up after a hard day', sim('followup')], ['After a quiet week', sim('quietweek')], ['Saathi is calling', () => go('incoming')], [`Lock-screen previews: ${preview ? 'on' : 'off'}`, () => set(p => ({ priv: { ...p.priv, preview: !p.priv.preview } }))]] },
+    { group: 'Notifications', desc: 'What arrives outside the app.', items: [['Check-in notification', sim('checkin')], ['Plan reminder', sim('plan')], ['Event: time to leave', sim('leave')], ['Follow-up after a hard day', sim('followup')], ['After a quiet week', sim('quietweek')], ['Saathi is calling', () => go('incoming')], [`Lock-screen previews: ${preview ? 'on' : 'off'}`, () => void updatePrivacy({ lockScreenPreviews: !preview })]] },
     { group: 'Calm', desc: 'Meditations, sleep stories, sounds.', items: [['Calm hub', () => go('calm', { calmTab: 'meditate' })], ['Sleep stories', () => go('calm', { calmTab: 'sleep' })], ['Sounds', () => go('calm', { calmTab: 'sounds' })]] },
     { group: 'Safety', desc: 'Always one tap away.', items: [['Support sheet', () => set({ sheet: 'support' })], ['Level 2 in chat', () => go('chat', { careCard: true })], ['Crisis screen (level 3)', showCrisis], ['Breathe with me', openBreathe]] },
   ];
@@ -48,7 +48,7 @@ export function DemoPanel() {
         </div>
         <label style={{ fontSize: 14, display: 'flex', gap: 8, alignItems: 'center' }}><input type="checkbox" checked={reduce} onChange={e => set({ reduceMotion: e.target.checked })} /> Reduce motion</label>
         <label style={{ fontSize: 14, display: 'flex', gap: 8, alignItems: 'center' }}><input type="checkbox" checked={voiceAudio} onChange={e => set({ voiceAudio: e.target.checked })} /> Spoken voice</label>
-        <button onClick={() => { teardownAll(); clearPrefs(); resetState(initialState(false)); }} style={{ alignSelf: 'flex-start', height: 32, padding: '0 12px', borderRadius: 16, border: `1px solid ${C.muted}`, background: 'none', fontSize: 13, fontWeight: 600, color: C.ink }}>Reset demo</button>
+        <button onClick={() => location.reload()} style={{ alignSelf: 'flex-start', height: 32, padding: '0 12px', borderRadius: 16, border: `1px solid ${C.muted}`, background: 'none', fontSize: 13, fontWeight: 600, color: C.ink }}>Reset demo</button>
       </div>
       {groups.map(g => (
         <div key={g.group} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>

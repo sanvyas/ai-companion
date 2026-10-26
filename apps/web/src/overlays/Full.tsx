@@ -1,10 +1,9 @@
 import { useEffect } from 'react';
 import { C, serif } from '../theme';
 import { set, useStore } from '../state/store';
-import { closeBreathe, closePlayer, confirmSafe, go, openBreathe, openPlayer, setPlayerBg, stepPlayer, toast, togglePlay } from '../state/actions';
+import { acknowledgeHelp, closeBreathe, closePlayer, confirmSafe, openBreathe, openPlayer, setPlayerBg, startCall, stepPlayer, toast, togglePlay } from '../state/actions';
 import { CALM_ITEMS, PLAYER_BG_CHIPS, SLEEP_TIMERS } from '../data/calm';
 import { EMERGENCY, TELE_MANAS } from '../data/helplines';
-import { TRUSTED_CONTACT } from '../data/seed';
 import { useDialog } from '../components/useDialog';
 import { Disc, Orb, useReduceMotion } from '../components/figures';
 import { P, Svg } from '../components/icons';
@@ -139,6 +138,7 @@ export function Breathe() {
 export function Crisis() {
   const confirm = useStore(s => s.crisisConfirm);
   const compName = useStore(s => s.compName);
+  const trusted = useStore(s => s.trustedDial);
   const ref = useDialog<HTMLDivElement>(); // focus + trap, no Escape handler
 
   useEffect(() => {
@@ -157,13 +157,11 @@ export function Crisis() {
       <h1 style={{ fontFamily: serif, fontSize: 34, lineHeight: 1.15, fontWeight: 400, margin: '12px 0 0' }}>Your safety matters most right now.</h1>
       <div style={{ fontSize: 17, lineHeight: 1.55, color: C.amberText, textWrap: 'pretty' }}>I’m an AI, so I can’t be there the way a person can. Let’s get you to someone who can.</div>
       <div style={{ ...flex('column', 10), marginTop: 8 }}>
-        <CallLink tel={TELE_MANAS.tel} style={btn(true)}><span>Call a helpline</span><span style={sub}>Tele-MANAS {TELE_MANAS.num}</span></CallLink>
-        {TRUSTED_CONTACT.phone
-          ? <CallLink tel={TRUSTED_CONTACT.phone} style={btn(false)}><span>Call {TRUSTED_CONTACT.name}</span><span style={sub}>Trusted contact</span></CallLink>
-          : <button onClick={() => toast(`Add ${TRUSTED_CONTACT.name}’s number in Trusted contact to call from here.`)} style={btn(false)}><span>Call {TRUSTED_CONTACT.name}</span><span style={sub}>Trusted contact</span></button>}
-        <CallLink tel={EMERGENCY.tel} style={btn(false)}><span>Call emergency services</span><span style={sub}>{EMERGENCY.num}</span></CallLink>
+        <CallLink tel={TELE_MANAS.tel} onClick={() => acknowledgeHelp('helpline')} style={btn(true)}><span>Call a helpline</span><span style={sub}>Tele-MANAS {TELE_MANAS.num}</span></CallLink>
+        {trusted && <CallLink tel={trusted.phone} onClick={() => acknowledgeHelp('contact')} style={btn(false)}><span>Call {trusted.name}</span><span style={sub}>Trusted contact</span></CallLink>}
+        <CallLink tel={EMERGENCY.tel} onClick={() => acknowledgeHelp('emergency')} style={btn(false)}><span>Call emergency services</span><span style={sub}>{EMERGENCY.num}</span></CallLink>
         <button onClick={openBreathe} style={btn(false)}><span>Breathe with me</span><span style={sub}>One minute</span></button>
-        <button onClick={() => go('call', { callMode: 'voice', micOk: true })} style={btn(false)}><span>Stay with me</span><span style={sub}>Voice</span></button>
+        <button onClick={() => void startCall('voice')} style={btn(false)}><span>Stay with me</span><span style={sub}>Voice</span></button>
       </div>
       <div style={{ fontSize: 17, lineHeight: 1.55, color: C.amberText, marginTop: 8, textWrap: 'pretty' }}>If you can, move away from anything you could use to hurt yourself.</div>
       <div style={{ marginTop: 'auto', paddingTop: 12 }}>

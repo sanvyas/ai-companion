@@ -1,31 +1,42 @@
 import { useSyncExternalStore } from 'react';
 import type { TimeOfDay } from '../theme';
-import { SEED_JOURNAL, SEED_MEMORIES, SEED_PLAN, WINS, type JournalEntry, type Memory, type PlanItem } from '../data/seed';
-import type { SoundId } from '../data/calm';
 import { initialRisk, type RiskState } from '@saathi/domain';
-import type { JournalAnalysis } from '@saathi/domain';
+import type { SoundId } from '../data/calm';
+import { HELPLINES } from '../data/helplines';
+import { isDemo, type Consent, type ConversationItem, type ConversationMode, type EndConversationResponse, type Helpline, type Insights, type JournalAnalysis, type JournalEntry, type Letter, type MemoryItem, type Me, type NotificationPrefs, type OutsideEvent, type PlanItem, type PublicConfig, type SafetyPlan } from '../api';
 
 export type Screen =
-  | 'welcome' | 'intro' | 'age' | 'under' | 'lang' | 'name' | 'companion' | 'consent'
+  | 'welcome' | 'intro' | 'age' | 'under' | 'lang' | 'name' | 'otp' | 'companion' | 'consent'
   | 'today' | 'talk' | 'call' | 'chat' | 'outside' | 'walk' | 'journey' | 'you' | 'memory'
   | 'privacy' | 'journal' | 'jcompose' | 'lock' | 'incoming' | 'notifs' | 'studio' | 'calm';
 
-export type Sheet = 'support' | 'helplines' | 'plan' | 'letter' | 'jread' | 'mic' | 'delete' | 'event' | null;
+export type Sheet = 'support' | 'helplines' | 'plan' | 'letter' | 'jread' | 'mic' | 'delete' | 'event' | 'trusted' | 'planedit' | null;
 export type CallMode = 'voice' | 'video' | 'sit' | 'checkin';
 export type Look = 'orb' | 'asha' | 'dev' | 'noor' | 'kabir';
 export type Persona = 'warm' | 'steady' | 'bright';
+export type Language = 'en' | 'hinglish' | 'hi';
 export type NotifKind = 'checkin' | 'plan' | 'leave' | 'followup' | 'quietweek';
 export type AvatarMode = 'idle' | 'listening' | 'thinking' | 'concerned' | 'smiling' | 'speaking' | 'paused';
+export type CallPhase = 'connecting' | 'listening' | 'thinking' | 'speaking' | 'idle' | 'paused' | 'error';
 
 export interface ChatMsg { who: 'ai' | 'me'; text: string }
 
 export interface JournalResult extends JournalAnalysis {
   hookOn: boolean;
   stepOn: boolean;
-  memories: (JournalAnalysis['memories'][number] & { id: number; keep: boolean })[];
+  entryId: string;
+  /** Which proposed memories the user has ticked. Sensitive ones start off. */
+  keep: number[];
 }
 
 export interface AppState {
+  // session
+  phase: 'booting' | 'out' | 'in';
+  cfg: PublicConfig | null;
+  me: Me | null;
+  helplines: Helpline[];
+  trustedDial: { name: string; phone: string } | null;
+
   // navigation + overlays
   screen: Screen;
   sheet: Sheet;
@@ -36,39 +47,61 @@ export interface AppState {
   toast: string | null;
   tick: number;
 
-  // onboarding + profile
-  onboarded: boolean;
-  langs: string[];
+  // sign-in (before there is a `me`)
+  language: Language;
   nick: string;
+  age18: boolean;
+  returning: boolean;
+  phone: string;
+  otpCode: string;
+  challengeId: string | null;
+  devCode: string | null;
+  authBusy: boolean;
+  authError: string | null;
+  previewing: Persona | null;
+
+  // mirrors of `me` that screens read directly
   compName: string;
-  acct: 'private' | 'anon';
   look: Look;
   voice: Persona;
-  consent: { remember: boolean; health: boolean; notif: boolean; trusted: boolean };
+  consent: Consent | null;
 
-  // voice / call
+  // conversation + call
+  conv: { id: string; mode: ConversationMode; voice: { serverStt: boolean; serverTts: boolean }; ready: boolean } | null;
+  callMode: CallMode;
+  firstRun: boolean;
   captions: boolean;
   muted: boolean;
   paused: boolean;
   callEnded: boolean;
-  callMode: CallMode;
-  firstRun: boolean;
+  callPhase: CallPhase;
+  callLine: { who: 'ai' | 'me'; text: string } | null;
+  callSummary: EndConversationResponse | null;
+  callBusy: boolean;
   micOk: boolean;
   pendingMode: CallMode | null;
   pendingFirst: boolean;
-  previewing: Persona | null;
   mouth: number;
   speakingNow: boolean;
   sampleLang: string;
   deviceVoice: string;
   voicesList: { name: string; lang: string; uri: string }[];
   studioMode: AvatarMode;
+  walkEnded: boolean;
+  walkSeconds: number;
+
+  // chat
+  msgs: ChatMsg[];
+  draft: string;
+  typing: boolean;
+  careCard: boolean;
+  risk: RiskState;
 
   // notifications
   notif: NotifKind | null;
-  inApp: boolean;
-  chan: { card: boolean; push: boolean; calls: boolean; letter: boolean };
-  checkinTime: 'Morning' | 'Evening' | 'Off';
+  cards: { id: string; kind: string }[];
+  prefs: NotificationPrefs | null;
+  pushState: 'unknown' | 'unsupported' | 'denied' | 'off' | 'on';
 
   // calm
   calmTab: 'meditate' | 'sleep' | 'sounds';
@@ -81,46 +114,40 @@ export interface AppState {
   pLineIdx: number;
   pBg: SoundId | null;
   pTimer: string;
+  pSession: string | null;
   sounds: Partial<Record<SoundId, true>>;
 
   // journal
   jEntries: JournalEntry[];
+  jNext: string | null;
   jMode: 'write' | 'speak';
   jText: string;
   jPrompt: string | null;
   jShare: boolean;
-  jStage: 'edit' | 'thinking' | 'review';
+  jStage: 'edit' | 'saving' | 'thinking' | 'review';
   jResult: JournalResult | null;
+  jError: string | null;
   dictating: boolean;
-  jReadId: number | null;
-  journalHook: string | null;
-  hookUsed: boolean;
+  jReadId: string | null;
 
-  // today / outside / insights
+  // today, outside, insights, memory, safety
   plan: PlanItem[];
   mood: number | null;
   small: number;
   smallReply: string | null;
-  walkEnded: boolean;
+  events: OutsideEvent[];
+  eventsCity: string | null;
   eventId: string | null;
   eventStage: 'detail' | 'confirm' | 'done';
   day: number | null;
-  wins: { text: string; when: string }[];
-
-  // memory + privacy
-  memories: Memory[];
-  editingId: number | null;
+  insights: Insights | null;
+  letter: Letter | null;
+  memories: MemoryItem[];
+  editingId: string | null;
   editText: string;
-  priv: { anon: boolean; lock: boolean; discreet: boolean; hide: boolean; preview: boolean };
-  retention: '7 days' | '90 days' | 'Until I delete';
-
-  // chat + safety
-  msgs: ChatMsg[];
-  draft: string;
-  typing: boolean;
-  careCard: boolean;
-  turn: number;
-  risk: RiskState;
+  recent: ConversationItem[];
+  safetyPlan: SafetyPlan | null;
+  retention: 0 | 7 | 30 | 90 | 36500;
 
   // settings + demo
   reduceMotion: boolean;
@@ -129,58 +156,38 @@ export interface AppState {
   demo: boolean;
 }
 
-const PREF_KEY = 'saathi.prefs.v1';
+const PREF_KEY = 'saathi.ui.v1';
 
-// Only low-sensitivity preferences are persisted. Journal text, memories, chat and mood are
-// deliberately NOT written to localStorage (PRD §0.4: when unsure, do not store; §5 requires
-// per-user encryption we do not have client-side yet).
-// TODO(sync): persist journal/memories through the encrypted API + offline queue (PRD §9).
-type Prefs = Pick<AppState, 'onboarded' | 'langs' | 'nick' | 'compName' | 'look' | 'voice' | 'consent' | 'chan' | 'checkinTime' | 'priv' | 'retention' | 'reduceMotion' | 'sampleLang'>;
-
-function loadPrefs(): Partial<Prefs> {
-  try {
-    const raw = localStorage.getItem(PREF_KEY);
-    return raw ? (JSON.parse(raw) as Partial<Prefs>) : {};
-  } catch {
-    return {};
-  }
+// Only display preferences are kept on the device. Anything personal lives on the server, encrypted (PRD 5).
+function loadUi(): Partial<Pick<AppState, 'reduceMotion' | 'captions' | 'language'>> {
+  try { const r = localStorage.getItem(PREF_KEY); return r ? JSON.parse(r) : {}; } catch { return {}; }
+}
+export function saveUi(s: AppState) {
+  try { localStorage.setItem(PREF_KEY, JSON.stringify({ reduceMotion: s.reduceMotion, captions: s.captions, language: s.language })); } catch { /* blocked */ }
 }
 
-export function savePrefs(s: AppState) {
-  const p: Prefs = {
-    onboarded: s.onboarded, langs: s.langs, nick: s.nick, compName: s.compName, look: s.look, voice: s.voice,
-    consent: s.consent, chan: s.chan, checkinTime: s.checkinTime, priv: s.priv, retention: s.retention,
-    reduceMotion: s.reduceMotion, sampleLang: s.sampleLang,
-  };
-  try { localStorage.setItem(PREF_KEY, JSON.stringify(p)); } catch { /* storage may be blocked */ }
-}
-
-export function clearPrefs() {
-  try { localStorage.removeItem(PREF_KEY); } catch { /* ignore */ }
-}
-
-export function initialState(withPrefs = true): AppState {
-  const prefs = withPrefs ? loadPrefs() : {};
-  const params = typeof location !== 'undefined' ? new URLSearchParams(location.search) : new URLSearchParams();
-  const base: AppState = {
+export function initialState(): AppState {
+  const ui = loadUi();
+  return {
+    phase: 'booting', cfg: null, me: null, helplines: builtinHelplines(), trustedDial: null,
     screen: 'welcome', sheet: null, crisis: false, crisisConfirm: false, breathe: false, paywall: false, toast: null, tick: 0,
-    onboarded: false, langs: ['English', 'Hinglish'], nick: 'Aarav', compName: 'Saathi', acct: 'private', look: 'asha', voice: 'warm',
-    consent: { remember: false, health: false, notif: false, trusted: false },
-    captions: true, muted: false, paused: false, callEnded: false, callMode: 'voice', firstRun: false, micOk: false, pendingMode: null, pendingFirst: false,
-    previewing: null, mouth: 0, speakingNow: false, sampleLang: 'English', deviceVoice: '', voicesList: [], studioMode: 'idle',
-    notif: null, inApp: false, chan: { card: true, push: true, calls: true, letter: true }, checkinTime: 'Evening',
-    calmTab: 'meditate', calmCat: 'All', player: null, pPlaying: false, pElapsed: 0, pEnded: false, pLineText: '', pLineIdx: 0, pBg: null, pTimer: 'End of story', sounds: {},
-    jEntries: SEED_JOURNAL, jMode: 'write', jText: '', jPrompt: null, jShare: false, jStage: 'edit', jResult: null, dictating: false, jReadId: null, journalHook: null, hookUsed: false,
-    plan: SEED_PLAN, mood: null, small: 0, smallReply: null, walkEnded: false, eventId: null, eventStage: 'detail', day: null, wins: WINS,
-    memories: SEED_MEMORIES, editingId: null, editText: '',
-    priv: { anon: false, lock: true, discreet: false, hide: true, preview: false }, retention: '90 days',
-    msgs: [{ who: 'ai', text: 'Hey Aarav. I’m here.' }, { who: 'ai', text: 'How did the interview prep go today?' }],
-    draft: '', typing: false, careCard: false, turn: 0, risk: initialRisk,
-    reduceMotion: false, voiceAudio: true, todOverride: null, demo: params.has('demo') || import.meta.env.VITE_DEMO === '1',
+    language: ui.language ?? 'en', nick: '', age18: false, returning: false, phone: '', otpCode: '', challengeId: null, devCode: null, authBusy: false, authError: null, previewing: null,
+    compName: 'Saathi', look: 'asha', voice: 'warm', consent: null,
+    conv: null, callMode: 'voice', firstRun: false, captions: ui.captions ?? true, muted: false, paused: false, callEnded: false, callPhase: 'connecting', callLine: null, callSummary: null, callBusy: false,
+    micOk: false, pendingMode: null, pendingFirst: false, mouth: 0, speakingNow: false, sampleLang: 'English', deviceVoice: '', voicesList: [], studioMode: 'idle', walkEnded: false, walkSeconds: 0,
+    msgs: [], draft: '', typing: false, careCard: false, risk: initialRisk,
+    notif: null, cards: [], prefs: null, pushState: 'unknown',
+    calmTab: 'meditate', calmCat: 'All', player: null, pPlaying: false, pElapsed: 0, pEnded: false, pLineText: '', pLineIdx: 0, pBg: null, pTimer: 'End of story', pSession: null, sounds: {},
+    jEntries: [], jNext: null, jMode: 'write', jText: '', jPrompt: null, jShare: false, jStage: 'edit', jResult: null, jError: null, dictating: false, jReadId: null,
+    plan: [], mood: null, small: 0, smallReply: null, events: [], eventsCity: null, eventId: null, eventStage: 'detail', day: null, insights: null, letter: null,
+    memories: [], editingId: null, editText: '', recent: [], safetyPlan: null, retention: 90,
+    reduceMotion: ui.reduceMotion ?? false, voiceAudio: true, todOverride: null, demo: isDemo,
   };
-  const merged = { ...base, ...prefs, consent: { ...base.consent, ...prefs.consent }, chan: { ...base.chan, ...prefs.chan }, priv: { ...base.priv, ...prefs.priv } };
-  merged.screen = merged.onboarded ? 'today' : 'welcome';
-  return merged;
+}
+
+/** Always available, even offline or before sign-in: the numbers PRD 6.4 says must be in the app. */
+export function builtinHelplines(): Helpline[] {
+  return HELPLINES.map(h => ({ id: h.id, name: h.name, description: h.desc, number: h.num, tel: h.tel, kind: h.id === 'emergency' ? 'emergency' : 'crisis', hours: '24x7', languages: ['en', 'hi'], city: null, stale: false }));
 }
 
 type Listener = () => void;
@@ -195,15 +202,17 @@ export function set(patch: Partial<AppState> | ((s: AppState) => Partial<AppStat
   listeners.forEach(l => l());
 }
 
-export function resetState(next: AppState = initialState(false)) {
-  state = next;
+export function resetState() {
+  const keep = { cfg: state.cfg, helplines: state.helplines, voicesList: state.voicesList, demo: state.demo };
+  state = { ...initialState(), ...keep, phase: 'out' };
   listeners.forEach(l => l());
 }
 
-const subscribe = (l: Listener) => { listeners.add(l); return () => { listeners.delete(l); }; };
-export const subscribePrefs = subscribe;
+export const subscribe = (l: Listener) => { listeners.add(l); return () => { listeners.delete(l); }; };
 
 /** Select a stable value (primitive or an existing reference). Never build new objects in the selector. */
 export function useStore<T>(selector: (s: AppState) => T): T {
   return useSyncExternalStore(subscribe, () => selector(state), () => selector(state));
 }
+
+export const dayOf = (iso: string) => new Date(iso).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });

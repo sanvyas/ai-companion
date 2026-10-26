@@ -1,7 +1,7 @@
+import { useEffect } from 'react';
 import { C, TOD, shadow } from '../theme';
-import { useStore } from '../state/store';
-import { go, openBreathe, startCall, startJournal } from '../state/actions';
-import { SEED_RECENT } from '../data/seed';
+import { dayOf, useStore } from '../state/store';
+import { go, loadTalk, openBreathe, openChat, startCall, startJournal } from '../state/actions';
 import { useTimeOfDay } from '../hooks';
 import { Chevron, Heading, Intro, Scroll, TabHeader, flex } from '../components/ui';
 import { P, Svg } from '../components/icons';
@@ -25,14 +25,16 @@ function RowCard({ rows, label }: { rows: Row[]; label: string }) {
 export function Talk() {
   const tod = useTimeOfDay();
   const compName = useStore(s => s.compName);
+  const recent = useStore(s => s.recent);
+  useEffect(() => { void loadTalk(); }, []);
   const now: Row[] = [
-    { label: 'Voice call', desc: 'Like a phone call. Captions on.', tint: C.tealSoft, icon: P.mic, onTap: () => startCall('voice') },
-    { label: 'Video call', desc: `See ${compName} while you talk.`, tint: C.lavender, icon: P.video, onTap: () => startCall('video') },
-    { label: 'Text', desc: 'Type, at your own pace.', tint: C.peach, icon: P.text, onTap: () => go('chat') },
+    { label: 'Voice call', desc: 'Like a phone call. Captions on.', tint: C.tealSoft, icon: P.mic, onTap: () => void startCall('voice') },
+    { label: 'Video call', desc: `See ${compName} while you talk.`, tint: C.lavender, icon: P.video, onTap: () => void startCall('video') },
+    { label: 'Text', desc: 'Type, at your own pace.', tint: C.peach, icon: P.text, onTap: () => void openChat() },
   ];
   const quiet: Row[] = [
     { label: 'Meditate and sleep', desc: 'Guided meditations, sleep stories and sounds.', tint: C.lavenderDeep, icon: P.moon, onTap: () => go('calm') },
-    { label: 'Just sit with me', desc: 'Quiet company. No need to say anything.', tint: C.lavender, icon: P.person, onTap: () => go('call', { callMode: 'sit', firstRun: false }) },
+    { label: 'Just sit with me', desc: 'Quiet company. No need to say anything.', tint: C.lavender, icon: P.person, onTap: () => void startCall('sit') },
     { label: 'Breathe', desc: 'A slow, guided breathing exercise.', tint: C.sky, icon: P.wave, onTap: openBreathe },
     { label: 'Talk it out', desc: 'Speak freely. Saved as a private journal entry.', tint: C.sand, icon: P.pen, onTap: () => startJournal('speak') },
   ];
@@ -45,16 +47,19 @@ export function Talk() {
         <RowCard rows={now} label="Talk now" />
         <Heading title="Quieter ways" sub="For when you don’t feel like a conversation." style={{ marginTop: 8 }} />
         <RowCard rows={quiet} label="Quieter ways" />
-        <Heading title="Recent conversations" sub="Short summaries. Tap one to pick it back up." style={{ marginTop: 8 }} />
-        <div style={{ ...flex('column'), background: C.white, borderRadius: 28, padding: '4px 20px', boxShadow: shadow.cardSoft }}>
-          {SEED_RECENT.map((r, i) => (
-            // TODO(conversations): continue in the same mode with the summary as context (GET /conversations).
-            <button key={r.text} onClick={() => go('chat')} style={{ textAlign: 'left', border: 'none', background: 'none', padding: '16px 0', borderBottom: i < SEED_RECENT.length - 1 ? `1px solid ${C.rule}` : 'none', ...flex('column', 3) }}>
-              <span style={{ fontSize: 17, lineHeight: 1.4 }}>{r.text}</span>
-              <span style={{ fontSize: 15, color: C.muted }}>{r.when}</span>
-            </button>
-          ))}
-        </div>
+        {recent.filter(r => r.summary).length > 0 && (
+          <>
+            <Heading title="Recent conversations" sub="Short summaries. Tap one to pick it back up." style={{ marginTop: 8 }} />
+            <div style={{ ...flex('column'), background: C.white, borderRadius: 28, padding: '4px 20px', boxShadow: shadow.cardSoft }}>
+              {recent.filter(r => r.summary).slice(0, 5).map((r, i, arr) => (
+                <button key={r.id} onClick={() => void openChat(r.id)} style={{ textAlign: 'left', border: 'none', background: 'none', padding: '16px 0', borderBottom: i < arr.length - 1 ? `1px solid ${C.rule}` : 'none', ...flex('column', 3) }}>
+                  <span style={{ fontSize: 17, lineHeight: 1.4 }}>{r.summary}</span>
+                  <span style={{ fontSize: 15, color: C.muted }}>{dayOf(r.startedAt)}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
       </Scroll>
     </main>
   );

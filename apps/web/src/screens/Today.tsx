@@ -1,7 +1,7 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { C, MOODS, TOD, ring, serif, shadow } from '../theme';
-import { set, useStore } from '../state/store';
-import { go, openBreathe, startCheckin, startJournal } from '../state/actions';
+import { useStore } from '../state/store';
+import { dismissCard, go, loadToday, openBreathe, startCheckin, startCall, startJournal, tapMood, togglePlan } from '../state/actions';
 import { useTimeOfDay } from '../hooks';
 import { Companion } from '../components/figures';
 import { Svg, P } from '../components/icons';
@@ -23,11 +23,14 @@ export function Today() {
   const nick = useStore(s => s.nick);
   const compName = useStore(s => s.compName);
   const look = useStore(s => s.look);
-  const inApp = useStore(s => s.inApp);
+  const cards = useStore(s => s.cards);
   const mood = useStore(s => s.mood);
   const plan = useStore(s => s.plan);
-  const hide = useStore(s => s.priv.hide);
+  const hide = useStore(s => s.me?.privacy.quickHide ?? false);
+  const checkinCard = cards.find(c => c.kind === 'checkin');
   const taps = useRef<number[]>([]);
+
+  useEffect(() => { void loadToday(); }, []);
 
   // Triple-tap the wordmark to hide the screen behind a breathing view (PRD §8.7.3 quick hide).
   const onLogo = () => {
@@ -49,13 +52,13 @@ export function Today() {
         <h1 style={{ fontFamily: serif, fontSize: 34, lineHeight: 1.15, fontWeight: 400, margin: 0 }}>{t.greet}{nick.trim() ? `, ${nick.trim()}` : ''}.</h1>
         <div style={{ fontSize: 17, color: C.muted, marginTop: 8 }}>{t.line}</div>
 
-        {inApp && (
+        {checkinCard && (
           <section aria-label="A quiet moment" style={{ marginTop: 20, borderRadius: 28, padding: '18px 20px', background: 'rgba(255,255,255,.7)', boxShadow: '0 10px 28px rgba(42,46,69,.06)', ...flex('column', 10), animation: 'sDrop 600ms cubic-bezier(.22,.61,.36,1)' }}>
             <span style={{ fontSize: 17, fontWeight: 600 }}>A quiet moment for you?</span>
             <span style={{ fontSize: 15, color: C.muted, lineHeight: 1.45 }}>Your evening check-in is here whenever you are. Two minutes, or skip it.</span>
             <div style={{ ...flex('row', 8), alignItems: 'center' }}>
-              <button onClick={startCheckin} style={{ height: 48, padding: '0 20px', borderRadius: 24, border: 'none', background: C.teal, color: C.white, fontSize: 15, fontWeight: 600 }}>Check in</button>
-              <button onClick={() => set({ inApp: false })} style={{ height: 48, padding: '0 12px', background: 'none', border: 'none', color: C.teal, fontSize: 15, fontWeight: 600 }}>Not now</button>
+              <button onClick={() => { void dismissCard(checkinCard.id); void startCheckin(); }} style={{ height: 48, padding: '0 20px', borderRadius: 24, border: 'none', background: C.teal, color: C.white, fontSize: 15, fontWeight: 600 }}>Check in</button>
+              <button onClick={() => void dismissCard(checkinCard.id)} style={{ height: 48, padding: '0 12px', background: 'none', border: 'none', color: C.teal, fontSize: 15, fontWeight: 600 }}>Not now</button>
             </div>
           </section>
         )}
@@ -70,7 +73,7 @@ export function Today() {
           </div>
           <div style={flex('row', 8)}>
             <PrimaryButton onClick={() => go('talk')} style={{ flex: 1.4, boxShadow: shadow.primary }}>Talk</PrimaryButton>
-            <button onClick={() => go('call', { callMode: 'sit', firstRun: false })} style={{ flex: 1, height: 56, borderRadius: 28, border: `1.5px solid ${C.teal}`, background: C.white, color: C.teal, fontSize: 15, fontWeight: 600 }}>Just sit</button>
+            <button onClick={() => void startCall('sit')} style={{ flex: 1, height: 56, borderRadius: 28, border: `1.5px solid ${C.teal}`, background: C.white, color: C.teal, fontSize: 15, fontWeight: 600 }}>Just sit</button>
           </div>
         </section>
 
@@ -87,7 +90,7 @@ export function Today() {
           <div style={flex('column', 2)}><h2 style={{ fontFamily: serif, fontSize: 22, fontWeight: 400, margin: 0 }}>How are you?</h2><span style={{ fontSize: 15, color: C.muted }}>One tap helps me notice how your weeks go.</span></div>
           <div role="group" aria-label="How are you?" style={{ ...flex('row'), justifyContent: 'space-between', padding: '0 2px' }}>
             {MOODS.map((m, i) => (
-              <button key={m.label} aria-label={m.label} aria-pressed={mood === i} onClick={() => set({ mood: mood === i ? null : i })}
+              <button key={m.label} aria-label={m.label} aria-pressed={mood === i} onClick={() => void tapMood(i)}
                 style={{ width: 48, height: 48, border: 'none', background: m.color, borderRadius: m.radius, boxShadow: mood === i ? ring : '0 6px 16px rgba(42,46,69,.10)', transition: 'box-shadow 400ms' }} />
             ))}
           </div>
@@ -98,7 +101,7 @@ export function Today() {
         <section style={{ background: C.white, borderRadius: 28, padding: '20px 20px 6px', boxShadow: shadow.cardSoft, ...flex('column') }}>
           <div style={{ ...flex('column', 2), marginBottom: 4 }}><h2 style={{ fontFamily: serif, fontSize: 22, fontWeight: 400, margin: 0 }}>Today’s gentle plan</h2><span style={{ fontSize: 15, color: C.muted }}>Small steps. Skipping one is okay.</span></div>
           {plan.map((p, i) => (
-            <button key={p.id} role="checkbox" aria-checked={p.done} onClick={() => set(st => ({ plan: st.plan.map(x => (x.id === p.id ? { ...x, done: !x.done } : x)) }))}
+            <button key={p.id} role="checkbox" aria-checked={p.done} onClick={() => void togglePlan(p.id)}
               style={{ ...flex('row', 14), alignItems: 'center', textAlign: 'left', border: 'none', background: 'none', padding: '14px 0', borderBottom: i < plan.length - 1 ? `1px solid ${C.rule}` : 'none' }}>
               <div style={{ flex: 'none', width: 28, height: 28, borderRadius: '50%', border: p.done ? `1.5px solid ${C.teal}` : '1.5px solid #C9C2B6', background: p.done ? C.teal : 'transparent', display: 'grid', placeItems: 'center', transition: 'all 500ms cubic-bezier(.22,.61,.36,1)' }}>
                 <Svg d={P.check} size={14} stroke="#FFFFFF" sw={3} style={{ opacity: p.done ? 1 : 0 }} />

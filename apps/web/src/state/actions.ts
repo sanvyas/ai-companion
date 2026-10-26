@@ -1,27 +1,43 @@
+import { api, isDemo } from '../api';
 import { CALM_ITEMS } from '../data/calm';
-import { TRUSTED_CONTACT } from '../data/seed';
-import { analyzeJournalLocally, moodIndexFor } from '@saathi/domain';
-import { nextRisk, userSafeAcknowledged } from '@saathi/domain';
-import { mockCompanion } from '../providers/companion';
-import { startDictation, stopDictation } from '../audio/dictation';
+import { stopDictation, startDictation } from '../audio/dictation';
 import { isSpeaking, pauseNarration, say, stopSpeech, ttsSupported } from '../audio/speech';
 import { stopAllSounds, toggleSound } from '../audio/sounds';
-import { getState, set, type AppState, type CallMode, type JournalResult, type Screen } from './store';
+import { nextRisk, userSafeAcknowledged } from '@saathi/domain';
+import { askForMic, beginConversation, bindConversationUi, closeConversation, finishCall, hasConversation, sendTurn, startListening } from './conversation';
+import { bindDataUi, loadTalk } from './data';
+import { bindSessionUi, handleMinor } from './session';
+import { getState, set, type AppState, type CallMode, type Screen } from './store';
+
+export * from './conversation';
+export * from './data';
+export * from './session';
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
-let replyTimer: ReturnType<typeof setTimeout> | undefined;
 
 export function toast(msg: string) {
   clearTimeout(toastTimer);
   set({ toast: msg });
-  toastTimer = setTimeout(() => set({ toast: null }), 2800);
+  toastTimer = setTimeout(() => set({ toast: null }), 3200);
 }
 
-export function go(screen: Screen, extra: Partial<AppState> = {}) {
+/** Pure navigation: resets transient UI. Does not touch the live conversation. */
+export function navigate(screen: Screen, extra: Partial<AppState> = {}) {
   closePlayer();
   stopSpeech();
   stopDictation();
-  set({ screen, sheet: null, tick: 0, paused: false, callEnded: false, crisis: false, crisisConfirm: false, breathe: false, paywall: false, ...extra });
+  set({ screen, sheet: null, tick: 0, paused: false, crisis: false, crisisConfirm: false, breathe: false, paywall: false, ...extra });
+}
+
+/**
+ * Navigate and tidy the conversation: leaving chat or a call ends the conversation (so its summary shows up in
+ * Recent), except when switching between the chat and call views of the same one.
+ */
+export function go(screen: Screen, extra: Partial<AppState> = {}) {
+  const s = getState();
+  const keep = (s.screen === 'call' && screen === 'chat') || (s.screen === 'chat' && screen === 'call');
+  if (!keep && s.conv && ['chat', 'call', 'walk'].includes(s.screen)) void closeConversation({ end: true }).then(() => loadTalk());
+  navigate(screen, extra);
 }
 
 export const openSheet = (sheet: AppState['sheet']) => set({ sheet });
@@ -29,153 +45,101 @@ export const closeSheet = () => set({ sheet: null });
 export const openBreathe = () => set({ breathe: true, tick: 0, sheet: null });
 export const closeBreathe = () => set({ breathe: false });
 
-// --- onboarding -----------------------------------------------------------------------------
-export function finishOnboarding() {
-  set({ onboarded: true });
+// ------------------------------------------------------------------------------------------------ calls
+export async function startCall(mode: CallMode, first = false) {
+  const s = getState();
+  if (!s.micOk && mode !== 'sit' && !isDemo) { set({ sheet: 'mic', pendingMode: mode, pendingFirst: first }); return; }
+  // Switching from the text chat to a voice call keeps the thread: the old conversation becomes context for the new one.
+  const previous = s.screen === 'chat' ? s.conv?.id : undefined;
+  if (previous) await closeConversation({ end: true });
+  navigate('call', { callMode: mode, firstRun: first, muted: false, paused: false, callEnded: false, callSummary: null, callLine: null, callPhase: 'connecting' });
+  await beginConversation(mode, { continueFrom: previous, keepMessages: !!previous, first });
 }
 
-// --- calls ----------------------------------------------------------------------------------
-export function startCall(mode: CallMode, first = false) {
-  if (!getState().micOk && mode !== 'sit') {
-    set({ sheet: 'mic', pendingMode: mode, pendingFirst: first });
-    return;
-  }
-  go('call', { callMode: mode, firstRun: first, muted: false });
+export const startCheckin = () => { set({ micOk: getState().micOk || isDemo }); return startCall('checkin'); };
+
+export async function allowMic() {
+  const s = getState();
+  const ok = await askForMic();
+  set({ sheet: null });
+  if (ok) await startCall(s.pendingMode ?? 'voice', s.pendingFirst);
+  else { toast('No problem. You can talk by typing instead.'); void openChat(); }
 }
 
-export const startCheckin = () => go('call', { callMode: 'checkin', micOk: true, firstRun: false, inApp: false, notif: null });
-
-export function endCall() {
+export async function endCall(feeling?: 'better' | 'same' | 'worse') {
   stopSpeech();
-  set({ callEnded: true });
+  await finishCall(feeling);
 }
 
-// --- safety ---------------------------------------------------------------------------------
+/** Open the text chat. From a call it keeps the same conversation; otherwise it starts a fresh one (optionally picking up an earlier one). */
+export async function openChat(continueFrom?: string) {
+  const s = getState();
+  if (s.conv && s.screen === 'call') { navigate('chat'); return; }
+  go('chat', { msgs: [], careCard: false, draft: '' });
+  await beginConversation('text', { continueFrom });
+}
+
+export function sendChat() {
+  const text = getState().draft;
+  if (!text.trim()) return;
+  if (!sendTurn(text, 'typed')) toast('I’m not connected yet. One moment.');
+}
+
+// ------------------------------------------------------------------------------------------------ walk
+export async function startWalkFlow() {
+  navigate('walk', { walkEnded: false, walkSeconds: 0, callLine: null, callPhase: 'connecting' });
+  // A walk works as a plain timer even if the companion can't connect.
+  await beginConversation('walk');
+}
+
+export async function endWalk() {
+  const seconds = getState().tick;
+  set({ walkEnded: true, walkSeconds: seconds });
+  await closeConversation({ end: true });
+  void loadTalk();
+}
+
+export async function talkOnWalk() {
+  if (!getState().micOk && !isDemo) { set({ sheet: 'mic', pendingMode: 'voice', pendingFirst: false }); return; }
+  await startListening();
+}
+
+// ------------------------------------------------------------------------------------------------ safety
 export function showCrisis() {
   stopSpeech();
   stopDictation();
   set({ crisis: true, crisisConfirm: false, sheet: null });
 }
 
-/** "I'm safe right now" after the extra confirm (PRD §8.10.3). */
+/** "I'm safe right now" after the extra confirm (PRD 8.10.3). Recorded, and a gentle follow-up is queued if opted in. */
 export function confirmSafe() {
   set(s => ({ crisis: false, crisisConfirm: false, risk: userSafeAcknowledged(s.risk), careCard: true }));
+  void api.safetyAck(3, 'safe').catch(() => undefined);
 }
 
-/** Paywall is never shown during distress (risk >= 1 this session, PRD §8.7.5). Safety features are never gated. */
+export function acknowledgeHelp(action: 'helpline' | 'contact' | 'emergency') {
+  void api.safetyAck(getState().crisis ? 3 : 2, action).catch(() => undefined);
+}
+
+/** Paywall is never shown during distress (risk >= 1 this session, PRD 8.7.5). Safety features are never gated. */
 export function openPaywall() {
-  const s = getState();
-  if (s.risk.max >= 1) {
-    toast('Plus can wait. There’s no rush, and nothing here is locked that you need right now.');
-    return;
-  }
+  if (getState().risk.max >= 1) { toast('Plus can wait. There’s no rush, and nothing you need right now is locked.'); return; }
   set({ paywall: true, sheet: null });
 }
 
-// --- chat -----------------------------------------------------------------------------------
-export function sendChat() {
-  const s = getState();
-  const text = s.draft.trim();
-  if (!text) return;
-  const reply = mockCompanion.reply({ text, turn: s.turn, trustedName: TRUSTED_CONTACT.name });
-  const risk = nextRisk(s.risk, reply.level);
-  set({ msgs: [...s.msgs, { who: 'me', text }], draft: '', typing: reply.level < 3, risk });
-  clearTimeout(replyTimer);
-
-  if (reply.level === 3) {
-    // Fixed, reviewed script replaces the AI turn; the crisis screen takes over at once.
-    set(p => ({ msgs: [...p.msgs, ...reply.lines.map(t => ({ who: 'ai' as const, text: t }))], careCard: true, turn: p.turn + 1 }));
-    showCrisis();
-    return;
-  }
-  replyTimer = setTimeout(() => {
-    set(p => ({
-      typing: false,
-      turn: p.turn + (reply.level >= 2 ? 0 : 1),
-      msgs: [...p.msgs, ...reply.lines.map(t => ({ who: 'ai' as const, text: t }))],
-      careCard: p.careCard || reply.level >= 2,
-    }));
-    if (reply.minor) setTimeout(() => go('under'), 2200);
-  }, 1700);
-}
-
-// --- journal --------------------------------------------------------------------------------
-export function startJournal(mode: 'write' | 'speak') {
-  go('jcompose', { jMode: mode, jText: '', jPrompt: null, jStage: 'edit', jShare: getState().consent.remember });
-}
-
-const addEntry = (s: AppState, shared: boolean, mood: number) => ({
-  id: Date.now(),
-  date: 'Today',
-  mode: (s.jMode === 'speak' ? 'spoken' : 'written') as 'spoken' | 'written',
-  mood,
-  shared,
-  text: (s.jPrompt ? s.jPrompt + '\n' : '') + s.jText.trim(),
-});
-
-export function saveJournal() {
-  const s = getState();
-  if (!s.jText.trim()) { toast('Nothing to save yet. Take your time.'); return; }
-  stopDictation();
-  if (!s.jShare) {
-    // Private path: no analysis, no AI processing at all (PRD §8.5.2).
-    set(p => ({ jEntries: [addEntry(s, false, 2), ...p.jEntries] }));
-    go('journal');
-    toast('Saved, just for you.');
-    return;
-  }
-  analyzeJournal(s.jText);
-}
-
-export function analyzeJournal(text: string) {
-  set({ jStage: 'thinking' });
-  setTimeout(() => {
-    const a = analyzeJournalLocally(text);
-    const result: JournalResult = {
-      ...a,
-      hookOn: true,
-      stepOn: false,
-      memories: a.memories.map((m, i) => ({ ...m, id: Date.now() + i, keep: !m.sensitive })),
-    };
-    set(p => ({ jStage: 'review', jResult: result, risk: nextRisk(p.risk, a.riskLevel) }));
-    if (a.riskLevel === 3) showCrisis();
-  }, 1300);
-}
-
-export function finishJournal() {
-  const s = getState();
-  const r = s.jResult;
-  if (!r) return;
-  const keep = r.memories.filter(m => m.keep);
-  set(p => ({
-    jEntries: [addEntry(s, true, moodIndexFor(r.mood)), ...p.jEntries],
-    // Nothing is written to Memory until Done (PRD §8.5.3).
-    memories: [...p.memories, ...keep.map((m, i) => ({ id: Date.now() + i, theme: m.theme, text: m.text, hidden: false }))],
-    journalHook: r.hookOn ? r.hook : p.journalHook,
-    hookUsed: r.hookOn ? false : p.hookUsed,
-    plan: r.stepOn ? [...p.plan.filter(x => !x.done), { id: Date.now(), label: r.step, done: false }].slice(-3) : p.plan,
-    jResult: null,
-  }));
-  go('journal');
-  toast(keep.length || r.hookOn ? `Saved. I’ll remember ${keep.length} thing${keep.length === 1 ? '' : 's'}${r.hookOn ? ' and ask about it next time' : ''}.` : 'Saved. I won’t bring it up.');
-}
-
-export function keepPrivate() {
-  const s = getState();
-  if (!s.jResult) return;
-  // Analysis MUST be discarded (PRD §8.5.3). TODO(journal-api): also DELETE the server-side analysis.
-  set(p => ({ jEntries: [addEntry(s, false, moodIndexFor(s.jResult!.mood)), ...p.jEntries], jResult: null }));
-  go('journal');
-  toast('Saved, just for you. Nothing remembered.');
-}
-
-export const toggleDictation = () => (getState().dictating ? stopDictation() : (stopSpeech(), startDictation(toast)));
-
-// --- calm player ----------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------ calm player
+// The catalogue ships with the app so it works offline (PRD 9). Sessions are reported to the server for wins.
 let pLine = 0;
 let pNext: ReturnType<typeof setTimeout> | undefined;
 let pIv: ReturnType<typeof setInterval> | undefined;
-export const getPlayerLine = () => pLine;
+
+function reportProgress(done: boolean) {
+  const s = getState();
+  const it = CALM_ITEMS.find(x => x.id === s.player);
+  if (!s.pSession || !it?.lines) return;
+  const pct = done ? 100 : Math.round((Math.min(pLine, it.lines.length) / it.lines.length) * 100);
+  void api.progressCalm(s.pSession, pct).catch(() => undefined);
+}
 
 function playLine() {
   const st = getState();
@@ -183,17 +147,14 @@ function playLine() {
   const it = CALM_ITEMS.find(x => x.id === st.player);
   if (!it?.lines) return;
   if (pLine >= it.lines.length) {
-    set(p => ({ pPlaying: false, pEnded: true, pLineIdx: it.lines!.length, wins: [{ text: `${it.title}`, when: 'Today' }, ...p.wins].slice(0, 6) }));
+    set({ pPlaying: false, pEnded: true, pLineIdx: it.lines.length });
+    reportProgress(true);
     if (st.pTimer === 'End of story') setTimeout(stopAllSounds, 1500);
     return;
   }
   const text = it.lines[pLine];
   set({ pLineText: text, pLineIdx: pLine });
-  const next = () => {
-    if (!getState().pPlaying) return;
-    pLine++;
-    pNext = setTimeout(playLine, it.kind === 'sleep' ? 3200 : 2600);
-  };
+  const next = () => { if (!getState().pPlaying) return; pLine++; pNext = setTimeout(playLine, it.kind === 'sleep' ? 3200 : 2600); };
   if (!st.voiceAudio || !ttsSupported()) { pNext = setTimeout(next, 4200); return; }
   say(text, { persona: st.voice, rateMul: it.kind === 'sleep' ? 0.8 : 0.88 }, next);
 }
@@ -207,7 +168,9 @@ export function openPlayer(id: string) {
   pauseNarration();
   pLine = 0;
   const bg = it.bg || getState().pBg;
-  set({ player: id, pPlaying: true, pElapsed: 0, pEnded: false, pLineText: '', pLineIdx: 0, pBg: bg || null });
+  const timerMin = parseInt(getState().pTimer, 10) || undefined;
+  set({ player: id, pPlaying: true, pElapsed: 0, pEnded: false, pLineText: '', pLineIdx: 0, pBg: bg || null, pSession: null });
+  void api.startCalm(id, bg ?? undefined, timerMin).then(r => set({ pSession: r.id })).catch(() => undefined);
   if (bg) toggleSound(bg, true, () => toast('This browser can’t play sounds.'));
   playLine();
   clearInterval(pIv);
@@ -217,16 +180,19 @@ export function openPlayer(id: string) {
     if (st.pPlaying) set({ pElapsed: st.pElapsed + 1 });
     const mins = parseInt(st.pTimer, 10);
     if (mins && st.pElapsed >= mins * 60) {
-      // TODO(calm-content): fade audio over 30s (PRD §8.6) once recorded audio exists.
+      // TODO(calm-content): fade audio over 30 s (PRD 8.6) once recorded audio exists.
       clearTimeout(pNext);
       pauseNarration();
       stopAllSounds();
       set({ pPlaying: false, pEnded: true, pTimer: 'End of story' });
+      reportProgress(false);
     }
   }, 1000);
 }
 
 export function closePlayer() {
+  const had = !!getState().player && !getState().pEnded;
+  if (had) reportProgress(false);
   clearTimeout(pNext);
   clearInterval(pIv);
   pauseNarration();
@@ -255,15 +221,37 @@ export function setPlayerBg(k: Parameters<typeof toggleSound>[0] | null) {
   set({ pBg: k });
 }
 
-// --- timers ---------------------------------------------------------------------------------
-/** One-second heartbeat that drives the call script, walk prompts and breathing cycle. */
+export const toggleDictation = () => (getState().dictating ? stopDictation() : (stopSpeech(), startDictation(toast)));
+
+// ------------------------------------------------------------------------------------------------ app wiring
+/** One heartbeat for the walk timer and breathing cycle. */
 export function startTicker() {
   const id = setInterval(() => {
     const s = getState();
-    const run = ((s.screen === 'call' && !s.paused && !s.callEnded) || (s.screen === 'walk' && !s.walkEnded) || s.breathe) && !isSpeaking();
-    if (run) set(p => ({ tick: p.tick + 1 }));
+    const run = (s.screen === 'walk' && !s.walkEnded) || s.breathe;
+    if (run && !isSpeaking()) set(p => ({ tick: p.tick + 1 }));
   }, 1000);
   return () => clearInterval(id);
+}
+
+export function bindUi() {
+  bindConversationUi({ toast, crisis: showCrisis, minor: () => void handleMinor() });
+  bindSessionUi({ toast, navigate: s => navigate(s) });
+  bindDataUi({ toast, crisis: showCrisis, navigate: s => navigate(s), sheet: openSheet });
+}
+
+/** A tapped notification lands on the right screen (PRD 8.8: actions deep-link into the right state). */
+export function handleNotificationOpen(route: string, _kind: string, action: string) {
+  void _kind;
+  if (action === 'later' || action === 'skip') return;
+  switch (route) {
+    case 'checkin': if (action === 'type') void openChat(); else void startCheckin(); return;
+    case 'walk': if (action === 'company') void startWalkFlow(); else go('outside'); return;
+    case 'plan': if (action === 'walk') void startWalkFlow(); else go('today'); return;
+    case 'talk': void startCall('voice'); return;
+    case 'letter': go('journey'); set({ sheet: 'letter' }); return;
+    default: go('today');
+  }
 }
 
 export function teardownAll() {
@@ -271,6 +259,8 @@ export function teardownAll() {
   stopAllSounds();
   stopSpeech();
   stopDictation();
-  clearTimeout(replyTimer);
+  void closeConversation({ end: false });
   clearTimeout(toastTimer);
 }
+
+export { hasConversation, nextRisk };

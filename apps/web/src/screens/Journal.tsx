@@ -1,12 +1,12 @@
+import { useEffect } from 'react';
 import { C, MOODS, serif, shadow } from '../theme';
-import { set, useStore, type JournalResult } from '../state/store';
-import { finishJournal, go, keepPrivate, openSheet, saveJournal, startCall, startJournal, toggleDictation } from '../state/actions';
+import { dayOf, set, useStore, type JournalResult } from '../state/store';
+import { finishJournal, go, keepPrivate, loadInsights, loadJournal, loadMoreJournal, openSheet, saveJournal, startCall, startJournal, toggleDictation } from '../state/actions';
 import { stopDictation } from '../audio/dictation';
 import { moodIndexFor } from '@saathi/domain';
 import { Orb, useReduceMotion } from '../components/figures';
 import { P, Svg } from '../components/icons';
 import { HelpPill, Chip, Scroll, Segmented, Switch, TextButton, PrimaryButton, flex } from '../components/ui';
-import { MOOD_SERIES, RHYTHMS, WEEK_DAYS } from '../data/seed';
 
 export function JournalTabs({ active }: { active: 'journal' | 'journey' }) {
   return (
@@ -23,6 +23,8 @@ export function JournalTabs({ active }: { active: 'journal' | 'journey' }) {
 export function JournalList() {
   const entries = useStore(s => s.jEntries);
   const compName = useStore(s => s.compName);
+  const more = useStore(s => s.jNext);
+  useEffect(() => { void loadJournal(); }, []);
   return (
     <main aria-label="Journal entries" style={{ position: 'absolute', inset: 0, ...flex('column'), background: C.paper }}>
       <JournalTabs active="journal" />
@@ -50,7 +52,7 @@ export function JournalList() {
             <button key={e.id} onClick={() => set({ sheet: 'jread', jReadId: e.id })} style={{ textAlign: 'left', border: 'none', background: C.white, borderRadius: 28, padding: '18px 20px', boxShadow: shadow.cardSoft, ...flex('column', 8) }}>
               <div style={{ ...flex('row', 10), alignItems: 'center' }}>
                 <span aria-label={m.label} style={{ width: 14, height: 14, borderRadius: m.radius, background: m.color, flex: 'none' }} />
-                <span style={{ fontSize: 15, fontWeight: 600, flex: 1 }}>{e.date}</span>
+                <span style={{ fontSize: 15, fontWeight: 600, flex: 1 }}>{dayOf(e.createdAt)}</span>
                 <span style={{ fontSize: 13, color: C.muted }}>{e.mode === 'spoken' ? 'Spoken' : 'Written'}</span>
               </div>
               <span style={{ fontFamily: serif, fontSize: 17, lineHeight: 1.5 }}>{e.text.length > 120 ? e.text.slice(0, 118) + '…' : e.text}</span>
@@ -58,6 +60,8 @@ export function JournalList() {
             </button>
           );
         })}
+        {entries.length === 0 && <span style={{ fontSize: 15, color: C.muted }}>Nothing here yet. Whenever you like.</span>}
+        {more && <TextButton onClick={() => void loadMoreJournal()}>Show older entries</TextButton>}
       </Scroll>
     </main>
   );
@@ -134,7 +138,7 @@ function Edit() {
           </span>
           <Switch on={share} />
         </button>
-        <PrimaryButton onClick={saveJournal} style={text.trim() ? undefined : { background: C.tealSoft, color: C.tealDark }}>Save</PrimaryButton>
+        <PrimaryButton onClick={() => void saveJournal()} style={text.trim() ? undefined : { background: C.tealSoft, color: C.tealDark }}>Save</PrimaryButton>
       </div>
     </>
   );
@@ -145,7 +149,7 @@ function Review() {
   const compName = useStore(s => s.compName);
   if (!r) return null;
   const m = MOODS[moodIndexFor(r.mood)];
-  const flip = (id: number) => set(p => ({ jResult: p.jResult && { ...p.jResult, memories: p.jResult.memories.map(x => (x.id === id ? { ...x, keep: !x.keep } : x)) } }));
+  const flip = (id: number) => set(p => ({ jResult: p.jResult && { ...p.jResult, keep: p.jResult.keep.includes(id) ? p.jResult.keep.filter(k => k !== id) : [...p.jResult.keep, id] } }));
   const flipOpt = (k: 'hookOn' | 'stepOn') => set(p => ({ jResult: p.jResult && { ...p.jResult, [k]: !p.jResult[k] } }));
   return (
     <Scroll pad="20px 24px 40px">
@@ -160,23 +164,26 @@ function Review() {
           <span style={{ fontSize: 15, lineHeight: 1.45, color: C.amberText }}>Would it help to talk to a real person? It’s free, any time. I’m here too.</span>
           <div style={flex('row', 8)}>
             <button onClick={() => openSheet('helplines')} style={{ flex: 1, height: 48, borderRadius: 24, border: 'none', background: C.ink, color: C.white, fontSize: 15, fontWeight: 600 }}>See helplines</button>
-            <button onClick={() => startCall('voice')} style={{ flex: 1, height: 48, borderRadius: 24, border: `1.5px solid ${C.amberLine}`, background: C.white, color: C.ink, fontSize: 15, fontWeight: 600 }}>Talk with {compName}</button>
+            <button onClick={() => void startCall('voice')} style={{ flex: 1, height: 48, borderRadius: 24, border: `1.5px solid ${C.amberLine}`, background: C.white, color: C.ink, fontSize: 15, fontWeight: 600 }}>Talk with {compName}</button>
           </div>
         </section>
       )}
       <section style={{ background: C.white, borderRadius: 28, padding: '18px 20px', ...flex('column', 4), boxShadow: shadow.cardSoft }}>
         <h3 style={{ fontSize: 17, fontWeight: 600, margin: 0 }}>Remember this?</h3>
         <span style={{ fontSize: 15, color: C.muted, marginBottom: 4 }}>Only what you pick is saved. Edit it later in Memory.</span>
-        {r.memories.map(mm => (
+        {r.memories.map(mm => {
+          const keep = r.keep.includes(mm.id);
+          return (
           <div key={mm.id} style={{ ...flex('row', 12), alignItems: 'center', padding: '12px 0', borderTop: `1px solid ${C.rule}` }}>
             <div style={{ flex: 1, ...flex('column', 3) }}>
               <span style={{ fontSize: 13, fontWeight: 600, color: C.muted }}>{mm.theme}</span>
               <span style={{ fontSize: 17, lineHeight: 1.45 }}>{mm.text}</span>
               {mm.sensitive && <span style={{ fontSize: 13, color: C.amberText }}>This feels personal, so it’s off unless you choose it.</span>}
             </div>
-            <button aria-pressed={mm.keep} onClick={() => flip(mm.id)} style={{ flex: 'none', height: 40, padding: '0 14px', borderRadius: 20, border: `1.5px solid ${mm.keep ? C.teal : C.tealLine}`, background: mm.keep ? C.teal : C.white, color: mm.keep ? C.white : C.teal, fontSize: 15, fontWeight: 600 }}>{mm.keep ? 'Saved' : 'Save'}</button>
+            <button aria-pressed={keep} onClick={() => flip(mm.id)} style={{ flex: 'none', height: 40, padding: '0 14px', borderRadius: 20, border: `1.5px solid ${keep ? C.teal : C.tealLine}`, background: keep ? C.teal : C.white, color: keep ? C.white : C.teal, fontSize: 15, fontWeight: 600 }}>{keep ? 'Saved' : 'Save'}</button>
           </div>
-        ))}
+          );
+        })}
         {r.memories.length === 0 && <span style={{ fontSize: 15, color: C.muted }}>Nothing to remember from this one.</span>}
       </section>
       <button role="switch" aria-checked={r.hookOn} onClick={() => flipOpt('hookOn')} style={{ background: C.white, borderRadius: 28, padding: '18px 20px', ...flex('row', 14), alignItems: 'center', boxShadow: shadow.cardSoft, border: 'none', textAlign: 'left' }}>
@@ -187,17 +194,17 @@ function Review() {
         <span style={{ flex: 1, ...flex('column', 4) }}><span style={{ fontSize: 17, fontWeight: 600 }}>A small step for tomorrow</span><span style={{ fontSize: 17, lineHeight: 1.45 }}>{r.step}</span></span>
         <Switch on={r.stepOn} />
       </button>
-      <PrimaryButton onClick={finishJournal} style={{ marginTop: 4 }}>Done</PrimaryButton>
-      <TextButton onClick={keepPrivate}>Keep it just for me</TextButton>
-      <span style={{ fontSize: 13, color: C.muted, textAlign: 'center' }}>{r.source}</span>
+      <PrimaryButton onClick={() => void finishJournal()} style={{ marginTop: 4 }}>Done</PrimaryButton>
+      <TextButton onClick={() => void keepPrivate()}>Keep it just for me</TextButton>
     </Scroll>
   );
 }
 
 // ---- Insights -------------------------------------------------------------------------------
 const W = 302, H = 130;
-function chartPaths() {
-  const pts = MOOD_SERIES.map((v, i) => [(i * W) / (MOOD_SERIES.length - 1), 12 + (1 - v) * 150 - 30] as const);
+function chartPaths(values: number[]) {
+  if (values.length < 2) return null;
+  const pts = values.map((v, i) => [(i * W) / (values.length - 1), H - 14 - (v / 4) * (H - 28)] as const);
   let d = `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
   for (let i = 0; i < pts.length - 1; i++) {
     const [x0, y0] = pts[i], [x1, y1] = pts[i + 1], mx = (x0 + x1) / 2;
@@ -205,11 +212,21 @@ function chartPaths() {
   }
   return { line: d, area: `${d} L${W},${H} L0,${H} Z` };
 }
-const CHART = chartPaths();
+
+const weekdayLetter = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString('en-IN', { weekday: 'narrow' });
 
 export function Insights() {
   const day = useStore(s => s.day);
-  const wins = useStore(s => s.wins);
+  const ins = useStore(s => s.insights);
+  const letter = useStore(s => s.letter);
+  useEffect(() => { void loadInsights(); }, []);
+
+  const series = ins?.moodSeries ?? [];
+  const chart = chartPaths(series.map(p => p.value));
+  const last7 = series.slice(-7);
+  const wins = ins?.wins ?? [];
+  const enough = (ins?.daysOfData ?? 0) >= 3;
+
   return (
     <main aria-label="Insights" style={{ position: 'absolute', inset: 0, ...flex('column'), background: C.paper }}>
       <JournalTabs active="journey" />
@@ -217,50 +234,56 @@ export function Insights() {
         <section style={{ background: C.white, borderRadius: 28, padding: 20, boxShadow: shadow.cardSoft, ...flex('column', 12) }}>
           <h2 style={{ fontFamily: serif, fontSize: 22, fontWeight: 400, margin: 0 }}>The last four weeks</h2>
           <span style={{ fontSize: 15, color: C.muted, marginTop: -8 }}>From your mood taps, check-ins and journal.</span>
-          <div style={{ position: 'relative' }}>
-            <svg width="100%" height="130" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ display: 'block' }} role="img" aria-label="Mood over the last four weeks, trending lighter">
-              <defs><linearGradient id="sMoodFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#B7B1E6" stopOpacity=".75" /><stop offset="1" stopColor="#CFE3F0" stopOpacity=".15" /></linearGradient></defs>
-              <path d={CHART.area} fill="url(#sMoodFill)" />
-              <path d={CHART.line} fill="none" stroke="#5A5493" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-            <span style={{ position: 'absolute', top: 0, right: 0, fontSize: 13, color: C.muted }}>lighter days</span>
-            <span style={{ position: 'absolute', bottom: 0, right: 0, fontSize: 13, color: C.muted }}>heavier days</span>
-          </div>
-          <div role="group" aria-label="This week" style={{ display: 'grid', gridTemplateColumns: 'repeat(7,minmax(0,1fr))', gap: 4 }}>
-            {WEEK_DAYS.map(([l], i) => (
-              <button key={i} aria-pressed={day === i} onClick={() => set({ day: i })} style={{ height: 44, borderRadius: 22, border: 'none', background: day === i ? C.nightMid : C.sand, color: day === i ? C.white : C.ink, fontSize: 15, fontWeight: 600 }}>{l}</button>
-            ))}
-          </div>
-          <div role="status" style={{ fontSize: 15, lineHeight: 1.5, color: C.muted, minHeight: 44, textWrap: 'pretty' }}>{day === null ? 'Tap a day to read it.' : WEEK_DAYS[day][1]}</div>
+          {chart ? (
+            <div style={{ position: 'relative' }}>
+              <svg width="100%" height="130" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ display: 'block' }} role="img" aria-label="Your mood over the last four weeks">
+                <defs><linearGradient id="sMoodFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#B7B1E6" stopOpacity=".75" /><stop offset="1" stopColor="#CFE3F0" stopOpacity=".15" /></linearGradient></defs>
+                <path d={chart.area} fill="url(#sMoodFill)" />
+                <path d={chart.line} fill="none" stroke="#5A5493" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+              <span style={{ position: 'absolute', top: 0, right: 0, fontSize: 13, color: C.muted }}>lighter days</span>
+              <span style={{ position: 'absolute', bottom: 0, right: 0, fontSize: 13, color: C.muted }}>heavier days</span>
+            </div>
+          ) : (
+            <div role="status" style={{ fontSize: 15, lineHeight: 1.5, color: C.muted }}>Nothing to draw yet. A few mood taps over the next days and a picture will start to form. No pressure.</div>
+          )}
+          {last7.length > 0 && (
+            <>
+              <div role="group" aria-label="Recent days" style={{ display: 'grid', gridTemplateColumns: `repeat(${last7.length},minmax(0,1fr))`, gap: 4 }}>
+                {last7.map((p, i) => (
+                  <button key={p.day} aria-pressed={day === i} onClick={() => set({ day: i })} style={{ height: 44, borderRadius: 22, border: 'none', background: day === i ? C.nightMid : C.sand, color: day === i ? C.white : C.ink, fontSize: 15, fontWeight: 600 }}>{weekdayLetter(p.day)}</button>
+                ))}
+              </div>
+              <div role="status" style={{ fontSize: 15, lineHeight: 1.5, color: C.muted, minHeight: 44, textWrap: 'pretty' }}>{day === null || !last7[day] ? 'Tap a day to read it.' : `${dayOf(last7[day].day)}: ${MOODS[last7[day].value].label.toLowerCase()}.`}</div>
+            </>
+          )}
         </section>
 
-        <section style={{ background: C.white, borderRadius: 28, padding: 20, boxShadow: shadow.cardSoft, ...flex('column', 16) }}>
-          <h2 style={{ fontFamily: serif, fontSize: 22, fontWeight: 400, margin: 0 }}>Rhythms this week</h2>
-          {RHYTHMS.map(rh => (
-            <div key={rh.label} style={flex('column', 6)}>
-              <div style={{ ...flex('row'), justifyContent: 'space-between', fontSize: 15 }}><span style={{ fontWeight: 600 }}>{rh.label}</span><span style={{ color: C.muted }}>{rh.value}</span></div>
-              <div aria-hidden style={{ height: 10, borderRadius: 5, background: C.sand, overflow: 'hidden' }}><div style={{ height: '100%', borderRadius: 5, width: rh.pct, background: rh.color }} /></div>
-            </div>
-          ))}
-          <span style={{ fontSize: 15, color: C.muted }}>Sleep is a little shorter lately. Want to try winding down earlier?</span>
+        <section style={{ background: C.white, borderRadius: 28, padding: 20, boxShadow: shadow.cardSoft, ...flex('column', 12) }}>
+          <h2 style={{ fontFamily: serif, fontSize: 22, fontWeight: 400, margin: 0 }}>Rhythms</h2>
+          {enough && ins && ins.rhythms.length > 0
+            ? ins.rhythms.map(r => <span key={r} style={{ fontSize: 17, lineHeight: 1.5 }}>{r}</span>)
+            : <span style={{ fontSize: 15, color: C.muted, lineHeight: 1.5 }}>I only point out patterns once there are a few days to see them in. Nothing yet, and that’s fine.</span>}
         </section>
 
         <section style={{ background: C.white, borderRadius: 28, padding: 20, boxShadow: shadow.cardSoft, ...flex('column', 10) }}>
           <div style={{ ...flex('column', 2), marginBottom: 4 }}><h2 style={{ fontFamily: serif, fontSize: 22, fontWeight: 400, margin: 0 }}>Wins</h2><span style={{ fontSize: 15, color: C.muted }}>Small things you did. They count.</span></div>
-          {wins.map((w, i) => (
-            <div key={`${w.text}-${i}`} style={{ ...flex('row', 12), alignItems: 'baseline', fontSize: 17, lineHeight: 1.45 }}>
+          {wins.map(w => (
+            <div key={w.id} style={{ ...flex('row', 12), alignItems: 'baseline', fontSize: 17, lineHeight: 1.45 }}>
               <span aria-hidden style={{ flex: 'none', width: 8, height: 8, borderRadius: '50%', background: '#F1A56B', transform: 'translateY(-2px)' }} />
-              <span style={{ flex: 1 }}>{w.text}</span><span style={{ fontSize: 15, color: C.muted }}>{w.when}</span>
+              <span style={{ flex: 1 }}>{w.label}</span><span style={{ fontSize: 15, color: C.muted }}>{dayOf(w.createdAt)}</span>
             </div>
           ))}
+          {wins.length === 0 && <span style={{ fontSize: 15, color: C.muted }}>They’ll show up here as they happen.</span>}
         </section>
 
-        <button onClick={() => openSheet('letter')} style={{ textAlign: 'left', border: 'none', borderRadius: 28, padding: '22px 20px', background: C.sand, ...flex('column', 6), boxShadow: '0 4px 0 -1px #EAE0D1,0 8px 0 -2px #E2D7C6' }}>
-          <span style={{ fontSize: 15, color: C.muted }}>Sunday letter · 19 Oct</span>
-          <span style={{ fontFamily: serif, fontSize: 22, lineHeight: 1.3 }}>“This week you stepped out three times…”</span>
-        </button>
+        {letter && (
+          <button onClick={() => openSheet('letter')} style={{ textAlign: 'left', border: 'none', borderRadius: 28, padding: '22px 20px', background: C.sand, ...flex('column', 6), boxShadow: '0 4px 0 -1px #EAE0D1,0 8px 0 -2px #E2D7C6' }}>
+            <span style={{ fontSize: 15, color: C.muted }}>Sunday letter · {dayOf(letter.createdAt)}</span>
+            <span style={{ fontFamily: serif, fontSize: 22, lineHeight: 1.3 }}>“{letter.body.split(/(?<=[.!?])\s/)[0]}…”</span>
+          </button>
+        )}
       </Scroll>
     </main>
   );
 }
-

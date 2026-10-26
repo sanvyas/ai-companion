@@ -1,8 +1,10 @@
+import { isDemo } from '../api';
 import { getState, set } from '../state/store';
 
-// Dictation into the journal (PRD §8.5.2). Uses the browser SpeechRecognition where it exists and
-// falls back to a clearly-labelled demo transcript. Audio is never stored.
-// TODO(stt-adapter): streaming STT via POST /stt/token (en-IN / hi-IN, code-mix).
+// Dictation into the journal (PRD 8.5.2): live transcript into the text area, editable afterwards, audio never kept.
+// Uses the browser's recognition. Without it the person is told plainly, rather than shown a made-up transcript.
+// The scripted transcript is demo-mode only.
+// TODO(stt-adapter): stream through the server STT vendor via POST /stt/token once one is connected.
 let on = false;
 let rec: SpeechRecognition | null = null;
 let sim: ReturnType<typeof setInterval> | null = null;
@@ -22,10 +24,11 @@ export function startDictation(notify: (msg: string) => void) {
   on = true;
   set({ dictating: true });
 
-  const simulate = () => {
+  const fallback = (why: string) => {
+    if (!isDemo) { stopDictation(); notify(why); return; }
     let i = 0;
     if (sim) clearInterval(sim);
-    notify('Microphone isn’t available here, so this is demo dictation.');
+    notify('Demo mode: this is a scripted transcript.');
     sim = setInterval(() => {
       if (!on || i >= DEMO.length) { if (sim) clearInterval(sim); sim = null; if (on) stopDictation(); return; }
       set(p => ({ jText: (i === 0 ? base : p.jText + ' ') + DEMO[i++] }));
@@ -34,12 +37,12 @@ export function startDictation(notify: (msg: string) => void) {
 
   const w = window as unknown as { SpeechRecognition?: new () => SpeechRecognition; webkitSpeechRecognition?: new () => SpeechRecognition };
   const SR = w.SpeechRecognition || w.webkitSpeechRecognition;
-  if (!SR) { simulate(); return; }
+  if (!SR) { fallback('Dictation isn’t available in this browser. You can type instead.'); return; }
   let fin = '';
   try {
     const r = new SR();
     rec = r;
-    r.lang = 'en-IN';
+    r.lang = getState().me?.language === 'hi' ? 'hi-IN' : 'en-IN';
     r.continuous = true;
     r.interimResults = true;
     r.onresult = e => {
@@ -51,9 +54,9 @@ export function startDictation(notify: (msg: string) => void) {
       set({ jText: base + fin + interim });
     };
     r.onerror = e => {
-      if (['not-allowed', 'service-not-allowed', 'audio-capture'].includes(e.error)) { rec = null; if (on) simulate(); }
+      if (['not-allowed', 'service-not-allowed', 'audio-capture'].includes(e.error)) { rec = null; if (on) fallback('I can’t reach the microphone. Check the browser’s permission, or type instead.'); }
     };
     r.onend = () => { if (rec === r) { rec = null; if (on && !sim) set({ dictating: false }); } };
     r.start();
-  } catch { simulate(); }
+  } catch { fallback('Dictation couldn’t start. You can type instead.'); }
 }

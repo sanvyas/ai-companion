@@ -1,36 +1,36 @@
 import { C, serif } from '../theme';
-import { getState, set, useStore, type NotifKind } from '../state/store';
-import { go, startCheckin, toast } from '../state/actions';
+import { getState, useStore, type NotifKind } from '../state/store';
+import { go, openChat, startCall, startCheckin, startWalkFlow, togglePlan, toast } from '../state/actions';
 import { useClock, todayLong } from '../hooks';
 import { Companion } from '../components/figures';
 import { P, Svg } from '../components/icons';
 import { flex } from '../components/ui';
 
 // Notification content (PRD §8.8). With previews OFF every notification reads "A quiet moment for you?".
-// These simulate the OS lock screen for the demo. Real delivery: push/VoIP via POST /devices + the scheduler.
-// TODO(notifications): APNs/FCM actionable categories, caps (<=2 push + 1 call a day), quiet hours, back-off.
+// These screens only PREVIEW how notifications look (Settings > Reminders, and the demo panel). Real delivery is
+// web push from the server scheduler, which applies the caps, quiet hours and back-off.
 interface NDef { body: string; tag?: string; actions: [string, () => void][] }
 
 const quietToast = (t: string) => () => { go('lock', { notif: null }); toast(t); };
 
 const NDEF: Record<NotifKind, NDef> = {
   checkin: { body: 'Ready for your evening check-in? Two minutes, whenever suits.', actions: [
-    ['Talk now', startCheckin],
-    ['Type', () => go('chat', { notif: null, msgs: [...getState().msgs, { who: 'ai', text: 'Check-in time, if you’re up for it.' }, { who: 'ai', text: 'How did you sleep last night?' }] })],
+    ['Talk now', () => void startCheckin()],
+    ['Type', () => void openChat()],
     ['Later', quietToast('Okay. I’ll stay quiet for an hour.')],
   ] },
   plan: { body: 'The 10-minute walk you picked. Whenever you’re ready.', actions: [
-    ['Walk with me', () => go('walk', { walkEnded: false, notif: null })],
-    ['Did it', () => { set(p => ({ plan: p.plan.map(x => (x.id === 1 ? { ...x, done: true } : x)) })); quietToast('That counts, truly.')(); }],
+    ['Walk with me', () => void startWalkFlow()],
+    ['Did it', () => { const first = getState().plan.find(x => !x.done); if (first) void togglePlan(first.id); quietToast('That counts, truly.')(); }],
     ['Not today', quietToast('That’s okay. It’ll fade to tomorrow.')],
   ] },
   leave: { tag: 'Time Sensitive', body: 'Cubbon Park walk at 7:30. Leave in ten minutes? I can keep you company.', actions: [
-    ['Keep me company', () => go('walk', { walkEnded: false, notif: null })],
+    ['Keep me company', () => void startWalkFlow()],
     ['On my way', quietToast('Lovely. 30 minutes is plenty.')],
     ['Skip it', quietToast('No problem. There’s another next Sunday.')],
   ] },
   followup: { body: 'Thinking of you after yesterday. Want to talk?', actions: [
-    ['Talk', () => go('call', { callMode: 'voice', micOk: true, notif: null })],
+    ['Talk', () => void startCall('voice')],
     ['Not now', quietToast('Okay. I’m here when you want.')],
   ] },
   quietweek: { body: 'No pressure. I’m here when you want.', actions: [['Open Saathi', () => go('today', { notif: null })]] },
@@ -55,8 +55,8 @@ export function NotifIcon({ bg, dot, size = 38 }: { bg: string; dot: string; siz
 export function LockScreen() {
   const notif = useStore(s => s.notif);
   const compName = useStore(s => s.compName);
-  const rich = useStore(s => s.priv.preview);
-  const disc = useStore(s => s.priv.discreet);
+  const rich = useStore(s => s.me?.privacy.lockScreenPreviews ?? false);
+  const disc = useStore(s => s.me?.privacy.discreetMode ?? false);
   const clock = useClock();
   const nt = notif ? buildNotification(notif, compName, rich, disc) : null;
   return (
@@ -85,7 +85,7 @@ export function LockScreen() {
   );
 }
 
-// CallKit-style incoming check-in call (opt-in, PRD §8.8). TODO(voip): PushKit/ConnectionService.
+// Preview of the incoming check-in call (opt-in, PRD 8.8). Real calls need a telephony provider, which isn't connected.
 export function IncomingCall() {
   const compName = useStore(s => s.compName);
   const look = useStore(s => s.look);
@@ -100,7 +100,7 @@ export function IncomingCall() {
           <span style={{ width: 76, height: 76, borderRadius: '50%', background: 'rgba(255,255,255,.14)', display: 'grid', placeItems: 'center' }}><Svg d={P.clock} size={28} stroke={C.moonText} /></span>
           <span style={{ fontSize: 15 }}>In an hour</span>
         </button>
-        <button onClick={startCheckin} style={{ background: 'none', border: 'none', ...flex('column', 10), alignItems: 'center', color: C.moonSoft }}>
+        <button onClick={() => void startCheckin()} style={{ background: 'none', border: 'none', ...flex('column', 10), alignItems: 'center', color: C.moonSoft }}>
           <span style={{ width: 76, height: 76, borderRadius: '50%', background: '#7FC4B5', display: 'grid', placeItems: 'center' }}><Svg d={P.phone} size={28} stroke="#12182B" sw={1.9} /></span>
           <span style={{ fontSize: 15 }}>Answer</span>
         </button>

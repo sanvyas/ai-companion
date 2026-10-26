@@ -7,7 +7,7 @@ const base: SendFacts = {
   prefs: { push: true, calls: true, sundayLetter: true, checkinTime: 'evening', followUpAfterHardDay: true },
   consent: { notifications: true, calls: true },
 };
-const f = (o: Partial<SendFacts> & { prefs?: Partial<SendFacts['prefs']>; consent?: Partial<SendFacts['consent']> } = {}): SendFacts => ({ ...base, ...o, prefs: { ...base.prefs, ...o.prefs }, consent: { ...base.consent, ...o.consent } });
+const f = (o: Partial<Omit<SendFacts, 'prefs' | 'consent'>> & { prefs?: Partial<SendFacts['prefs']>; consent?: Partial<SendFacts['consent']> } = {}): SendFacts => ({ ...base, ...o, prefs: { ...base.prefs, ...o.prefs }, consent: { ...base.consent, ...o.consent } });
 
 describe('quiet hours', () => {
   it.each([[22 * 60, true], [23 * 60 + 59, true], [0, true], [7 * 60 + 59, true], [8 * 60, false], [12 * 60, false], [21 * 60 + 59, false]])('%i -> %s', (m, q) => expect(inQuietHours(m, '22:00', '08:00')).toBe(q));

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { C } from '../theme';
-import { getState, set, useStore } from '../state/store';
-import { go, openSheet, sendChat, startCall, toast } from '../state/actions';
+import { set, useStore } from '../state/store';
+import { go, openChat, openSheet, sendChat, startCall } from '../state/actions';
 import { Disc } from '../components/figures';
 import { P, Svg } from '../components/icons';
 import { HelpPill, flex } from '../components/ui';
@@ -12,15 +12,9 @@ export function Chat() {
   const careCard = useStore(s => s.careCard);
   const draft = useStore(s => s.draft);
   const compName = useStore(s => s.compName);
-  const hook = useStore(s => s.journalHook);
-  const hookUsed = useStore(s => s.hookUsed);
+  const conv = useStore(s => s.conv);
+  const busy = useStore(s => s.callBusy);
   const ref = useRef<HTMLDivElement>(null);
-
-  // A pending journal hook opens the conversation, once (PRD §8.3.2).
-  useEffect(() => {
-    const st = getState();
-    if (st.journalHook && !st.hookUsed) set(p => ({ hookUsed: true, msgs: [...p.msgs, { who: 'ai', text: p.journalHook! }] }));
-  }, [hook, hookUsed]);
 
   useEffect(() => { if (ref.current) ref.current.scrollTop = ref.current.scrollHeight; }, [msgs.length, typing, careCard]);
 
@@ -32,7 +26,7 @@ export function Chat() {
           <h1 style={{ fontSize: 17, fontWeight: 600, margin: 0 }}>{compName}</h1>
           <span style={{ fontSize: 13, color: C.muted }}>AI companion</span>
         </div>
-        <button onClick={() => startCall('voice')} aria-label="Switch to voice" style={{ width: 44, height: 44, borderRadius: '50%', border: 'none', background: C.tealSoft, display: 'grid', placeItems: 'center' }}><Svg d="M9 3h6v8a3 3 0 0 1-6 0V3zM5 11a7 7 0 0 0 14 0M12 18v3" size={20} stroke={C.teal} /></button>
+        <button onClick={() => void startCall('voice')} aria-label="Switch to voice" style={{ width: 44, height: 44, borderRadius: '50%', border: 'none', background: C.tealSoft, display: 'grid', placeItems: 'center' }}><Svg d="M9 3h6v8a3 3 0 0 1-6 0V3zM5 11a7 7 0 0 0 14 0M12 18v3" size={20} stroke={C.teal} /></button>
         <HelpPill />
       </div>
 
@@ -63,10 +57,18 @@ export function Chat() {
         </section>
       )}
 
+      {!conv && !busy && (
+        <div role="alert" style={{ margin: '0 16px 10px', background: C.white, borderRadius: 24, padding: '14px 18px', ...flex('column', 10), boxShadow: '0 6px 18px rgba(42,46,69,.05)' }}>
+          <div style={{ fontSize: 15, lineHeight: 1.45 }}>I’m not connected right now. Your words aren’t lost, and help is always one tap away.</div>
+          <div style={flex('row', 8)}>
+            <button onClick={() => void openChat()} style={{ height: 44, padding: '0 20px', borderRadius: 22, border: 'none', background: C.teal, color: C.white, fontSize: 15, fontWeight: 600 }}>Try again</button>
+            <button onClick={() => openSheet('helplines')} style={{ height: 44, padding: '0 16px', border: 'none', background: 'none', color: C.teal, fontSize: 15, fontWeight: 600 }}>See helplines</button>
+          </div>
+        </div>
+      )}
+
       <form onSubmit={e => { e.preventDefault(); sendChat(); }} style={{ ...flex('row', 8), alignItems: 'center', padding: '10px 16px calc(var(--sa-bottom) + 20px)', background: C.paper }}>
-        {/* TODO(stt): hold-to-record dictation into the composer (POST /stt/token). */}
-        <button type="button" onClick={() => toast('Hold to record a voice note.')} aria-label="Voice note" style={{ flex: 'none', width: 48, height: 48, borderRadius: '50%', border: 'none', background: C.sand, display: 'grid', placeItems: 'center' }}><Svg d={P.mic} size={20} stroke={C.muted} /></button>
-        <input aria-label="Message" value={draft} onChange={e => set({ draft: e.target.value })} placeholder="Say anything" autoComplete="off" style={{ flex: 1, minWidth: 0, height: 48, borderRadius: 24, border: 'none', background: C.sand, padding: '0 18px', fontSize: 17, outline: 'none' }} />
+        <input aria-label="Message" disabled={!conv} value={draft} onChange={e => set({ draft: e.target.value })} placeholder="Say anything" autoComplete="off" style={{ flex: 1, minWidth: 0, height: 48, borderRadius: 24, border: 'none', background: C.sand, padding: '0 18px', fontSize: 17, outline: 'none' }} />
         <button type="submit" aria-label="Send" style={{ flex: 'none', width: 48, height: 48, borderRadius: '50%', border: 'none', background: C.teal, display: 'grid', placeItems: 'center' }}><Svg d={P.send} size={20} stroke="#FFFFFF" sw={2} /></button>
       </form>
     </main>
