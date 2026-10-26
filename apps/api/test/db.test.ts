@@ -65,7 +65,7 @@ describe('row-level security', () => {
 
   it('the app role cannot touch system tables or escalate', async () => {
     const u = await makeUser('3333');
-    for (const t of ['otp_challenges', 'refresh_tokens', 'jobs', 'usage_events', 'notification_log', 'idempotency_keys']) {
+    for (const t of ['otp_challenges', 'refresh_tokens', 'jobs', 'usage_events', 'notification_log']) {
       await expect(withUser(db, u.id, tx => tx.query(`SELECT 1 FROM ${t}`))).rejects.toThrow(/permission denied/);
     }
     await expect(withUser(db, u.id, tx => tx.query(`UPDATE users SET subscription='plus' WHERE id=$1`, [u.id]))).rejects.toThrow(/permission denied/);

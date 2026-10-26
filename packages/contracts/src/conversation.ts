@@ -52,7 +52,7 @@ export const ClientMsg = z.discriminatedUnion('type', [
 ]);
 
 export const ServerMsg = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('ready'), conversationId: Uuid, mode: ConversationMode, companion: z.object({ name: z.string(), look: z.string(), voice: z.string() }), voice: z.object({ serverStt: z.boolean(), serverTts: z.boolean() }) }),
+  z.object({ type: z.literal('ready'), conversationId: Uuid, mode: ConversationMode, companion: z.object({ name: z.string(), look: z.string(), voice: z.string() }), voice: z.object({ serverStt: z.boolean(), serverTts: z.boolean() }), opening: z.string().nullable() }),
   z.object({ type: z.literal('ack'), clientId: z.string().optional(), riskLevel: RiskLevel }),
   z.object({ type: z.literal('thinking') }),
   z.object({ type: z.literal('sentence'), text: z.string(), emotion: Emotion.optional(), index: z.number().int() }),

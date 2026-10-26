@@ -27,6 +27,9 @@ export const moodIndexFor = (m: JournalAnalysis['mood']) => ({ heavier: 1, 'in b
 const SENSITIVE =
   /(medicine|medication|tablet|therap|psychiat|depress|anxiety|panic|diagnos|trauma|abuse|assault|harass|sexual|gay|lesbian|queer|religio|church|mosque|temple|caste|politic|vote|salary|debt|loan|emi\b|pregnan|period|illness|cancer|surgery)/i;
 
+/** True when text touches health, trauma, sexuality, religion, caste, politics or money (PRD 5.2). */
+export const isSensitive = (text: string) => SENSITIVE.test(text);
+
 const toSecondPerson = (x: string) =>
   x
     .replace(/\bI am\b/g, 'You are')

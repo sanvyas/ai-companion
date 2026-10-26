@@ -13,6 +13,7 @@ export const testEnv = () => ({
   LLM_PROVIDER: 'mock',
   OTP_PROVIDER: 'console',
   RUN_WORKER: 'false',
+  RATE_LIMIT_SCALE: '1000',
   LOG_LEVEL: 'silent',
 });
 

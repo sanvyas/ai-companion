@@ -55,6 +55,8 @@ const schema = z.object({
 
   BASIC_VOICE_MINUTES_PER_DAY: z.coerce.number().default(10),
   RUN_WORKER: bool.default('true'),
+  /** Multiplies every HTTP rate limit. Leave at 1 outside tests. */
+  RATE_LIMIT_SCALE: z.coerce.number().min(1).default(1),
 });
 
 export type Config = z.infer<typeof schema> & {

@@ -1,0 +1,128 @@
+import type { FastifyInstance } from 'fastify';
+import type { WebSocket } from 'ws';
+import { z } from 'zod';
+import { ClientMsg, CreateConversationBody, EndFeedback, type ServerMsg } from '@saathi/contracts';
+import type { Ctx } from '../context.js';
+import { verifyAccess } from '../auth/tokens.js';
+import { AppError } from '../errors.js';
+import { parse, uid } from '../http.js';
+import { createConversation, endConversation, handleSilence, handleTurn, listConversations, listMessages, openSession, type LiveSession } from '../services/conversations.js';
+import { withIdempotency } from '../services/idempotency.js';
+
+const TURNS_PER_MINUTE = 20;
+
+export function conversationRoutes(app: FastifyInstance, ctx: Ctx) {
+  const auth = { preHandler: app.auth };
+
+  app.post('/conversations', auth, async (req, reply) =>
+    withIdempotency(ctx, req, reply, async () => {
+      const b = parse(CreateConversationBody, req.body);
+      return { status: 201, body: await createConversation(ctx, uid(req), b.mode, b.continueFrom) };
+    }));
+
+  app.post('/walks', auth, async (req, reply) =>
+    withIdempotency(ctx, req, reply, async () => ({ status: 201, body: await createConversation(ctx, uid(req), 'walk') })));
+
+  app.get('/conversations', auth, async req => {
+    const q = parse(z.object({ limit: z.coerce.number().int().min(1).max(50).default(10) }), req.query);
+    return { items: await listConversations(ctx, uid(req), q.limit) };
+  });
+
+  app.get('/conversations/:id/messages', auth, async req => {
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    return { items: await listMessages(ctx, uid(req), id) };
+  });
+
+  app.post('/conversations/:id/end', auth, async req => {
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    parse(EndFeedback, req.body ?? {});
+    return endConversation(ctx, uid(req), id);
+  });
+
+  // ---- WebSocket: text turns now, voice transcripts through the same pipeline ----------------------------
+  app.get('/conversations/:id/stream', {
+    websocket: true,
+    config: { rateLimit: false },
+    preValidation: async (req) => {
+      // Browsers do not apply CORS to WebSockets, so the Origin is checked here.
+      const origin = req.headers.origin;
+      if (origin && !ctx.cfg.webOrigins.includes(origin)) throw new AppError(403, 'bad_origin', 'That origin isn’t allowed.');
+    },
+  }, (socket: WebSocket, req) => {
+    const { id } = req.params as { id: string };
+    let session: LiveSession | null = null;
+    let userId: string | null = null;
+    const stamps: number[] = [];
+    let chain: Promise<void> = Promise.resolve();
+
+    const send = (m: ServerMsg) => { if (socket.readyState === socket.OPEN) socket.send(JSON.stringify(m)); };
+    const fail = (code: string, message: string, close = false) => { send({ type: 'error', code, message }); if (close) socket.close(4001, code); };
+
+    // Credentials travel in the first frame, not the URL, so tokens stay out of access logs.
+    const authTimer = setTimeout(() => { if (!session) socket.close(4001, 'auth_timeout'); }, 5000);
+
+    socket.on('message', raw => {
+      let msg: ReturnType<typeof ClientMsg.safeParse>;
+      try { msg = ClientMsg.safeParse(JSON.parse(raw.toString())); } catch { return fail('bad_message', 'That message wasn’t understood.'); }
+      if (!msg.success) return fail('bad_message', 'That message wasn’t understood.');
+      const m = msg.data;
+
+      if (m.type === 'ping') return send({ type: 'pong' });
+
+      if (m.type === 'auth') {
+        if (session) return;
+        chain = chain.then(async () => {
+          try {
+            const a = await verifyAccess(ctx, m.token);
+            userId = a.userId;
+            const s = await openSession(ctx, a.userId, id);
+            session = s;
+            clearTimeout(authTimer);
+            send({ type: 'ready', conversationId: id, mode: s.mode, companion: s.companion, voice: { serverStt: !!ctx.stt, serverTts: !!ctx.tts }, opening: s.opening });
+          } catch (e) {
+            const ae = e instanceof AppError ? e : null;
+            fail(ae?.code ?? 'internal', ae?.message ?? 'Something went wrong.', true);
+          }
+        });
+        return;
+      }
+
+      if (!session || !userId) return fail('unauthorized', 'Please sign in again.', true);
+      const s = session;
+
+      if (m.type === 'interrupt') { s.abort?.abort(); return; }
+      if (m.type === 'end') {
+        chain = chain.then(async () => {
+          try {
+            const out = await endConversation(ctx, s.userId, s.conversationId);
+            send({ type: 'done', messageId: null, riskLevel: s.risk.level, text: out.summary });
+            socket.close(1000, 'ended');
+          } catch (e) { fail('end_failed', (e as Error).message); }
+        });
+        return;
+      }
+
+      // Soft limit per connection: a person cannot send 20 turns a minute; a runaway client can.
+      const now = Date.now();
+      while (stamps.length && now - stamps[0] > 60_000) stamps.shift();
+      if (m.type === 'turn') {
+        if (stamps.length >= TURNS_PER_MINUTE) return fail('rate_limited', 'Slow down a little.');
+        stamps.push(now);
+      }
+
+      chain = chain.then(async () => {
+        try {
+          if (m.type === 'turn') await handleTurn(ctx, s, m.text, send, m.clientId);
+          else if (m.type === 'silence') await handleSilence(ctx, s, m.seconds, send);
+        } catch (e) {
+          ctx.log.error({ err: (e as Error).message }, 'turn failed');
+          fail('internal', 'Something went wrong on our side. Please try again.');
+        }
+      });
+    });
+
+    socket.on('close', () => { clearTimeout(authTimer); session?.abort?.abort(); });
+    socket.on('error', () => { clearTimeout(authTimer); });
+  });
+}
+

@@ -61,6 +61,10 @@ export class Crypto {
     return dek;
   }
 
+  cachedKey(userId: string): Buffer | undefined {
+    return this.dekCache.get(userId);
+  }
+
   forget(userId: string) {
     this.dekCache.delete(userId);
   }
