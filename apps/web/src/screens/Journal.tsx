@@ -2,7 +2,7 @@ import { C, MOODS, serif, shadow } from '../theme';
 import { set, useStore, type JournalResult } from '../state/store';
 import { finishJournal, go, keepPrivate, openSheet, saveJournal, startCall, startJournal, toggleDictation } from '../state/actions';
 import { stopDictation } from '../audio/dictation';
-import { moodIndexFor } from '../domain/journal';
+import { moodIndexFor } from '@saathi/domain';
 import { Orb, useReduceMotion } from '../components/figures';
 import { P, Svg } from '../components/icons';
 import { HelpPill, Chip, Scroll, Segmented, Switch, TextButton, PrimaryButton, flex } from '../components/ui';

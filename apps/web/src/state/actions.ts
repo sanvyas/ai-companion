@@ -1,7 +1,7 @@
 import { CALM_ITEMS } from '../data/calm';
 import { TRUSTED_CONTACT } from '../data/seed';
-import { analyzeJournalLocally, moodIndexFor } from '../domain/journal';
-import { nextRisk, userSafeAcknowledged } from '../domain/safety';
+import { analyzeJournalLocally, moodIndexFor } from '@saathi/domain';
+import { nextRisk, userSafeAcknowledged } from '@saathi/domain';
 import { mockCompanion } from '../providers/companion';
 import { startDictation, stopDictation } from '../audio/dictation';
 import { isSpeaking, pauseNarration, say, stopSpeech, ttsSupported } from '../audio/speech';

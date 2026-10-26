@@ -2,8 +2,8 @@ import { useSyncExternalStore } from 'react';
 import type { TimeOfDay } from '../theme';
 import { SEED_JOURNAL, SEED_MEMORIES, SEED_PLAN, WINS, type JournalEntry, type Memory, type PlanItem } from '../data/seed';
 import type { SoundId } from '../data/calm';
-import { initialRisk, type RiskState } from '../domain/safety';
-import type { JournalAnalysis } from '../domain/journal';
+import { initialRisk, type RiskState } from '@saathi/domain';
+import type { JournalAnalysis } from '@saathi/domain';
 
 export type Screen =
   | 'welcome' | 'intro' | 'age' | 'under' | 'lang' | 'name' | 'companion' | 'consent'

@@ -1,5 +1,6 @@
-import type { Theme } from '../data/seed';
 import { classify, type RiskLevel } from './safety';
+
+export type Theme = 'People' | 'Work and study' | 'Sleep' | 'What helps' | 'Feelings' | 'Plans';
 
 // JournalAnalysis shape from PRD §5.1 / §6.5.
 export interface ProposedMemory {

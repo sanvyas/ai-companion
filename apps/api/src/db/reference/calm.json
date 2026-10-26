@@ -1,0 +1,177 @@
+[
+ {
+  "id": "breathe",
+  "kind": "med",
+  "cat": "Stress",
+  "title": "Breathe with me",
+  "mins": 3,
+  "desc": "Slow, guided breathing. Good anywhere.",
+  "tint": "#CFE3F0"
+ },
+ {
+  "id": "sos",
+  "kind": "med",
+  "cat": "Anxiety",
+  "title": "When it feels like too much",
+  "mins": 5,
+  "desc": "Grounding for a racing mind.",
+  "tint": "#FBE3CF",
+  "lines": [
+   "You’re okay. This feeling is strong, and it will pass.",
+   "Put your feet flat on the floor. Press down, just a little.",
+   "Look around and name five things you can see.",
+   "Now four things you can touch.",
+   "Three things you can hear.",
+   "Breathe in for four… hold for two… and out for six.",
+   "Again. In for four… and a long breath out.",
+   "You got through this moment. I’m right here."
+  ]
+ },
+ {
+  "id": "body",
+  "kind": "med",
+  "cat": "Stress",
+  "title": "Body scan",
+  "mins": 8,
+  "desc": "Let tension go, one part at a time.",
+  "tint": "#DCEBE6",
+  "lines": [
+   "Let’s settle in. Find a position that feels easy.",
+   "Let your eyes close, or rest your gaze on the floor.",
+   "Take one slow breath in… and let it go.",
+   "Notice your feet. Their weight. Nothing to change.",
+   "Move up to your legs. Let them be heavy.",
+   "Your stomach rises and falls on its own.",
+   "Let your shoulders drop, just a little.",
+   "Soften your jaw. Your forehead. The space around your eyes.",
+   "Notice your whole body, breathing.",
+   "Whenever you’re ready, come back to the room. Gently."
+  ]
+ },
+ {
+  "id": "morning",
+  "kind": "med",
+  "cat": "Focus",
+  "title": "Morning reset",
+  "mins": 5,
+  "desc": "Start the day a little steadier.",
+  "tint": "#F8D3B4",
+  "lines": [
+   "Good morning. Let’s take a few minutes before the day begins.",
+   "Sit up, with your feet on the floor. Feel the ground under you.",
+   "Take a slow breath in… and let it out.",
+   "Notice how you feel right now. Tired, okay, a bit of both. All of it is fine.",
+   "Think of one small thing you’d like to do today. Just one.",
+   "Picture yourself doing it. It doesn’t have to be perfect.",
+   "One more slow breath in… and out.",
+   "You’re ready enough. Go gently today."
+  ]
+ },
+ {
+  "id": "kind",
+  "kind": "med",
+  "cat": "Self-kindness",
+  "title": "Kindness for yourself",
+  "mins": 10,
+  "desc": "For days you’re hard on yourself.",
+  "tint": "#E6E2F6",
+  "lines": [
+   "Let’s spend a few minutes being kind to you.",
+   "Put a hand on your chest, if that feels okay. Feel it rise and fall.",
+   "Think of how you’d speak to a good friend after a hard week.",
+   "Now, quietly, say those words to yourself.",
+   "May I be gentle with myself.",
+   "May I remember I’m doing my best.",
+   "May I let today be enough.",
+   "Notice any feeling that comes up. Let it be there.",
+   "Carry a little of this kindness with you."
+  ]
+ },
+ {
+  "id": "winddown",
+  "kind": "sleep",
+  "cat": "Wind-down",
+  "title": "Wind-down for sleep",
+  "mins": 10,
+  "desc": "Slow breathing and a soft body scan.",
+  "tint": "#B7B1E6",
+  "lines": [
+   "Let’s get ready for sleep. Lie down in a way that feels comfortable.",
+   "Breathe in slowly through your nose… and let it out through your mouth.",
+   "Again. In… and a long, slow breath out.",
+   "Let the day go. You don’t need to solve anything tonight.",
+   "Feel the bed holding you. Let it take your weight.",
+   "Soften your face. Your jaw. Your shoulders.",
+   "Let your arms feel heavy. Then your legs.",
+   "If a thought comes, that’s okay. Let it drift past like a cloud.",
+   "Stay here. Let sleep come when it’s ready."
+  ]
+ },
+ {
+  "id": "monsoon",
+  "kind": "sleep",
+  "cat": "Sleep story",
+  "title": "Monsoon on the hills",
+  "mins": 24,
+  "desc": "Rain on tin roofs in a quiet hill town.",
+  "tint": "#9FCFC3",
+  "bg": "rain",
+  "lines": [
+   "Tonight we’re going to a small town in the hills, in the middle of the monsoon.",
+   "There’s nothing you need to do. Just listen, and let your body get heavy.",
+   "The bus has left you at the last stop. The air smells of wet earth and woodsmoke.",
+   "You walk up a narrow lane. Rain is falling softly on the tin roofs.",
+   "At the end of the lane, a small guesthouse has a light on. Someone has left the door open for you.",
+   "Inside, it’s warm. A quilt is folded on the bed, and a cup of ginger tea waits on the table.",
+   "You sit by the window. The rain keeps its steady rhythm.",
+   "Far below, the valley is lost in cloud. The whole town is going quiet.",
+   "You pull the quilt up. It is heavy and soft. Your shoulders let go.",
+   "The rain carries on, patient and slow. You don’t have to stay awake for it.",
+   "Sleep well."
+  ]
+ },
+ {
+  "id": "train",
+  "kind": "sleep",
+  "cat": "Sleep story",
+  "title": "The night train south",
+  "mins": 30,
+  "desc": "A sleeper berth, the rails, dark fields.",
+  "tint": "#D9C2E4",
+  "bg": "fan",
+  "lines": [
+   "Tonight you’re on the night train, heading south.",
+   "Your berth is made up with clean white sheets. A little blue lamp glows above you.",
+   "The train pulls out slowly. The station lights slide away, one by one.",
+   "Outside, the city thins into fields. Dark shapes of trees go by.",
+   "The rails keep a gentle rhythm, over and over.",
+   "Somewhere down the carriage, a chai seller calls out softly, then goes quiet.",
+   "The carriage rocks you, side to side, like being held.",
+   "A village passes, a single light in one window. Then dark fields again.",
+   "There’s nowhere you need to be until morning. The train will carry you.",
+   "Sleep well."
+  ]
+ },
+ {
+  "id": "garden",
+  "kind": "sleep",
+  "cat": "Sleep story",
+  "title": "A tea garden at dusk",
+  "mins": 20,
+  "desc": "Slow paths between green rows.",
+  "tint": "#F1C79B",
+  "bg": "crickets",
+  "lines": [
+   "This evening we’re walking through a tea garden, just as the sun goes down.",
+   "The rows of tea bushes curve over the hills like green waves.",
+   "The path under your feet is soft and damp. Each step is slow.",
+   "The air is cooling. The leaves smell fresh and a little sweet.",
+   "Far off, a bell rings from a small temple. Then silence.",
+   "The sky turns orange, then pink, then a deep blue.",
+   "You find a wooden bench at the top of the hill and sit down.",
+   "The garden goes still. The first stars appear.",
+   "Rest here as long as you like.",
+   "Sleep well."
+  ]
+ }
+]

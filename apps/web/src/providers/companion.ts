@@ -1,4 +1,4 @@
-import { classify, detectsMinor, level3Script, type RiskLevel } from '../domain/safety';
+import { classify, detectsMinor, level3Script, type RiskLevel } from '@saathi/domain';
 
 // Adapter boundary for the conversation LLM + safety pipeline (PRD §4, §6).
 // Only a mock exists. TODO(llm-adapter): real streaming provider over WS /conversations/{id}/stream,
