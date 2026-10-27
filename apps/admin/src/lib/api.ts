@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 // The portal talks to /admin/api with its own session cookie (httpOnly, set by the server) and a CSRF header on writes.
-const ORIGIN = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? 'http://localhost:8787';
+// Production builds call the portal's own origin (the host proxies /admin/api to the API, keeping the cookie first-party).
+const ORIGIN = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? (import.meta.env.PROD ? '' : 'http://localhost:8787');
 const BASE = `${ORIGIN}/admin/api`;
 
 let csrf = '';

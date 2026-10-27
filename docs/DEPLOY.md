@@ -23,10 +23,11 @@ If Render gives the service a different address than `saathi-api.onrender.com`, 
 
 ## 3. Front ends on Netlify
 ```bash
-deploy/stage.sh https://<your-render-address>      # builds both into .deploy/app and .deploy/admin
-# publish .deploy/app to saathi-app-tno6 and .deploy/admin to saathi-admin-2ehw
+deploy/stage.sh https://<your-render-address>      # builds both and writes .deploy/saathi-app.zip and .deploy/saathi-admin.zip
 ```
-The portal build is relative (`/admin/api`) and Netlify proxies it to the API, so the portal's `SameSite=Strict` cookie stays first-party. The app calls the API directly.
+Netlify dashboard > the site > **Deploys** > drag the zip onto the "drag and drop" area (app zip to `saathi-app-tno6`, admin zip to `saathi-admin-2ehw`). Re-run the script and re-upload whenever the front end changes or the API address changes.
+
+The portal build calls a relative `/admin/api` and Netlify proxies it to the API (`_redirects`), so the portal's `SameSite=Strict` cookie stays first-party. The app calls the API directly.
 
 ## 4. First sign-in to the portal
 Open the admin address, sign in with the bootstrap email and password, scan the QR code with an authenticator app, and enter the code. Then open **Integrations and keys** and add the Anthropic key. Chat works from the next message.

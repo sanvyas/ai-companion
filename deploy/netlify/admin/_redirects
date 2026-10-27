@@ -1,0 +1,2 @@
+# The portal calls /admin/api on its own origin; Netlify forwards it to the API so the session cookie stays first-party.
+/admin/api/*  __API__/admin/api/:splat  200!
