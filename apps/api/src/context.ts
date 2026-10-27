@@ -7,11 +7,14 @@ import type { OtpProvider } from './providers/otp.js';
 import type { PushProvider } from './providers/push.js';
 import type { SttProvider, TtsProvider } from './providers/voice.js';
 import type { TelephonyProvider } from './providers/telephony.js';
+import type { Runtime } from './runtime/index.js';
 
 export interface Ctx {
   cfg: Config;
   db: Db;
   crypto: Crypto;
+  /** Settings, flags, credentials, prompts and prices that the admin portal can change while the app runs. */
+  rt: Runtime;
   llm: LlmProvider;
   otp: OtpProvider;
   push: PushProvider;

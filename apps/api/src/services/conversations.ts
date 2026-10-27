@@ -5,7 +5,7 @@ import type { Ctx } from '../context.js';
 import { withUser, type Tx } from '../db/pool.js';
 import { AppError, forbidden, notFound } from '../errors.js';
 import { LlmFailure, LlmRefusal, LlmUnavailable, type LlmMessage } from '../providers/llm.js';
-import { CHECKIN_EXTRACT_SYSTEM, MEMORY_PROPOSAL_SYSTEM, SUMMARY_SYSTEM, dynamicSystem, stableSystem } from './prompts.js';
+import { checkinExtractSystem, dynamicSystem, memoryProposalSystem, stableSystem, summarySystem } from './prompts.js';
 import { SAFE_FALLBACK_LINE, classifyWithModel, logSafetyEvent, prefilter, reviewDraft, wrapUser } from './safety.js';
 import { retrieveMemories } from './memory.js';
 import { getCompanion, getTrusted } from './profile.js';
@@ -40,6 +40,7 @@ export interface LiveSession {
 
 const live = new Map<string, LiveSession>();
 export const getLive = (id: string) => live.get(id);
+export const liveSessionCount = () => live.size;
 
 // Drop sessions nobody has touched for 45 minutes so memory cannot grow without bound.
 setInterval(() => { const cut = Date.now() - 45 * 60_000; for (const [k, v] of live) if (v.lastSeen < cut) live.delete(k); }, 5 * 60_000).unref();
@@ -49,8 +50,10 @@ type Emit = (m: ServerMsg) => void;
 // ------------------------------------------------------------------------------------------ create / open
 export async function createConversation(ctx: Ctx, userId: string, mode: ConversationMode, continueFrom?: string, first = false) {
   return withUser(ctx.db, userId, async tx => {
-    const u = (await tx.query<{ subscription: string; age_confirmed_18: boolean }>('SELECT subscription, age_confirmed_18 FROM users WHERE id = $1', [userId])).rows[0];
+    const u = (await tx.query<{ subscription: string; age_confirmed_18: boolean; suspended_at: Date | null }>('SELECT subscription, age_confirmed_18, suspended_at FROM users WHERE id = $1', [userId])).rows[0];
     if (!u?.age_confirmed_18) throw forbidden('under18', 'Saathi is for adults. This account is paused.');
+    if (u.suspended_at) throw forbidden('suspended', 'This account is paused. Please contact support.');
+    if (['voice', 'video'].includes(mode) && ctx.rt.settings.bool('kill.voice')) throw new AppError(503, 'voice_paused', 'Voice calls are paused for a moment. Text chat still works.');
     if (!ctx.llm.configured) throw new AppError(503, 'llm_unavailable', 'Your companion isn’t connected yet. Helplines and breathing exercises still work.');
 
     // Basic plan: limited voice minutes per day (PRD 8.7.5). Never applied while the user may be struggling,
@@ -58,7 +61,7 @@ export async function createConversation(ctx: Ctx, userId: string, mode: Convers
     if (['voice', 'video', 'walk'].includes(mode) && u.subscription === 'basic') {
       const used = (await tx.query<{ s: number }>('SELECT COALESCE(sum(voice_seconds),0)::int AS s FROM usage_daily WHERE day = current_date')).rows[0].s;
       const distress = (await tx.query(`SELECT 1 FROM conversations WHERE risk_max >= 1 AND started_at > now() - interval '24 hours' LIMIT 1`)).rowCount;
-      if (used >= ctx.cfg.BASIC_VOICE_MINUTES_PER_DAY * 60 && !distress) {
+      if (used >= ctx.rt.settings.num('limits.voice_minutes_per_day') * 60 && !distress) {
         throw new AppError(402, 'plus_required', 'You’ve used today’s voice time. Text is always open, and Plus has unlimited voice.');
       }
     }
@@ -172,7 +175,7 @@ const localTime = (tz: string) => new Intl.DateTimeFormat('en-IN', { weekday: 'l
 function buildRequest(ctx: Ctx, s: LiveSession, c: Awaited<ReturnType<typeof turnContext>>, userText: string, level: 0 | 1 | 2, strict = false) {
   const messages: LlmMessage[] = [...s.history.map(m => (m.role === 'user' ? { role: m.role, content: wrapUser(m.content) } : m)), { role: 'user', content: wrapUser(userText) }];
   return {
-    model: ctx.cfg.MODEL_COMPANION,
+    model: ctx.rt.settings.str('models.companion'),
     system: {
       stable: stableSystem({ companionName: s.companion.name, nickname: s.nickname, language: s.language, voice: s.companion.voice }),
       dynamic: dynamicSystem({ mode: s.mode, localTime: localTime(s.timezone), planItems: c.plan, moodTrend: c.mood, memories: c.memories, hasSafetyPlan: s.hasSafetyPlan, trustedFirstName: s.trustedFirst, riskLevel: level, priorSummary: s.priorSummary, openingHookSpoken: s.opening, strict, firstRun: s.firstRun && s.history.length === 0 }),
@@ -443,14 +446,14 @@ export async function endConversation(ctx: Ctx, userId: string, conversationId: 
 
   if (userTurns > 0 && ctx.llm.configured && !meta.conv.ended_at) {
     const text = transcript(meta.history);
-    const base = { model: ctx.cfg.MODEL_ANALYSIS, userId, maxTokens: 600, effort: 'low' as const };
+    const base = { model: ctx.rt.settings.str('models.analysis'), userId, maxTokens: 600, effort: 'low' as const };
     const [s1, m1, c1] = await Promise.allSettled([
-      ctx.llm.json({ ...base, task: 'summary', system: { stable: SUMMARY_SYSTEM }, messages: [{ role: 'user', content: `Conversation:\n${text}` }], schemaName: 'summary', jsonSchema: SUMMARY_JSON, parse: v => SummarySchema.parse(v) }),
+      ctx.llm.json({ ...base, task: 'summary', system: { stable: summarySystem() }, messages: [{ role: 'user', content: `Conversation:\n${text}` }], schemaName: 'summary', jsonSchema: SUMMARY_JSON, parse: v => SummarySchema.parse(v) }),
       meta.remember
-        ? ctx.llm.json({ ...base, task: 'memories', system: { stable: MEMORY_PROPOSAL_SYSTEM }, messages: [{ role: 'user', content: `Conversation:\n${text}` }], schemaName: 'memories', jsonSchema: MEM_JSON, parse: v => MemSchema.parse(v) })
+        ? ctx.llm.json({ ...base, task: 'memories', system: { stable: memoryProposalSystem() }, messages: [{ role: 'user', content: `Conversation:\n${text}` }], schemaName: 'memories', jsonSchema: MEM_JSON, parse: v => MemSchema.parse(v) })
         : Promise.resolve({ memories: [] }),
       meta.conv.mode === 'checkin'
-        ? ctx.llm.json({ ...base, task: 'checkin', system: { stable: CHECKIN_EXTRACT_SYSTEM }, messages: [{ role: 'user', content: `Check-in conversation:\n${text}` }], schemaName: 'checkin', jsonSchema: CHECKIN_JSON, parse: v => CheckinSchema.parse(v) })
+        ? ctx.llm.json({ ...base, task: 'checkin', system: { stable: checkinExtractSystem() }, messages: [{ role: 'user', content: `Check-in conversation:\n${text}` }], schemaName: 'checkin', jsonSchema: CHECKIN_JSON, parse: v => CheckinSchema.parse(v) })
         : Promise.resolve(null),
     ]);
     if (s1.status === 'fulfilled') summary = s1.value.summary;

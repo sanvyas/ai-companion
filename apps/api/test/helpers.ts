@@ -17,8 +17,11 @@ export const testEnv = () => ({
   LOG_LEVEL: 'silent',
 });
 
+/** Override environment values for one app. A value of '__unset__' removes the variable. */
 export function testConfig(over: Record<string, string> = {}) {
-  return loadConfig({ ...testEnv(), ...over } as NodeJS.ProcessEnv);
+  const env: Record<string, string> = { ...testEnv(), ...over };
+  for (const [k, v] of Object.entries(env)) if (v === '__unset__') delete env[k];
+  return loadConfig(env as NodeJS.ProcessEnv);
 }
 
 export function testDb(): Db {

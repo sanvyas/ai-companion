@@ -24,7 +24,7 @@ export function authRoutes(app: FastifyInstance, ctx: Ctx) {
 
   app.post('/auth/google', { config: { rateLimit: { max: lim(30), timeWindow: '1 hour' } } }, async req => {
     const b = parse(GoogleBody, req.body);
-    const g = await verifyGoogleIdToken(ctx.cfg, b.idToken);
+    const g = await verifyGoogleIdToken({ GOOGLE_CLIENT_ID: ctx.rt.secrets.get('google', 'client_id') }, b.idToken);
     const u = await resolveUser(ctx, { kind: 'google', value: g.sub }, { ageConfirmed18: b.ageConfirmed18, nickname: b.nickname });
     const s = await issueSession(ctx, u.userId, { deviceLabel: b.deviceLabel });
     return { ...s, isNewUser: u.isNew, pendingDeletion: u.pendingDeletion };

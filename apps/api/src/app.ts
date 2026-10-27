@@ -1,6 +1,7 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
+import cookie from '@fastify/cookie';
 import rateLimit from '@fastify/rate-limit';
 import websocket from '@fastify/websocket';
 import { ZodError } from 'zod';
@@ -9,6 +10,7 @@ import type { Config } from './config.js';
 import { createPool, type Db } from './db/pool.js';
 import { Crypto } from './crypto/envelope.js';
 import { createProviders } from './providers/index.js';
+import { Runtime } from './runtime/index.js';
 import { AppError } from './errors.js';
 import { LlmFailure, LlmRefusal, LlmUnavailable } from './providers/llm.js';
 import { registerAuth } from './plugins/auth.js';
@@ -18,6 +20,8 @@ import { conversationRoutes } from './routes/conversations.js';
 import { dataRoutes } from './routes/data.js';
 import { inboxRoutes, notificationRoutes } from './routes/notifications.js';
 import { publicRoutes } from './routes/public.js';
+import { adminRoutes } from './admin/index.js';
+import { captureError } from './admin/errors.js';
 
 export interface BuildOpts { db?: Db; overrides?: Partial<Ctx> }
 
@@ -34,15 +38,27 @@ export async function buildApp(cfg: Config, opts: BuildOpts = {}): Promise<{ app
   });
 
   const db = opts.db ?? createPool(cfg);
-  const providers = createProviders(cfg, db, app.log);
-  const ctx: Ctx = { cfg, db, crypto: new Crypto(cfg.DATA_KEK, cfg.PHONE_HASH_KEY), log: app.log, ...providers, ...opts.overrides };
+  const crypto = new Crypto(cfg.DATA_KEK, cfg.PHONE_HASH_KEY);
+  const rt = new Runtime(db, crypto, cfg);
+  await rt.start();
+  const providers = createProviders(cfg, db, app.log, rt);
+  const ctx: Ctx = { cfg, db, crypto, rt, log: app.log, ...providers, ...opts.overrides };
 
   await app.register(helmet, { contentSecurityPolicy: false });
+  await app.register(cookie);
+  // The app and the admin portal are different origins with different rules: the portal may send its session
+  // cookie, the app never does.
   await app.register(cors, {
-    origin: cfg.webOrigins,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-    allowedHeaders: ['Authorization', 'Content-Type', 'Idempotency-Key'],
-    maxAge: 600,
+    delegator: (req, cb) => {
+      const admin = (req.url ?? '').startsWith('/admin');
+      cb(null, {
+        origin: admin ? cfg.adminOrigins : cfg.webOrigins,
+        credentials: admin,
+        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+        allowedHeaders: ['Authorization', 'Content-Type', 'Idempotency-Key', 'X-CSRF-Token'],
+        maxAge: 600,
+      });
+    },
   });
   await app.register(rateLimit, { global: true, max: 240 * cfg.RATE_LIMIT_SCALE, timeWindow: '1 minute' });
   await app.register(websocket, { options: { maxPayload: 256 * 1024 } });
@@ -54,15 +70,23 @@ export async function buildApp(cfg: Config, opts: BuildOpts = {}): Promise<{ app
       return reply.code(err.status).send({ error: { code: err.code, message: err.message, details: err.details } });
     }
     if (err instanceof LlmUnavailable) return reply.code(503).send({ error: { code: 'llm_unavailable', message: 'Your companion isn’t connected right now. Helplines and breathing exercises still work.' } });
-    if (err instanceof LlmFailure || err instanceof LlmRefusal) return reply.code(502).send({ error: { code: 'llm_failed', message: 'I couldn’t find my words just then. Please try again in a moment.' } });
+    if (err instanceof LlmFailure || err instanceof LlmRefusal) { captureError(ctx, { source: 'api', route: req.routeOptions?.url ?? req.url, code: 'llm_failed', message: (err as Error).message }); return reply.code(502).send({ error: { code: 'llm_failed', message: 'I couldn’t find my words just then. Please try again in a moment.' } }); }
     if (err instanceof ZodError) return reply.code(400).send({ error: { code: 'validation_failed', message: 'Some of that didn’t look right.', details: err.issues } });
     const e = err as { statusCode?: number; code?: string; message?: string };
     if (e.statusCode === 429) return reply.code(429).send({ error: { code: 'rate_limited', message: 'Slow down a little and try again.' } });
     if (e.statusCode && e.statusCode < 500) return reply.code(e.statusCode).send({ error: { code: e.code ?? 'bad_request', message: e.message ?? 'Bad request' } });
     req.log.error({ err: { message: e.message, code: e.code } }, 'unhandled error');
+    captureError(ctx, { source: 'api', route: req.routeOptions?.url ?? req.url, code: e.code ?? 'internal', message: e.message ?? 'unhandled error' });
     return reply.code(500).send({ error: { code: 'internal', message: 'Something went wrong on our side. Please try again.' } });
   });
   app.setNotFoundHandler((_req, reply) => reply.code(404).send({ error: { code: 'not_found', message: 'That route doesn’t exist.' } }));
+
+  // Maintenance mode pauses the app but never the safety paths: helplines, health checks, config and the admin portal.
+  const OPEN_DURING_MAINTENANCE = /^\/(healthz|readyz|version|public-config|helplines|admin)(\/|\?|$)/;
+  app.addHook('onRequest', async (req, reply) => {
+    if (!ctx.rt.settings.bool('access.maintenance') || OPEN_DURING_MAINTENANCE.test(req.url)) return;
+    return reply.code(503).send({ error: { code: 'maintenance', message: ctx.rt.settings.str('access.maintenance_message') } });
+  });
 
   publicRoutes(app, ctx);
   authRoutes(app, ctx);
@@ -71,7 +95,8 @@ export async function buildApp(cfg: Config, opts: BuildOpts = {}): Promise<{ app
   dataRoutes(app, ctx);
   notificationRoutes(app, ctx);
   inboxRoutes(app, ctx);
+  await adminRoutes(app, ctx);
 
-  app.addHook('onClose', async () => { if (!opts.db) await db.end(); });
+  app.addHook('onClose', async () => { rt.stop(); if (!opts.db) await db.end(); });
   return { app, ctx };
 }

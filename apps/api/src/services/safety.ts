@@ -3,7 +3,7 @@ import { checkAiOutput, classify, detectsMinor, SAFE_FALLBACK_LINE, type OutputV
 import type { Ctx } from '../context.js';
 import { withUser } from '../db/pool.js';
 import type { LlmMessage } from '../providers/llm.js';
-import { CLASSIFIER_SYSTEM, OUTPUT_CHECK_SYSTEM } from './prompts.js';
+import { classifierSystem, outputCheckSystem } from './prompts.js';
 
 // Server safety pipeline (PRD 6.4): keyword pre-filter, then a separate model on every user turn, then an
 // output check on every AI draft. The classifier errs high: unsure means the higher level, and a classifier
@@ -30,8 +30,8 @@ export async function classifyWithModel(ctx: Ctx, userId: string, text: string, 
   try {
     const ctxLines = recent.slice(-4).map(m => `${m.role === 'user' ? 'User' : 'Companion'}: ${m.content.slice(0, 400)}`).join('\n');
     const out = await ctx.llm.json({
-      task: 'classify', model: ctx.cfg.MODEL_SAFETY, userId, signal: ac.signal, maxTokens: 64, effort: 'low',
-      system: { stable: CLASSIFIER_SYSTEM },
+      task: 'classify', model: ctx.rt.settings.str('models.safety'), userId, signal: ac.signal, maxTokens: 64, effort: 'low',
+      system: { stable: classifierSystem() },
       messages: [{ role: 'user', content: `${ctxLines ? `Recent turns:\n${ctxLines}\n\n` : ''}Latest message:\n${wrapUser(text)}` }],
       schemaName: 'risk', jsonSchema: RISK_JSON, parse: v => RiskSchema.parse(v),
     });
@@ -59,8 +59,8 @@ export async function reviewDraft(ctx: Ctx, userId: string, draft: string, eleva
   if (!elevated || !ctx.llm.configured) return { ok: true };
   try {
     const out = await ctx.llm.json({
-      task: 'output_check', model: ctx.cfg.MODEL_SAFETY, userId, maxTokens: 64, effort: 'low',
-      system: { stable: OUTPUT_CHECK_SYSTEM },
+      task: 'output_check', model: ctx.rt.settings.str('models.safety'), userId, maxTokens: 64, effort: 'low',
+      system: { stable: outputCheckSystem() },
       messages: [{ role: 'user', content: `Draft reply:\n"""\n${draft}\n"""` }],
       schemaName: 'output_check', jsonSchema: CHECK_JSON, parse: v => CheckSchema.parse(v),
     });

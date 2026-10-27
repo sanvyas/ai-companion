@@ -10,10 +10,12 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "db:migrate": "tsx --env-file-if-exists=.env src/db/migrate-cli.ts",
-    "gen:secrets": "tsx src/crypto/gen-secrets.ts"
+    "gen:secrets": "tsx src/crypto/gen-secrets.ts",
+    "admin:create": "tsx --env-file-if-exists=.env src/admin/create-cli.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "1.3.0",
+    "@fastify/cookie": "^11.1.3",
     "@fastify/cors": "10.0.1",
     "@fastify/helmet": "12.0.1",
     "@fastify/rate-limit": "10.1.1",

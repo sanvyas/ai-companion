@@ -58,7 +58,7 @@ export async function getMe(ctx: Ctx, userId: string): Promise<Me> {
       companion: await getCompanion(tx, userId),
       trustedContact: trusted ? { name: trusted.name, relation: trusted.relation, phoneMasked: maskPhone(trusted.phone) } : null,
       features: {
-        otp: ctx.otp.canSend, google: !!ctx.cfg.GOOGLE_CLIENT_ID, llm: ctx.llm.configured,
+        otp: ctx.otp.canSend, google: !!ctx.rt.secrets.get('google', 'client_id'), llm: ctx.llm.configured,
         stt: !!ctx.stt, tts: !!ctx.tts, push: ctx.push.enabled, calls: !!ctx.telephony,
       },
     };

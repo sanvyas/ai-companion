@@ -4,7 +4,7 @@ import { buildRhythms } from '@saathi/domain';
 import type { Ctx } from '../context.js';
 import { withSystem, withUser, type Tx } from '../db/pool.js';
 import { notFound } from '../errors.js';
-import { PLAN_SYSTEM } from './prompts.js';
+import { planSystem } from './prompts.js';
 import { audit } from './audit.js';
 import { retrieveMemories } from './memory.js';
 import { localDay } from './time.js';
@@ -45,8 +45,8 @@ export async function getPlanToday(ctx: Ctx, userId: string): Promise<PlanItem[]
     try {
       const mem = await retrieveMemories(ctx, userId, 'plan for today small steps', 3);
       const out = await ctx.llm.json({
-        task: 'plan', model: ctx.cfg.MODEL_COMPANION, userId, maxTokens: 200, effort: 'low',
-        system: { stable: PLAN_SYSTEM }, messages: [{ role: 'user', content: `Things they have told me: ${mem.join(' | ') || 'nothing yet'}` }],
+        task: 'plan', model: ctx.rt.settings.str('models.companion'), userId, maxTokens: 200, effort: 'low',
+        system: { stable: planSystem() }, messages: [{ role: 'user', content: `Things they have told me: ${mem.join(' | ') || 'nothing yet'}` }],
         schemaName: 'plan', jsonSchema: PLAN_JSON, parse: v => PlanSchema.parse(v),
       });
       suggestions = out.items;

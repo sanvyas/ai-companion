@@ -232,7 +232,7 @@ describe('safety pipeline', () => {
     const off = await makeApp({ LLM_PROVIDER: 'mock' });
     // Simulate "no key": swap the provider for the unconfigured one.
     const { createLlm } = await import('../src/providers/llm.js');
-    off.ctx.llm = createLlm({ llmProvider: 'none', ANTHROPIC_API_KEY: undefined }, () => undefined);
+    off.ctx.llm = createLlm({ llmProvider: 'none' }, () => undefined, () => undefined);
     const a = await signIn(off);
     const r = await off.app.inject({ method: 'POST', url: '/conversations', headers: a.headers, payload: { mode: 'text' } });
     expect(r.statusCode).toBe(503);

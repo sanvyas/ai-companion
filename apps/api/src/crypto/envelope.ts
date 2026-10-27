@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createCipheriv, createDecipheriv, createHmac, hkdfSync, randomBytes, timingSafeEqual } from 'node:crypto';
 
 // Envelope encryption for personal content (PRD section 4/5): every user has a random 256-bit data key (DEK),
 // stored wrapped by the master key (KEK) from the environment. Journal text, memories, messages, summaries,
@@ -37,11 +37,14 @@ export class Crypto {
   private readonly kek: Buffer;
   private readonly phoneKey: Buffer;
   private readonly dekCache = new Map<string, Buffer>();
+  /** Separate key for platform secrets (API keys, admin TOTP), derived so it never equals the user-data KEK. */
+  private readonly platformKey: Buffer;
 
   constructor(kekB64: string, phoneKeyB64: string) {
     this.kek = Buffer.from(kekB64, 'base64');
     this.phoneKey = Buffer.from(phoneKeyB64, 'base64');
     if (this.kek.length !== 32 || this.phoneKey.length !== 32) throw new Error('keys must be 32 bytes');
+    this.platformKey = Buffer.from(hkdfSync('sha256', this.kek, Buffer.alloc(0), 'saathi-platform-secrets-v1', 32));
   }
 
   /** Create a fresh DEK for a new user. Store `wrapped` in users.dek_wrapped. */
@@ -83,6 +86,15 @@ export class Crypto {
 
   decryptJson<T>(dek: Buffer, userId: string, purpose: string, blob: Buffer): T {
     return JSON.parse(this.decrypt(dek, userId, purpose, blob)) as T;
+  }
+
+  /** Seal a platform secret (an API key, an admin's TOTP seed). `purpose` binds it to where it belongs. */
+  sealPlatform(purpose: string, plaintext: string): Buffer {
+    return seal(this.platformKey, Buffer.from(plaintext, 'utf8'), `platform:${purpose}`);
+  }
+
+  openPlatform(purpose: string, blob: Buffer): string {
+    return open(this.platformKey, blob, `platform:${purpose}`).toString('utf8');
   }
 
   /** Keyed hash for lookups of values we do not store in clear (phone, Google subject). */

@@ -20,6 +20,9 @@ const schema = z.object({
 
   /** Browser origin(s) allowed to call the API, comma separated. */
   WEB_ORIGINS: z.string().default('http://localhost:5173'),
+  /** Where the admin portal is served from. Admin cookies and CORS credentials apply to these origins only. */
+  ADMIN_ORIGINS: z.string().default('http://localhost:5174'),
+  ADMIN_SESSION_HOURS: z.coerce.number().default(8),
 
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
   ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().default(15 * 60),
@@ -63,6 +66,7 @@ export type Config = z.infer<typeof schema> & {
   otpProvider: 'none' | 'console';
   llmProvider: 'anthropic' | 'mock' | 'none';
   webOrigins: string[];
+  adminOrigins: string[];
   isProd: boolean;
 };
 
@@ -79,5 +83,5 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const llmProvider = c.LLM_PROVIDER ?? (c.ANTHROPIC_API_KEY ? 'anthropic' : 'none');
   if (isProd && llmProvider === 'mock') throw new Error('LLM_PROVIDER=mock is for tests and local development only');
   if (llmProvider === 'anthropic' && !c.ANTHROPIC_API_KEY) throw new Error('LLM_PROVIDER=anthropic needs ANTHROPIC_API_KEY');
-  return { ...c, otpProvider, llmProvider, isProd, webOrigins: c.WEB_ORIGINS.split(',').map(s => s.trim()).filter(Boolean) };
+  return { ...c, otpProvider, llmProvider, isProd, webOrigins: c.WEB_ORIGINS.split(',').map(s => s.trim()).filter(Boolean), adminOrigins: c.ADMIN_ORIGINS.split(',').map(s => s.trim()).filter(Boolean) };
 }

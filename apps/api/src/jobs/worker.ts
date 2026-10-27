@@ -1,3 +1,4 @@
+import { prompt } from '../runtime/prompts.js';
 import { z } from 'zod';
 import { checkAiOutput } from '@saathi/domain';
 import type { Ctx } from '../context.js';
@@ -68,8 +69,8 @@ async function weeklyLetter(ctx: Ctx, userId: string, now: Date): Promise<void> 
   });
   if (!data.wins.length && !data.moods.length) return; // nothing to say is better than a hollow letter
   const out = await ctx.llm.json({
-    task: 'letter', model: ctx.cfg.MODEL_ANALYSIS, userId, maxTokens: 500, effort: 'low',
-    system: { stable: `You write a short Sunday letter in a wellness companion app. At most 150 words, warm, plain, second person, in ${data.u.language === 'hi' ? 'Hindi (Devanagari)' : data.u.language === 'hinglish' ? 'Hinglish in Latin script' : 'English'}. Say what happened this week, name the wins as real, and end with one gentle invitation for the week ahead. No scores, no streaks, no advice about medication, no diagnosis. Address them as ${data.u.nickname || 'you'}.` },
+    task: 'letter', model: ctx.rt.settings.str('models.analysis'), userId, maxTokens: 500, effort: 'low',
+    system: { stable: prompt('letter', { language: data.u.language === 'hi' ? 'Hindi (Devanagari)' : data.u.language === 'hinglish' ? 'Hinglish in Latin script' : 'English', nickname: data.u.nickname || 'you' }) },
     messages: [{ role: 'user', content: `Wins this week: ${data.wins.join('; ') || 'none logged'}.\nMood taps (0 heavy to 4 lighter): ${data.moods.join(', ') || 'none'}.` }],
     schemaName: 'letter', jsonSchema: LETTER_JSON, parse: v => LetterSchema.parse(v),
   });

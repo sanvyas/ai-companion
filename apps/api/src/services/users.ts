@@ -26,15 +26,17 @@ export interface Resolved { userId: string; isNew: boolean; pendingDeletion: boo
 export async function resolveUser(ctx: Ctx, id: Identity, opts: { ageConfirmed18: boolean; nickname?: string }): Promise<Resolved> {
   const hash = ctx.crypto.lookupHash(id.kind, id.value);
   const col = id.kind === 'phone' ? 'phone_hash' : 'google_hash';
-  const find = (tx: Tx) => tx.query<{ id: string; deleted_at: Date | null; deletion_requested_at: Date | null; age_confirmed_18: boolean }>(`SELECT id, deleted_at, deletion_requested_at, age_confirmed_18 FROM users WHERE ${col} = $1`, [hash]);
+  const find = (tx: Tx) => tx.query<{ id: string; deleted_at: Date | null; deletion_requested_at: Date | null; age_confirmed_18: boolean; suspended_at: Date | null }>(`SELECT id, deleted_at, deletion_requested_at, age_confirmed_18, suspended_at FROM users WHERE ${col} = $1`, [hash]);
 
   return withSystem(ctx.db, async tx => {
     const existing = (await find(tx)).rows[0];
     if (existing && !existing.deleted_at) {
       if (!existing.age_confirmed_18) throw forbidden('under18', 'Saathi is for adults. This account is paused.');
+      if (existing.suspended_at) throw forbidden('suspended', 'This account is paused. Please contact support.');
       return { userId: existing.id, isNew: false, pendingDeletion: !!existing.deletion_requested_at };
     }
     if (!opts.ageConfirmed18) throw forbidden('under18', 'Saathi is for adults.');
+    if (!ctx.rt.settings.bool('access.signups_open')) throw forbidden('signups_closed', 'New sign-ups are paused right now. Please try again later.');
 
     const userId = randomUUID();
     const { dek, wrapped } = ctx.crypto.newUserKey(userId);

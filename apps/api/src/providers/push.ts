@@ -1,5 +1,4 @@
 import webpush from 'web-push';
-import type { Config } from '../config.js';
 
 export interface PushPayload {
   title: string;
@@ -41,8 +40,33 @@ class DisabledPush implements PushProvider {
   }
 }
 
-export function createPush(cfg: Pick<Config, 'VAPID_PUBLIC_KEY' | 'VAPID_PRIVATE_KEY' | 'VAPID_SUBJECT'>): PushProvider {
-  if (!cfg.VAPID_PUBLIC_KEY || !cfg.VAPID_PRIVATE_KEY) return new DisabledPush();
-  webpush.setVapidDetails(cfg.VAPID_SUBJECT, cfg.VAPID_PUBLIC_KEY, cfg.VAPID_PRIVATE_KEY);
-  return new WebPushProvider(cfg.VAPID_PUBLIC_KEY);
+/** Web push whose VAPID keys come from the credential store, so saving them in the portal enables notifications. */
+class LivePush implements PushProvider {
+  private inner: WebPushProvider | null = null;
+  private innerKey = '';
+  constructor(private readonly get: (name: 'public_key' | 'private_key' | 'subject') => string | undefined) {}
+  private resolve(): WebPushProvider | null {
+    const pub = this.get('public_key'), priv = this.get('private_key');
+    if (!pub || !priv) return null;
+    const subject = this.get('subject') ?? 'mailto:support@example.com';
+    const sig = `${pub}|${priv}|${subject}`;
+    if (!this.inner || this.innerKey !== sig) {
+      webpush.setVapidDetails(subject, pub, priv);
+      this.inner = new WebPushProvider(pub);
+      this.innerKey = sig;
+    }
+    return this.inner;
+  }
+  get enabled() { try { return !!this.resolve(); } catch { return false; } }
+  get publicKey() { return this.enabled ? (this.get('public_key') ?? null) : null; }
+  async send(subscription: unknown, payload: PushPayload): Promise<boolean> {
+    const p = this.resolve();
+    return p ? p.send(subscription, payload) : true;
+  }
 }
+
+export function createPush(get: (name: 'public_key' | 'private_key' | 'subject') => string | undefined): PushProvider {
+  return new LivePush(get);
+}
+
+export { DisabledPush };

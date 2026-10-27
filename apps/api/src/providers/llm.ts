@@ -5,7 +5,7 @@ import { analyzeJournalLocally, classify } from '@saathi/domain';
 // Adapter boundary for the language model (PRD section 4/6). Every call is tagged with a task so usage can be
 // recorded per purpose and so the mock can answer deterministically in tests.
 
-export type LlmTask = 'companion' | 'sit' | 'classify' | 'output_check' | 'summary' | 'memories' | 'checkin' | 'journal' | 'plan' | 'letter';
+export type LlmTask = 'companion' | 'sit' | 'classify' | 'output_check' | 'summary' | 'memories' | 'checkin' | 'journal' | 'plan' | 'letter' | 'admin_playground' | 'admin_eval';
 export interface LlmMessage { role: 'user' | 'assistant'; content: string }
 
 export interface LlmBase {
@@ -24,7 +24,10 @@ export interface LlmJson<T> extends LlmBase {
   jsonSchema: Record<string, unknown>;
   parse: (v: unknown) => T;
 }
-export interface LlmUsage { provider: string; kind: string; units: number; latencyMs: number; ok: boolean; userId?: string }
+export interface LlmUsage {
+  provider: string; kind: string; units: number; latencyMs: number; ok: boolean; userId?: string;
+  model?: string; inTokens?: number; outTokens?: number; cacheRead?: number; cacheWrite?: number;
+}
 
 export interface LlmProvider {
   readonly name: 'anthropic' | 'mock' | 'none';
@@ -58,6 +61,11 @@ function msgs(m: LlmMessage[]): Anthropic.MessageParam[] {
   return out;
 }
 
+function tokens(u: Anthropic.Usage) {
+  const cacheRead = u.cache_read_input_tokens ?? 0, cacheWrite = u.cache_creation_input_tokens ?? 0;
+  return { units: u.input_tokens + u.output_tokens + cacheRead + cacheWrite, inTokens: u.input_tokens, outTokens: u.output_tokens, cacheRead, cacheWrite };
+}
+
 class AnthropicLlm implements LlmProvider {
   readonly name = 'anthropic' as const;
   readonly configured = true;
@@ -85,9 +93,9 @@ class AnthropicLlm implements LlmProvider {
       const final = await stream.finalMessage();
       this.guard(final);
       ok = true;
-      this.onUsage({ provider: `anthropic:${req.model}`, kind: req.task, units: final.usage.input_tokens + final.usage.output_tokens, latencyMs: Date.now() - started, ok, userId: req.userId });
+      this.onUsage({ provider: `anthropic:${req.model}`, model: req.model, kind: req.task, ...tokens(final.usage), latencyMs: Date.now() - started, ok, userId: req.userId });
     } catch (e) {
-      if (!ok) this.onUsage({ provider: `anthropic:${req.model}`, kind: req.task, units: 0, latencyMs: Date.now() - started, ok: false, userId: req.userId });
+      if (!ok) this.onUsage({ provider: `anthropic:${req.model}`, model: req.model, kind: req.task, units: 0, latencyMs: Date.now() - started, ok: false, userId: req.userId });
       throw wrap(e);
     }
   }
@@ -97,10 +105,10 @@ class AnthropicLlm implements LlmProvider {
     try {
       const m = await this.client.messages.create(this.base(req), { signal: req.signal });
       this.guard(m);
-      this.onUsage({ provider: `anthropic:${req.model}`, kind: req.task, units: m.usage.input_tokens + m.usage.output_tokens, latencyMs: Date.now() - started, ok: true, userId: req.userId });
+      this.onUsage({ provider: `anthropic:${req.model}`, model: req.model, kind: req.task, ...tokens(m.usage), latencyMs: Date.now() - started, ok: true, userId: req.userId });
       return m.content.flatMap(b => (b.type === 'text' ? [b.text] : [])).join('');
     } catch (e) {
-      this.onUsage({ provider: `anthropic:${req.model}`, kind: req.task, units: 0, latencyMs: Date.now() - started, ok: false, userId: req.userId });
+      this.onUsage({ provider: `anthropic:${req.model}`, model: req.model, kind: req.task, units: 0, latencyMs: Date.now() - started, ok: false, userId: req.userId });
       throw wrap(e);
     }
   }
@@ -114,10 +122,10 @@ class AnthropicLlm implements LlmProvider {
       if (m.stop_reason === 'max_tokens') throw new LlmFailure('structured output was cut off');
       const raw = m.content.flatMap(x => (x.type === 'text' ? [x.text] : [])).join('');
       const out = req.parse(JSON.parse(raw));
-      this.onUsage({ provider: `anthropic:${req.model}`, kind: req.task, units: m.usage.input_tokens + m.usage.output_tokens, latencyMs: Date.now() - started, ok: true, userId: req.userId });
+      this.onUsage({ provider: `anthropic:${req.model}`, model: req.model, kind: req.task, ...tokens(m.usage), latencyMs: Date.now() - started, ok: true, userId: req.userId });
       return out;
     } catch (e) {
-      this.onUsage({ provider: `anthropic:${req.model}`, kind: req.task, units: 0, latencyMs: Date.now() - started, ok: false, userId: req.userId });
+      this.onUsage({ provider: `anthropic:${req.model}`, model: req.model, kind: req.task, units: 0, latencyMs: Date.now() - started, ok: false, userId: req.userId });
       throw wrap(e);
     }
   }
@@ -198,8 +206,30 @@ export class MockLlm implements LlmProvider {
   }
 }
 
-export function createLlm(cfg: Pick<Config, 'llmProvider' | 'ANTHROPIC_API_KEY'>, onUsage: (u: LlmUsage) => void): LlmProvider {
-  if (cfg.llmProvider === 'anthropic') return new AnthropicLlm(cfg.ANTHROPIC_API_KEY!, onUsage);
-  if (cfg.llmProvider === 'mock') return new MockLlm();
-  return new NoLlm();
+/**
+ * The Anthropic adapter, but the API key is read at call time from the credential store. Saving a new key in the
+ * admin portal therefore takes effect on the next message, with no restart.
+ */
+class LiveLlm implements LlmProvider {
+  private inner: AnthropicLlm | null = null;
+  private innerKey = '';
+  constructor(private readonly getKey: () => string | undefined, private readonly onUsage: (u: LlmUsage) => void) {}
+  get configured() { return !!this.getKey(); }
+  get name(): 'anthropic' | 'none' { return this.configured ? 'anthropic' : 'none'; }
+  private use(): LlmProvider {
+    const key = this.getKey();
+    if (!key) throw new LlmUnavailable();
+    if (!this.inner || this.innerKey !== key) { this.inner = new AnthropicLlm(key, this.onUsage); this.innerKey = key; }
+    return this.inner;
+  }
+  stream(req: LlmBase) { return this.use().stream(req); }
+  text(req: LlmBase) { return this.use().text(req); }
+  json<T>(req: LlmJson<T>) { return this.use().json(req); }
 }
+
+export function createLlm(cfg: Pick<Config, 'llmProvider'>, getKey: () => string | undefined, onUsage: (u: LlmUsage) => void): LlmProvider {
+  if (cfg.llmProvider === 'mock') return new MockLlm();
+  return new LiveLlm(getKey, onUsage);
+}
+
+export { NoLlm };
