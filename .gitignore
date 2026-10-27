@@ -6,3 +6,5 @@ dist-single
 .env
 .env.*
 !.env.example
+.deploy
+.netlify

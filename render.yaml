@@ -1,0 +1,31 @@
+# Render Blueprint for the Saathi API. New > Blueprint > pick this repository and branch.
+# Secrets that Render generates (JWT_SECRET, DATA_KEK, PHONE_HASH_KEY, OTP_PEPPER) can be read later in the service's
+# Environment tab. Copy DATA_KEK somewhere safe: without it nobody's stored data can be decrypted.
+services:
+  - type: web
+    name: saathi-api
+    runtime: docker
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: .
+    region: singapore          # closest to the Mumbai database
+    plan: starter              # "free" sleeps after 15 minutes idle and the scheduler stops; fine for a quick test only
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - { key: NODE_ENV, value: production }
+      - { key: PORT, value: "10000" }
+      - { key: AUTO_MIGRATE, value: "1" }
+      - { key: RUN_WORKER, value: "true" }
+      - { key: DATABASE_SSL, value: "true" }
+      # Supabase > Connect > Session pooler (port 5432), with your database password. Never commit it.
+      - { key: DATABASE_URL, sync: false }
+      - { key: JWT_SECRET, generateValue: true }
+      - { key: DATA_KEK, generateValue: true }
+      - { key: PHONE_HASH_KEY, generateValue: true }
+      - { key: OTP_PEPPER, generateValue: true }
+      # Where the two Netlify sites live. Change these if you rename the sites or add a custom domain.
+      - { key: WEB_ORIGINS, value: "https://saathi-app-tno6.netlify.app" }
+      - { key: ADMIN_ORIGINS, value: "https://saathi-admin-2ehw.netlify.app" }
+      # First owner of the admin portal. Used only while no admin exists. Delete both variables after the first sign-in.
+      - { key: ADMIN_BOOTSTRAP_EMAIL, sync: false }
+      - { key: ADMIN_BOOTSTRAP_PASSWORD, sync: false }
