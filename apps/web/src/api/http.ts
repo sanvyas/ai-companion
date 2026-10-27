@@ -181,7 +181,7 @@ export class HttpApi implements Api {
 
   async openConversation(id: string, ev: ConvEvents): Promise<ConvTransport> {
     await this.ensureAccess();
-    const url = `${BASE.replace(/^http/, 'ws')}/conversations/${id}/stream`;
+    const url = `${(BASE || window.location.origin).replace(/^http/, 'ws')}/conversations/${id}/stream`;
     const ws = new WebSocket(url);
     ws.binaryType = 'arraybuffer';
     await new Promise<void>((res, rej) => { ws.onopen = () => res(); ws.onerror = () => rej(new ApiError(0, 'network', 'I couldn’t connect. Check your internet and try again.')); });

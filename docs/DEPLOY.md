@@ -1,13 +1,14 @@
 # Deploying Saathi (closed beta)
 
-Three pieces, three places:
+One Docker image does everything: the API, the scheduler, the citizen app (at `/`) and the admin portal (at `/portal/`). The app, the portal and the API share one origin, so there is no CORS to configure and the portal's `SameSite=Strict` cookie works as is.
 
 | Piece | Where | Address |
 |---|---|---|
-| Database | Supabase, Mumbai | project `bajnpbdjvbyasrovotsc` |
-| API (and scheduler) | Render, from `render.yaml` | `https://saathi-api-mpdh.onrender.com` (or whatever Render assigns) |
-| Citizen app | Netlify `saathi-app-tno6` | https://saathi-app-tno6.netlify.app |
-| Admin portal | Netlify `saathi-admin-2ehw` | https://saathi-admin-2ehw.netlify.app |
+| Database | Supabase (project `bajnpbdjvbyasrovotsc`, Singapore) | via the session pooler, role `saathi_api` |
+| API + app + portal | Render service `saathi-api` | https://saathi-api-mpdh.onrender.com (app) and https://saathi-api-mpdh.onrender.com/portal/ (portal) |
+| Optional extra front ends | Netlify (`saathi-app-tno6`, `saathi-admin-2ehw`) | zips from `deploy/stage.sh` |
+
+The Netlify sites are optional now. Use them only if you want the front ends on a separate host.
 
 ## 1. Database string
 Supabase > Connect > **Session pooler** (port 5432), copy the URI and put your database password in it. Use the session pooler, not the transaction pooler: the migrator takes a session-level lock. Reset the password under Project Settings > Database if you do not have it.
@@ -30,7 +31,7 @@ Netlify dashboard > the site > **Deploys** > drag the zip onto the "drag and dro
 The portal build calls a relative `/admin/api` and Netlify proxies it to the API (`_redirects`), so the portal's `SameSite=Strict` cookie stays first-party. The app calls the API directly.
 
 ## 4. First sign-in to the portal
-Open the admin address, sign in with the bootstrap email and password, scan the QR code with an authenticator app, and enter the code. Then open **Integrations and keys** and add the Anthropic key. Chat works from the next message.
+Open https://saathi-api-mpdh.onrender.com/portal/, sign in with the bootstrap email and password, scan the QR code with an authenticator app, and enter the code. Then open **Integrations and keys** and add the Anthropic key. Chat works from the next message.
 
 ## Things that will block real users
 - **Sign-in.** In production, phone codes are refused until an SMS vendor adapter exists (`docs/PROVIDERS.md`). Until then people can only sign in with Google: add the Google OAuth client id on the Integrations page (and add the app address as an authorised JavaScript origin in Google Cloud).

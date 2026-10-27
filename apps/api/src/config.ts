@@ -23,6 +23,9 @@ const schema = z.object({
   /** Where the admin portal is served from. Admin cookies and CORS credentials apply to these origins only. */
   ADMIN_ORIGINS: z.string().default('http://localhost:5174'),
   ADMIN_SESSION_HOURS: z.coerce.number().default(8),
+  /** Built front ends the API serves itself (the Docker image sets these): the citizen app at / and the portal at /portal/. */
+  STATIC_WEB_DIR: z.string().optional(),
+  STATIC_ADMIN_DIR: z.string().optional(),
 
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
   ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().default(15 * 60),

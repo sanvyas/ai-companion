@@ -23,6 +23,7 @@ import { eventRoutes } from './routes/events.js';
 import { publicRoutes } from './routes/public.js';
 import { adminRoutes } from './admin/index.js';
 import { captureError } from './admin/errors.js';
+import { STATIC_OPEN_DURING_MAINTENANCE, registerStatic } from './static.js';
 
 export interface BuildOpts { db?: Db; overrides?: Partial<Ctx> }
 
@@ -85,7 +86,7 @@ export async function buildApp(cfg: Config, opts: BuildOpts = {}): Promise<{ app
   // Maintenance mode pauses the app but never the safety paths: helplines, health checks, config and the admin portal.
   const OPEN_DURING_MAINTENANCE = /^\/(healthz|readyz|version|public-config|helplines|admin)(\/|\?|$)/;
   app.addHook('onRequest', async (req, reply) => {
-    if (!ctx.rt.settings.bool('access.maintenance') || OPEN_DURING_MAINTENANCE.test(req.url)) return;
+    if (!ctx.rt.settings.bool('access.maintenance') || OPEN_DURING_MAINTENANCE.test(req.url) || (req.method === 'GET' && STATIC_OPEN_DURING_MAINTENANCE.test(req.url))) return;
     return reply.code(503).send({ error: { code: 'maintenance', message: ctx.rt.settings.str('access.maintenance_message') } });
   });
 
@@ -98,6 +99,7 @@ export async function buildApp(cfg: Config, opts: BuildOpts = {}): Promise<{ app
   inboxRoutes(app, ctx);
   eventRoutes(app, ctx);
   await adminRoutes(app, ctx);
+  await registerStatic(app, cfg);
 
   app.addHook('onClose', async () => { rt.stop(); if (!opts.db) await db.end(); });
   return { app, ctx };
