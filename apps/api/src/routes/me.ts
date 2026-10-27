@@ -67,5 +67,5 @@ export function meRoutes(app: FastifyInstance, ctx: Ctx) {
   });
 
   // Server TTS previews need a TTS vendor. Until one is connected the web app uses the browser's voices.
-  app.get('/voices/samples', auth, async () => ({ available: !!ctx.tts, samples: [] as string[] }));
+  app.get('/voices/samples', auth, async () => ({ available: !!ctx.tts?.configured, samples: [] as string[] }));
 }

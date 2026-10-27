@@ -58,12 +58,12 @@ export interface AppState {
   devCode: string | null;
   authBusy: boolean;
   authError: string | null;
-  previewing: Persona | null;
+  previewing: string | null;
 
   // mirrors of `me` that screens read directly
   compName: string;
   look: Look;
-  voice: Persona;
+  voice: string;
   consent: Consent | null;
 
   // conversation + call

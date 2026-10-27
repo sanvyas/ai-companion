@@ -1,6 +1,6 @@
 import { ApiError, api, isDemo, type Consent, type ConsentUpdate, type Me, type Privacy, type PrivacyUpdate } from '../api';
 import { trackStep } from './analytics';
-import { builtinHelplines, getState, resetState, set, type Language, type Persona, type Look } from './store';
+import { builtinHelplines, getState, resetState, set, type Language, type Look } from './store';
 
 // Boot, sign-in and the person's own settings. The server is the source of truth: screens read mirrors in the store,
 // writes go to the API first-class (optimistic where it feels instant, rolled back with a message if it fails).
@@ -27,7 +27,14 @@ export async function boot() {
   void api.publicConfig().then(cfg => set({ cfg })).catch(() => undefined);
   void api.helplines().then(h => { if (h.length) set({ helplines: h }); }).catch(() => set({ helplines: builtinHelplines() }));
 
-  if (!isDemo && (await api.restoreSession().catch(() => false))) { await enterApp(false); return; }
+  if (!isDemo && (await api.restoreSession().catch(() => false))) {
+    // A sign-up that was never finished doesn't resume halfway through setup: coming back starts again from the first
+    // screen, signed out. People who finished setup stay signed in.
+    const unfinished = await api.me().then(m => !m.onboarded).catch(() => false);
+    if (unfinished) { await api.signOut().catch(() => undefined); set({ phase: 'out', screen: 'welcome' }); return; }
+    await enterApp(false);
+    return;
+  }
   set({ phase: 'out', screen: 'welcome' });
 }
 
@@ -147,7 +154,7 @@ export async function updatePrivacy(patch: PrivacyUpdate): Promise<Privacy | nul
   }
 }
 
-export async function updateCompanion(patch: { name?: string; look?: Look; voice?: Persona }) {
+export async function updateCompanion(patch: { name?: string; look?: Look; voice?: string }) {
   const s0 = getState();
   set({ compName: patch.name ?? s0.compName, look: patch.look ?? s0.look, voice: patch.voice ?? s0.voice });
   try {

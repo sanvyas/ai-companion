@@ -4,6 +4,7 @@ import { set, useStore } from '../state/store';
 import { detectPushState, disablePush, enablePush } from '../state/push';
 import { exportMyData, forgetAllMemories, forgetTheme, go, loadMemory, loadYou, openPaywall, openSheet, removeMemory, saveMemoryEdit, signOutNow, toast, toggleMemoryHidden, updateConsent, updatePrefs, updatePrivacy } from '../state/actions';
 import { Companion, lookName } from '../components/figures';
+import { voiceLabel } from '../domain/voices';
 import { BackHeader, Card, Chevron, Intro, PrimaryButton, Scroll, Segmented, TextButton, ToggleRow, TabHeader, flex } from '../components/ui';
 import { buildNotification, NotifIcon } from './Lock';
 
@@ -31,7 +32,7 @@ export function You() {
   const groups: { title: string; items: R[] }[] = [
     { title: 'Your companion', items: [
       { label: `What ${compName} remembers`, desc: 'See, edit or delete what I’ve learned.', value: String(memN), tap: () => go('memory') },
-      { label: 'Look and voice', desc: 'Pick a character and hear the voices.', tap: () => go('studio') },
+      { label: 'Avatar and voice', desc: 'Pick a character and a voice, and hear them first.', tap: () => go('studio') },
     ] },
     { title: 'Reminders and calls', items: [
       { label: 'Check-ins and reminders', desc: 'Gentle nudges, calls and the Sunday letter.', value: prefs && (prefs.push || prefs.calls) ? 'On' : 'Off', tap: () => go('notifs') },
@@ -61,7 +62,7 @@ export function You() {
           <div style={{ width: 56, height: 56, borderRadius: '50%', overflow: 'hidden', background: C.sand, flex: 'none', display: 'grid', placeItems: 'center' }}><Companion look={look} size={look === 'orb' ? 56 : 56} /></div>
           <div style={{ flex: 1, ...flex('column', 2) }}>
             <span style={{ fontSize: 17, fontWeight: 600 }}>{compName}</span>
-            <span style={{ fontSize: 15, color: C.muted }}>{lookName(look)} · {voice[0].toUpperCase() + voice.slice(1)} voice · {LANG_LABEL[language]}</span>
+            <span style={{ fontSize: 15, color: C.muted }}>{lookName(look)} · {voiceLabel(voice)} voice · {LANG_LABEL[language]}</span>
             <span style={{ fontSize: 15, color: C.teal, fontWeight: 600, marginTop: 4 }}>See and hear your companion</span>
           </div>
         </button>

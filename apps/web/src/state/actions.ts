@@ -156,7 +156,7 @@ function playLine() {
   set({ pLineText: text, pLineIdx: pLine });
   const next = () => { if (!getState().pPlaying) return; pLine++; pNext = setTimeout(playLine, it.kind === 'sleep' ? 3200 : 2600); };
   if (!st.voiceAudio || !ttsSupported()) { pNext = setTimeout(next, 4200); return; }
-  say(text, { persona: st.voice, rateMul: it.kind === 'sleep' ? 0.8 : 0.88 }, next);
+  say(text, { rateMul: it.kind === 'sleep' ? 0.8 : 0.88 }, next);
 }
 
 export function openPlayer(id: string) {

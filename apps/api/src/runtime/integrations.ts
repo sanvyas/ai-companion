@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { testOpenRouter } from './openrouter.js';
+import { testSarvam } from '../providers/sarvam.js';
 
 // Every outside service the platform can use. The portal lists these, stores the credentials sealed in the database,
 // and the live app reads them from there (falling back to the environment variable if none is saved).
@@ -68,9 +69,9 @@ export const INTEGRATIONS: IntegrationDef[] = [
     fields: [key('api_key', 'OPENROUTER_API_KEY', { pattern: /^sk-or-[\w-]{20,}$/, hint: 'Starts with sk-or-' })], test: testOpenRouter,
   },
   {
-    id: 'sarvam', label: 'Sarvam', category: 'Voice', purpose: 'Indic speech-to-text and text-to-speech (Hindi, Hinglish, English voices).',
-    status: 'pending', statusNote: 'Key is stored. The voice adapter isn’t built yet; it comes after the vendor test.', docsUrl: 'https://dashboard.sarvam.ai', hosts: ['api.sarvam.ai'],
-    fields: [key('api_key', 'SARVAM_API_KEY')],
+    id: 'sarvam', label: 'Sarvam', category: 'Voice', purpose: 'Natural Indian voices for the companion (Hindi, Hinglish, English). People pick one in the app by language.',
+    status: 'live', statusNote: 'Speaks the companion’s replies for anyone who picks a Sarvam voice, and powers the voice previews. Listening (speech-to-text) still uses the phone.', docsUrl: 'https://dashboard.sarvam.ai', hosts: ['api.sarvam.ai'],
+    fields: [key('api_key', 'SARVAM_API_KEY')], test: testSarvam,
   },
   {
     id: 'soniox', label: 'Soniox', category: 'Voice', purpose: 'Low-cost streaming speech-to-text (challenger in the vendor test).',

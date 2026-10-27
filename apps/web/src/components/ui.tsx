@@ -6,7 +6,8 @@ import { Svg, P } from './icons';
 const flex = (dir: 'row' | 'column' = 'column', gap = 0): CSSProperties => ({ display: 'flex', flexDirection: dir, gap });
 
 export const Screen = ({ children, bg = C.paper, style, className, label }: { children: ReactNode; bg?: string; style?: CSSProperties; className?: string; label?: string }) => (
-  <main aria-label={label} className={className} style={{ position: 'absolute', inset: 0, ...flex('column'), background: bg, ...style }}>
+  // data-scroll + overflow: on a short phone or with the keyboard open, the content scrolls instead of being cut off.
+  <main aria-label={label} className={className} data-scroll="1" style={{ position: 'absolute', inset: 0, ...flex('column'), overflowY: 'auto', background: bg, ...style }}>
     {children}
   </main>
 );

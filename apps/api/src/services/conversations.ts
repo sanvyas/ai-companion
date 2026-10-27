@@ -10,6 +10,7 @@ import { SAFE_FALLBACK_LINE, classifyWithModel, logSafetyEvent, prefilter, revie
 import { retrieveMemories } from './memory.js';
 import { getCompanion, getTrusted } from './profile.js';
 import { getDek } from './users.js';
+import { isServerVoice } from './voices.js';
 
 const HISTORY_LIMIT = 24;
 
@@ -20,7 +21,7 @@ export interface LiveSession {
   language: 'en' | 'hinglish' | 'hi';
   nickname: string;
   timezone: string;
-  companion: { name: string; look: string; voice: 'warm' | 'steady' | 'bright' };
+  companion: { name: string; look: string; voice: string };
   remember: boolean;
   persist: boolean;
   hasSafetyPlan: boolean;
@@ -70,7 +71,8 @@ export async function createConversation(ctx: Ctx, userId: string, mode: Convers
       if (!ok.rowCount) throw notFound('That conversation');
     }
     const { rows } = await tx.query<{ id: string }>('INSERT INTO conversations (user_id, mode, continued_from, first_run) VALUES ($1,$2,$3,$4) RETURNING id', [userId, mode, continueFrom ?? null, first]);
-    return { id: rows[0].id, mode, rtcToken: null as null, voice: { serverStt: !!ctx.stt, serverTts: !!ctx.tts } };
+    const voice = (await tx.query<{ voice: string }>('SELECT voice FROM companions WHERE user_id = $1', [userId])).rows[0]?.voice ?? 'warm';
+    return { id: rows[0].id, mode, rtcToken: null as null, voice: { serverStt: !!ctx.stt, serverTts: !!ctx.tts?.configured && mode !== 'text' && isServerVoice(voice) } };
   });
 }
 

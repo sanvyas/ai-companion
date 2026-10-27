@@ -115,6 +115,8 @@ function onServer(m: ServerMsg) {
     case 'visemes': return; // the avatar follows loudness today; vendor visemes can drive it later
     case 'error': {
       set({ typing: false, callPhase: 'listening' });
+      // The server voice couldn't speak this sentence; its text comes back so the phone can say it instead.
+      if (m.code === 'tts_failed') { if (speaksAloud()) { browserQueue.push(m.message); drain(); } return; }
       if (m.code === 'rate_limited' || m.code === 'llm_failed' || m.code === 'llm_unavailable') appendAi(m.message);
       else toastFn(m.message);
       return;
@@ -142,7 +144,7 @@ function drain() {
   browserSpeaking = true;
   set({ callPhase: 'speaking' });
   const s = getState();
-  say(next, { persona: s.voice, lang: s.me?.language === 'hi' ? 'हिन्दी' : 'English' }, () => { browserSpeaking = false; drain(); }, () => { browserSpeaking = false; browserQueue = []; startMouthBrief(); });
+  say(next, { lang: s.me?.language === 'hi' ? 'हिन्दी' : 'English' }, () => { browserSpeaking = false; drain(); }, () => { browserSpeaking = false; browserQueue = []; startMouthBrief(); });
 }
 
 function startMouthBrief() { startMouth(); setTimeout(stopMouth, 1800); }

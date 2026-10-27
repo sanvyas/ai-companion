@@ -1,7 +1,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
-import { api, isDemo } from './api';
+import { api, isDemo, type VoiceList } from './api';
 import { getState, resetState, set } from './state/store';
 import { enterApp, go, openChat, openPaywall, sendChat, startJournal } from './state/actions';
 
@@ -209,5 +209,53 @@ describe('privacy', () => {
     fireEvent.click(screen.getByText('Yes, delete my account and data'));
     await waitFor(() => expect(getState().screen).toBe('welcome'));
     expect(getState().phase).not.toBe('in');
+  });
+});
+
+describe('avatar and voice', () => {
+  const NATURAL: VoiceList = { language: 'hi', serverVoices: true, items: [
+    { id: 'sarvam:priya', label: 'Priya', gender: 'female', provider: 'sarvam' }, { id: 'sarvam:rahul', label: 'Rahul', gender: 'male', provider: 'sarvam' },
+    { id: 'warm', label: 'Warm', gender: null, provider: 'device' }, { id: 'steady', label: 'Steady', gender: null, provider: 'device' }, { id: 'bright', label: 'Bright', gender: null, provider: 'device' },
+  ] };
+  afterEach(() => { vi.restoreAllMocks(); });
+
+  it('lists the natural voices for the person’s language, and saves the choice straight away', async () => {
+    const asked: (string | undefined)[] = [];
+    vi.spyOn(api, 'voices').mockImplementation(async l => { asked.push(l); return NATURAL; });
+    await signedIn('studio');
+    set({ language: 'hi' });
+    render(<App />);
+    const group = await screen.findByRole('radiogroup', { name: 'Voice' });
+    expect(await within(group).findByText('Priya')).toBeInTheDocument();
+    expect(within(group).getByText('Woman’s voice')).toBeInTheDocument();
+    expect(within(group).getByText('Man’s voice')).toBeInTheDocument();
+    expect(asked).toContain('hi');
+    fireEvent.click(within(group).getByRole('radio', { name: /Rahul/ }));
+    await waitFor(() => expect(getState().voice).toBe('sarvam:rahul'));
+    expect((await api.me()).companion.voice).toBe('sarvam:rahul');
+    expect(screen.getByText(/Rahul voice/)).toBeInTheDocument();
+  });
+
+  it('saves the avatar too, so it shows everywhere else', async () => {
+    await signedIn('studio');
+    render(<App />);
+    const looks = await screen.findByRole('radiogroup', { name: 'Avatar' });
+    fireEvent.click(within(looks).getByRole('radio', { name: /Noor/ }));
+    await waitFor(() => expect(getState().look).toBe('noor'));
+    expect((await api.me()).companion.look).toBe('noor');
+  });
+
+  it('says so when a natural voice can’t be previewed, and offers only the phone’s voices when none are connected', async () => {
+    vi.spyOn(api, 'voices').mockResolvedValue(NATURAL);
+    vi.spyOn(api, 'previewVoice').mockRejectedValue(Object.assign(new Error('The voices aren’t connected yet. You can still use the phone’s own voices.'), { code: 'voice_unavailable' }));
+    await signedIn('studio');
+    render(<App />);
+    const group = await screen.findByRole('radiogroup', { name: 'Voice' });
+    fireEvent.click(await within(group).findByRole('button', { name: 'Preview Priya' }));
+    await waitFor(() => expect(getState().previewing).toBeNull());
+    cleanup();
+    vi.spyOn(api, 'voices').mockResolvedValue({ language: 'en', serverVoices: false, items: NATURAL.items.slice(2) });
+    render(<App />);
+    expect(await screen.findByText(/Natural voices aren’t switched on yet/)).toBeInTheDocument();
   });
 });

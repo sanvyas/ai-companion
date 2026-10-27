@@ -1,5 +1,6 @@
-import type { ConversationMode, Language, Voice } from '@saathi/contracts';
+import type { ConversationMode, Language } from '@saathi/contracts';
 import { prompt } from '../runtime/prompts.js';
+import { personaOf, type Persona } from './voices.js';
 
 // System prompts from PRD 6.1 / 6.2 / 6.3. The wording lives in runtime/promptDefs.ts and can be replaced from the
 // admin portal; this file assembles it. The STABLE block is identical across a user's turns so it can be cached;
@@ -11,7 +12,7 @@ const LANGUAGE: Record<Language, string> = {
   hi: 'Hindi, written in Devanagari',
 };
 
-const VOICE: Record<Voice, string> = {
+const VOICE: Record<Persona, string> = {
   warm: 'warm = soft and caring',
   steady: 'steady = calm, slower, grounded',
   bright: 'bright = lighter, a little more upbeat',
@@ -20,8 +21,8 @@ const VOICE: Record<Voice, string> = {
 /** Reads a prompt by key. The live app uses the published versions; the portal's test bench passes a getter with a draft swapped in. */
 export type PromptGetter = (key: string, vars?: Record<string, string>) => string;
 
-export function stableSystem(p: { companionName: string; nickname: string; language: Language; voice: Voice }, get: PromptGetter = prompt): string {
-  return get('companion.stable', { companionName: p.companionName, nickname: p.nickname.trim() || 'the user', language: LANGUAGE[p.language], voice: VOICE[p.voice] });
+export function stableSystem(p: { companionName: string; nickname: string; language: Language; voice: string }, get: PromptGetter = prompt): string {
+  return get('companion.stable', { companionName: p.companionName, nickname: p.nickname.trim() || 'the user', language: LANGUAGE[p.language], voice: VOICE[personaOf(p.voice)] });
 }
 
 export interface DynamicInput {

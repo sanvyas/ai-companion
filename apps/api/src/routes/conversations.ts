@@ -7,7 +7,7 @@ import { verifyAccess } from '../auth/tokens.js';
 import { AppError } from '../errors.js';
 import { parse, uid } from '../http.js';
 import { handleTurn, createConversation, endConversation, handleOpening, handleSilence, listConversations, listMessages, needsOpening, openSession, type LiveSession } from '../services/conversations.js';
-import { VoiceBridge } from '../services/voice.js';
+import { VoiceBridge, speaksFromServer } from '../services/voice.js';
 import { withIdempotency } from '../services/idempotency.js';
 
 const TURNS_PER_MINUTE = 20;
@@ -83,7 +83,7 @@ export function conversationRoutes(app: FastifyInstance, ctx: Ctx) {
             session = s;
             voice = new VoiceBridge(ctx, s, socket, send);
             clearTimeout(authTimer);
-            send({ type: 'ready', conversationId: id, mode: s.mode, companion: s.companion, voice: { serverStt: !!ctx.stt, serverTts: !!ctx.tts }, opening: s.opening });
+            send({ type: 'ready', conversationId: id, mode: s.mode, companion: s.companion, voice: { serverStt: !!ctx.stt, serverTts: speaksFromServer(ctx, s) }, opening: s.opening });
             if (needsOpening(s)) chain = chain.then(() => handleOpening(ctx, s, mm => voice!.emit(mm))).catch(e => ctx.log.warn({ err: (e as Error).message }, 'opening failed'));
           } catch (e) {
             const ae = e instanceof AppError ? e : null;

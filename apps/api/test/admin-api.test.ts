@@ -229,7 +229,8 @@ describe('integrations and keys', () => {
     const by = Object.fromEntries(r.json().items.map((i: { id: string; status: string }) => [i.id, i.status]));
     expect(by.anthropic).toBe('live');
     expect(by.google).toBe('live');
-    expect(by.sarvam).toBe('pending');
+    expect(by.sarvam).toBe('live');
+    expect(by.soniox).toBe('pending');
     expect(by.msg91).toBe('pending');
   });
 });

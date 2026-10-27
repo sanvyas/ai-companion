@@ -4,7 +4,7 @@ import { mockCompanion } from '../providers/companion';
 import { EVENTS } from '../data/outside';
 import { SEED_JOURNAL, SEED_MEMORIES, SEED_PLAN, MOOD_SERIES, WINS, SAFETY_PLAN, TRUSTED_CONTACT } from '../data/seed';
 import { YOUTH_HELPLINES, HELPLINES } from '../data/helplines';
-import type { Api, ConvEvents, ConvTransport, Helpline, Insights, JournalEntry, MemoryItem, Me, OutsideEvent, PlanItem, SafetyPlan } from './types';
+import { ApiError, type Api, type ConvEvents, type ConvTransport, type Helpline, type Insights, type JournalEntry, type MemoryItem, type Me, type OutsideEvent, type PlanItem, type SafetyPlan } from './types';
 
 // An in-memory stand-in for the backend, used only for design review (?demo). It follows the same interface and
 // the same rules as the server (consent, one-time hook, nothing saved until Done) with seeded demo data and no
@@ -70,6 +70,8 @@ export class DemoApi implements Api {
   }
   async putConsent(b: Parameters<Api['putConsent']>[0]) { this._me.consent = { ...this._me.consent, ...b, acceptedAt: this._me.consent.acceptedAt ?? new Date().toISOString() }; return structuredClone(this._me.consent); }
   async putPrivacy(b: Parameters<Api['putPrivacy']>[0]) { this._me.privacy = { ...this._me.privacy, ...b }; return structuredClone(this._me.privacy); }
+  async voices(language = 'en') { return { language, serverVoices: false, items: [{ id: 'warm', label: 'Warm', gender: null, provider: 'device' as const }, { id: 'steady', label: 'Steady', gender: null, provider: 'device' as const }, { id: 'bright', label: 'Bright', gender: null, provider: 'device' as const }] }; }
+  async previewVoice(): Promise<{ audio: string; mime: string; sampleRate: number }> { await wait(); throw new ApiError(503, 'voice_unavailable', 'The voices aren’t connected in this preview.'); }
   async putCompanion(b: Parameters<Api['putCompanion']>[0]) { this._me.companion = { ...this._me.companion, ...b }; return structuredClone(this._me.companion); }
   async declareMinor() { this.signed = false; this.cb.forEach(f => f()); }
   async deleteAccount() { this.signed = false; this.cb.forEach(f => f()); }

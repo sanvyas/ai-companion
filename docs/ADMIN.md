@@ -52,7 +52,8 @@ Saving a key makes the app use it immediately only where the code exists.
 | Google sign-in client id | Used by the app. |
 | Web push (VAPID) | Used by the app. |
 | GitHub token | Used by the Developer page. |
-| Sarvam, Soniox, ElevenLabs, AssemblyAI, MSG91 | **Key stored only.** The adapters are not built yet; they follow the vendor test (`docs/PROVIDERS.md`). Saving a key changes nothing for users yet. |
+| Sarvam | **Used by the app (voices).** Add the key and people can pick a natural Indian voice in the app; Test connection speaks one test word. Listening (speech-to-text) is not built yet. |
+| Soniox, ElevenLabs, AssemblyAI, MSG91 | **Key stored only.** The adapters are not built yet; they follow the vendor test (`docs/PROVIDERS.md`). Saving a key changes nothing for users yet. |
 
 The starter price rates (migration `0011`) for those vendors are unverified placeholders. Check them against each vendor's price page before relying on the cost numbers. Anthropic rates are deliberately not pre-filled: enter them on Cost and pricing, otherwise Claude spend shows as unpriced.
 
@@ -123,3 +124,13 @@ Model settings are dropdowns, validated against the list in `apps/api/src/runtim
 4. **Then run the Evaluations.** A different model can judge risky messages differently, and the safety suites are how you check that it still catches the ones that matter before you invite people.
 
 OpenRouter reports the exact cost of each call, which the Cost page records as-is (converted at the rate under Settings → Cost). The default OpenRouter model ids are starting points: choose the ones you actually want from the live list. Prompt caching is not used through OpenRouter, so long conversations can cost more per message than through Anthropic directly.
+
+## Voices and avatars
+
+People choose their companion's **avatar** (Orb, Asha, Dev, Noor, Kabir) and **voice** in the app: during setup, and later under You → Avatar and voice. Both save immediately and are used everywhere (calls, walks, Today).
+
+Voices come from Sarvam's `bulbul:v3` model once its key is added under Integrations. The list the app shows depends on the person's language (English, Hinglish, Hindi) and is the same eight voices for now: Ritu, Priya, Neha, Pooja (women's voices) and Shubh, Aditya, Rahul, Rohan (men's voices), as labelled on Sarvam's voices page. Each has a Preview button that plays a short sample; samples are generated once per voice and language and kept in memory, so previewing costs almost nothing. The three on-device voices (Warm, Steady, Bright) are always offered as the fallback.
+
+During a call, a replies' sentences are spoken by Sarvam for anyone who chose a Sarvam voice (never in plain text chat). If Sarvam fails for a sentence, the app says that sentence with the phone's own voice instead. Spend is recorded per character (provider `sarvam`, rate on Cost and pricing) so it shows up on the Cost page.
+
+To add voices, add a line to `apps/api/src/services/voices.ts` (speaker name and gender, from Sarvam's list). Only voices listed there can be chosen. The pricing seed for Sarvam (₹3 per 1,000 characters) is unverified: check it on their price page.

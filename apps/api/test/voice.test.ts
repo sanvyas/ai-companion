@@ -22,9 +22,13 @@ class FakeStt implements SttProvider {
 }
 class FakeTts implements TtsProvider {
   name = 'fake';
+  configured = true;
   spoken: string[] = [];
+  fail = false;
+  async synthesize(): Promise<{ wav: Buffer; pcm: Buffer; sampleRate: number }> { return { wav: Buffer.alloc(0), pcm: Buffer.alloc(0), sampleRate: 24000 }; }
   async *stream(o: { text: string; signal?: AbortSignal }): AsyncIterable<TtsChunk> {
     this.spoken.push(o.text);
+    if (this.fail) throw new Error('vendor down');
     for (let i = 0; i < 3; i++) {
       if (o.signal?.aborted) return;
       await new Promise(r => setTimeout(r, 15));
@@ -46,8 +50,10 @@ beforeAll(async () => {
 });
 afterAll(async () => { await t.app.close(); });
 
-async function open(mode = 'voice') {
+async function open(mode = 'voice', pickServerVoice = true) {
   const a = await signIn(t);
+  // Server speech is used only for someone who picked one of the server's voices.
+  if (pickServerVoice) await t.app.inject({ method: 'PUT', url: '/me/companion', headers: a.headers, payload: { voice: 'sarvam:priya' } });
   const c = (await t.app.inject({ method: 'POST', url: '/conversations', headers: a.headers, payload: { mode } })).json();
   const ws = new WebSocket(`ws://127.0.0.1:${port}/conversations/${c.id}/stream`);
   const events: { json?: Record<string, unknown>; bin?: Buffer }[] = [];
@@ -83,6 +89,30 @@ describe('server voice pipeline', () => {
     expect(events.find(e => e.json?.type === 'visemes')).toBeTruthy();
     expect(tts.spoken.join(' ')).toContain('That sounds like a lot to carry.');
     ws.close();
+  });
+
+  it('hands the words back to the app when the server voice fails, so the phone can say them', async () => {
+    const { ws, events, until } = await open();
+    tts.fail = true;
+    t.llm.reply = () => 'I am right here with you.';
+    try {
+      ws.send(JSON.stringify({ type: 'turn', text: 'hello there' }));
+      await until(() => events.some(e => e.json?.type === 'error' && e.json?.code === 'tts_failed'));
+      expect(events.find(e => e.json?.code === 'tts_failed')!.json!.message).toBe('I am right here with you.');
+    } finally { tts.fail = false; t.llm.reply = null; ws.close(); }
+  });
+
+  it('does not use the server voice in text chat, or for someone who chose a phone voice', async () => {
+    const text = await open('text');
+    expect(text.events.find(e => e.json?.type === 'ready')!.json!.voice).toEqual({ serverStt: true, serverTts: false });
+    text.ws.close();
+    const phone = await open('voice', false);
+    expect(phone.events.find(e => e.json?.type === 'ready')!.json!.voice).toEqual({ serverStt: true, serverTts: false });
+    tts.spoken.length = 0;
+    phone.ws.send(JSON.stringify({ type: 'turn', text: 'hello again' }));
+    await phone.until(() => phone.events.some(e => e.json?.type === 'done'));
+    expect(tts.spoken).toEqual([]);
+    phone.ws.close();
   });
 
   it('the fixed crisis script is spoken aloud, and no model sentence is generated', async () => {

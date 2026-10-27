@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { C, serif, ring, shadow } from '../theme';
 import { useStore, set } from '../state/store';
 import { finishOnboarding, go, sendCode, startCall, toast, updateCompanion, verifyCode } from '../state/actions';
-import { say, stopSpeech } from '../audio/speech';
+import { stopSpeech } from '../audio/speech';
+import { VoicePicker } from '../components/VoicePicker';
 import { Companion, LOOK_OPTIONS, Orb } from '../components/figures';
 import { GoogleButton } from '../components/GoogleButton';
 import { Body, Card, CallLink, PrimaryButton, Screen, TextButton, Title, ToggleRow, flex, onbPad } from '../components/ui';
@@ -113,14 +114,14 @@ export function NameScreen() {
         {s.err && <div role="alert" style={{ fontSize: 15, color: '#8A2D1A', marginTop: 12, lineHeight: 1.4 }}>{s.err}</div>}
         {s.cfg && !s.cfg.otp && <div role="status" style={{ fontSize: 15, color: C.amberText, background: C.amber, borderRadius: 16, padding: '12px 14px', marginTop: 12, lineHeight: 1.4 }}>Sign-in by phone isn’t switched on yet. Please check back soon.</div>}
         {s.cfg === null && <div role="status" style={{ fontSize: 15, color: C.amberText, background: C.amber, borderRadius: 16, padding: '12px 14px', marginTop: 12 }}>I can’t reach Saathi right now. Check your internet.</div>}
-        {s.cfg?.google && s.cfg.googleClientId && (
-          <div style={{ ...flex('column', 10), marginTop: 20 }}>
-            <div style={{ textAlign: 'center', fontSize: 13, color: C.muted }}>or</div>
-            <GoogleButton clientId={s.cfg.googleClientId} />
-          </div>
-        )}
-        <div style={{ marginTop: 'auto', paddingTop: 20 }}>
+        <div style={{ marginTop: 'auto', paddingTop: 20, ...flex('column', 14) }}>
           <PrimaryButton type="submit" disabled={s.busy || (!!s.cfg && !s.cfg.otp)} style={{ width: '100%', opacity: s.busy ? 0.7 : 1 }}>{s.busy ? 'Sending…' : 'Send me a code'}</PrimaryButton>
+          {s.cfg?.google && s.cfg.googleClientId && (
+            <>
+              <div aria-hidden style={{ ...flex('row', 12), alignItems: 'center', color: C.muted, fontSize: 13 }}><span style={{ flex: 1, height: 1, background: C.sandDark }} />or<span style={{ flex: 1, height: 1, background: C.sandDark }} /></div>
+              <GoogleButton clientId={s.cfg.googleClientId} />
+            </>
+          )}
         </div>
       </form>
     </Screen>
@@ -152,29 +153,18 @@ export function OtpScreen() {
   );
 }
 
-const VOICES = [{ id: 'warm' as const, label: 'Warm' }, { id: 'steady' as const, label: 'Steady' }, { id: 'bright' as const, label: 'Bright' }];
-
 export function CompanionPicker() {
   const look = useStore(s => s.look);
   const voice = useStore(s => s.voice);
-  const previewing = useStore(s => s.previewing);
-  const speakingNow = useStore(s => s.speakingNow);
   const compName = useStore(s => s.compName);
-  const nick = useStore(s => s.nick);
   const [name, setName] = useState(compName);
-
-  const preview = (k: typeof VOICES[number]['id']) => {
-    if (previewing === k && speakingNow) { stopSpeech(); return; }
-    set({ previewing: k, voice: k });
-    say(`Hi ${nick}. I’m ${name || 'Saathi'}. I’m here whenever you want to talk.`, { persona: k }, () => set({ previewing: null }), () => toast('This browser can’t play voices.'));
-  };
 
   return (
     <Screen style={{ padding: `calc(var(--sa-top) + 76px) 24px calc(var(--sa-bottom) + 32px)` }}>
       <div data-scroll="1" style={{ ...flex('column'), flex: 1, overflow: 'auto', minHeight: 0 }}>
         <Title size={28} style={{ lineHeight: 1.2 }}>Choose your companion</Title>
-        <div style={{ fontSize: 15, color: C.muted, marginTop: 20, marginBottom: 12 }}>Look</div>
-        <div role="radiogroup" aria-label="Look" style={{ display: 'grid', gridTemplateColumns: 'repeat(5,minmax(0,1fr))', gap: 8 }}>
+        <div style={{ fontSize: 15, color: C.muted, marginTop: 20, marginBottom: 12 }}>Avatar</div>
+        <div role="radiogroup" aria-label="Avatar" style={{ display: 'grid', gridTemplateColumns: 'repeat(5,minmax(0,1fr))', gap: 8 }}>
           {LOOK_OPTIONS.map(o => (
             <button key={o.id} role="radio" aria-checked={look === o.id} onClick={() => set({ look: o.id })} style={{ background: 'none', border: 'none', padding: 0, ...flex('column', 6), alignItems: 'center' }}>
               <div style={{ width: 60, height: 60, borderRadius: '50%', boxShadow: look === o.id ? ring : 'none', overflow: 'hidden', background: C.sand, display: 'grid', placeItems: 'center' }}>
@@ -184,20 +174,8 @@ export function CompanionPicker() {
             </button>
           ))}
         </div>
-        <div id="voice-label" style={{ fontSize: 15, color: C.muted, marginTop: 24, marginBottom: 10 }}>Voice</div>
-        <div role="radiogroup" aria-labelledby="voice-label" style={flex('column', 8)}>
-          {VOICES.map(v => {
-            const on = voice === v.id;
-            return (
-              <div key={v.id} style={{ ...flex('row', 4), alignItems: 'center', padding: '4px 10px 4px 0', borderRadius: 24, border: `1.5px solid ${on ? C.teal : 'transparent'}`, background: on ? C.tealSoft : C.white }}>
-                <button role="radio" aria-checked={on} onClick={() => set({ voice: v.id })} style={{ flex: 1, height: 52, textAlign: 'left', padding: '0 0 0 20px', border: 'none', background: 'none', fontSize: 17, fontWeight: 600 }}>{v.label}</button>
-                <button onClick={() => preview(v.id)} style={{ flex: 'none', height: 44, padding: '0 16px', borderRadius: 22, border: 'none', background: C.sand, fontSize: 15, color: C.tealDark, fontWeight: 600 }}>
-                  {previewing === v.id && speakingNow ? 'Stop' : 'Preview'}
-                </button>
-              </div>
-            );
-          })}
-        </div>
+        <div style={{ fontSize: 15, color: C.muted, marginTop: 24, marginBottom: 10 }}>Voice</div>
+        <VoicePicker value={voice} onPick={v => set({ voice: v })} />
         <label htmlFor="cname" style={{ fontSize: 15, color: C.muted, marginTop: 24, marginBottom: 10 }}>Name (you can change it any time)</label>
         <input id="cname" value={name} maxLength={24} onChange={e => setName(e.target.value)} style={{ height: 56, borderRadius: 20, border: 'none', background: C.sand, padding: '0 20px', fontSize: 17, outline: 'none' }} />
         <div style={{ marginTop: 28, flex: 'none' }}>

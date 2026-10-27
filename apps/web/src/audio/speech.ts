@@ -1,4 +1,6 @@
 import { getState, set, type Persona } from '../state/store';
+import { stopClip } from './clip';
+import { personaOf } from '../domain/voices';
 
 // Browser TTS stand-in (PRD §12). TODO(tts-adapter): production TTS with visemes + per-voice personas.
 let utt: SpeechSynthesisUtterance | null = null;
@@ -43,6 +45,7 @@ export function stopMouth() {
 }
 
 export function stopSpeech() {
+  stopClip();
   utt = null;
   speaking = false;
   if (guard) clearTimeout(guard);
@@ -62,7 +65,7 @@ export function pauseNarration() {
 export function say(text: string, opts: { persona?: Persona; lang?: string; rateMul?: number } = {}, onEnd?: () => void, onUnsupported?: () => void) {
   if (!ttsSupported()) { onUnsupported?.(); onEnd?.(); return; }
   speechSynthesis.cancel();
-  const persona = opts.persona || getState().voice;
+  const persona = opts.persona || personaOf(getState().voice);
   const lang = opts.lang || 'English';
   const u = new SpeechSynthesisUtterance(text);
   const v = pickVoice(persona, lang);

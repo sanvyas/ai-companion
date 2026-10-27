@@ -24,7 +24,7 @@ const { app, ctx } = await buildApp(cfg, { db });
 await bootstrapInvites(ctx, console.log);
 const stopWorker = cfg.RUN_WORKER ? startWorker(ctx) : () => undefined;
 await app.listen({ port: cfg.PORT, host: cfg.HOST });
-app.log.info({ llm: ctx.llm.name, otp: ctx.otp.name, push: ctx.push.enabled, stt: !!ctx.stt, tts: !!ctx.tts, calls: !!ctx.telephony }, 'Saathi API ready');
+app.log.info({ llm: ctx.llm.name, otp: ctx.otp.name, push: ctx.push.enabled, stt: !!ctx.stt, tts: !!ctx.tts?.configured, calls: !!ctx.telephony }, 'Saathi API ready');
 
 for (const sig of ['SIGINT', 'SIGTERM'] as const) {
   process.on(sig, async () => {
