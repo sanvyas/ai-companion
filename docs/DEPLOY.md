@@ -5,7 +5,7 @@ Three pieces, three places:
 | Piece | Where | Address |
 |---|---|---|
 | Database | Supabase, Mumbai | project `bajnpbdjvbyasrovotsc` |
-| API (and scheduler) | Render, from `render.yaml` | `https://saathi-api.onrender.com` (or whatever Render assigns) |
+| API (and scheduler) | Render, from `render.yaml` | `https://saathi-api-mpdh.onrender.com` (or whatever Render assigns) |
 | Citizen app | Netlify `saathi-app-tno6` | https://saathi-app-tno6.netlify.app |
 | Admin portal | Netlify `saathi-admin-2ehw` | https://saathi-admin-2ehw.netlify.app |
 
