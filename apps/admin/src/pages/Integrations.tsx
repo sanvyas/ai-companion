@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { api, useLoad } from '../lib/api';
 import { ago } from '../lib/format';
 import { useSession } from '../lib/session';
+import { ModelPicker } from '../lib/ModelPicker';
 import { Badge, Banner, Button, Card, Confirm, Copy, Dialog, Field, Loading, PageHead, Problem, useAction } from '../lib/ui';
 
 interface FieldStatus { name: string; label: string; secret: boolean; hint?: string; source: 'portal' | 'env' | 'none'; last4: string | null; value: string | null; updatedAt: string | null; updatedBy: string | null; lastTestAt: string | null; lastTestOk: boolean | null; lastTestNote: string | null }
@@ -20,6 +21,44 @@ function SetKey({ it, field, onClose, done }: { it: Integration; field: FieldSta
       </form>
       <p className="muted">Create one at <a href={it.docsUrl} target="_blank" rel="noreferrer">{new URL(it.docsUrl).host}</a>. {it.hosts.length > 0 && <>If this environment limits outbound traffic, allow <span className="mono">{it.hosts.join(', ')}</span>.</>}</p>
     </Dialog>
+  );
+}
+
+interface SettingRow { def: { key: string; label: string }; value: unknown }
+
+/** Everything about using OpenRouter: which vendor serves the app, and which model does each job. */
+function OpenRouterPanel() {
+  const { data, reload } = useLoad<{ items: SettingRow[] }>('/settings');
+  const act = useAction();
+  const [picking, setPicking] = useState<SettingRow | null>(null);
+  const [switching, setSwitching] = useState<'openrouter' | 'anthropic' | null>(null);
+  const get = (k: string) => data?.items.find(i => i.def.key === k);
+  const provider = (get('llm.provider')?.value as string | undefined) ?? 'anthropic';
+  const slots = ['companion', 'safety', 'analysis'].map(s => get(`openrouter.models.${s}`)).filter((x): x is SettingRow => !!x);
+  if (!data) return null;
+  return (
+    <div className="stack" style={{ borderTop: '1px solid var(--line-2)', paddingTop: 12 }}>
+      <div className="row" style={{ justifyContent: 'space-between' }}>
+        <div><b>AI provider</b><div className="muted" style={{ fontSize: 12.5 }}>Right now the app’s replies come from <b>{provider === 'openrouter' ? 'OpenRouter' : 'Anthropic'}</b>.</div></div>
+        {provider === 'openrouter'
+          ? <Button size="sm" onClick={() => setSwitching('anthropic')}>Switch back to Anthropic</Button>
+          : <Button size="sm" variant="primary" onClick={() => setSwitching('openrouter')}>Use OpenRouter for the app</Button>}
+      </div>
+      <div className="muted" style={{ fontSize: 12.5 }}>Models used when OpenRouter is the provider:</div>
+      {slots.map(s => (
+        <div key={s.def.key} className="row" style={{ justifyContent: 'space-between' }}>
+          <div style={{ minWidth: 0 }}><b>{s.def.label.replace('OpenRouter: ', '')}</b><div className="mono muted" style={{ fontSize: 12.5, overflowWrap: 'anywhere' }}>{String(s.value)}</div></div>
+          <Button size="sm" onClick={() => setPicking(s)}>Choose model</Button>
+        </div>
+      ))}
+      {picking && <ModelPicker title={picking.def.label} current={String(picking.value)} onClose={() => setPicking(null)} onChoose={id => act(() => api.put(`/settings/${picking.def.key}`, { value: id }).then(() => { void reload(); return true; }), 'Saved. The app picks it up within seconds.')} />}
+      {switching && (
+        <Confirm title={switching === 'openrouter' ? 'Serve the app from OpenRouter?' : 'Go back to Anthropic?'} confirmLabel="Yes, switch" danger onClose={() => setSwitching(null)} onConfirm={async () => { await act(() => api.put('/settings/llm.provider', { value: switching }).then(() => { void reload(); return true; }), 'Saved. The next message uses it.'); }}>
+          <p>{switching === 'openrouter' ? 'Every reply, safety check, journal reading and letter will use the OpenRouter models above, starting with the next message.' : 'Every reply, safety check, journal reading and letter will use the Claude models set under Settings.'}</p>
+          <p><b>Then run the safety evaluations</b> (Evaluations page). A different model can judge risky messages differently, and they are the check that it still catches the ones that matter.</p>
+        </Confirm>
+      )}
+    </div>
   );
 }
 
@@ -51,6 +90,7 @@ function Card1({ it, reload }: { it: Integration; reload: () => void }) {
           </div>
         ))}
         {test && <div className="row tight"><Badge tone={test.lastTestOk ? 'ok' : 'bad'}>{test.lastTestOk ? 'Test passed' : 'Test failed'}</Badge><span className="muted" style={{ fontSize: 12.5 }}>{test.lastTestNote} · {ago(test.lastTestAt)}</span></div>}
+        {it.id === 'openrouter' && allSet && write && <OpenRouterPanel />}
         {it.hosts.length > 0 && <div className="row tight faint" style={{ fontSize: 12 }}>Hosts to allow: <span className="mono">{it.hosts.join(', ')}</span><Copy text={it.hosts.join('\n')} label="Copy" /></div>}
       </div>
       {editing && <SetKey it={it} field={editing} onClose={() => setEditing(null)} done={reload} />}
@@ -64,11 +104,12 @@ export function Integrations() {
   if (error) return <Problem message={error} onRetry={reload} />;
   if (!data) return <Loading />;
   const cats = [...new Set(data.items.map(i => i.category))];
-  const aiOff = !data.items.find(i => i.id === 'anthropic')!.fields.every(f => f.source !== 'none');
+  const set = (id: string) => !!data.items.find(i => i.id === id)?.fields.every(f => f.source !== 'none');
+  const aiOff = !set('anthropic') && !set('openrouter');
   return (
     <>
       <PageHead title="Integrations and keys" sub="Connect the outside services Saathi uses. Keys are encrypted, never shown again, and take effect without a restart where the app already uses them." />
-      {aiOff && <Banner tone="bad"><span><b>The AI isn’t connected.</b> Conversations are off until the Anthropic key is added below.</span></Banner>}
+      {aiOff && <Banner tone="bad"><span><b>The AI isn’t connected.</b> Conversations are off until the Anthropic or OpenRouter key is added below.</span></Banner>}
       <Banner tone="info"><span><b>Used by the app</b> means the app already reads that key. <b>Key stored only</b> means you can save it now, but the part of the app that would use it (speech, SMS) hasn’t been built yet, so saving it changes nothing for users.</span></Banner>
       {cats.map(c => <div key={c} className="stack"><h2>{c}</h2><div className="grid g2">{data.items.filter(i => i.category === c).map(i => <Card1 key={i.id} it={i} reload={reload} />)}</div></div>)}
     </>

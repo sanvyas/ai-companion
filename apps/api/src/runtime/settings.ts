@@ -7,7 +7,7 @@ import { modelOptions } from './models.js';
 // Settings the founder can change without a deploy. Each one is typed and validated here; the portal renders its
 // editor from this list, and the live app reads the current value from memory (refreshed every few seconds).
 
-export type SettingKind = 'text' | 'long' | 'int' | 'number' | 'bool' | 'json' | 'select';
+export type SettingKind = 'text' | 'long' | 'int' | 'number' | 'bool' | 'json' | 'select' | 'openrouter_model';
 export interface SettingDef {
   key: string;
   group: 'Models' | 'Limits' | 'Access' | 'Cost' | 'Analytics' | 'Developer';
@@ -22,15 +22,22 @@ export interface SettingDef {
   ownerOnly?: boolean;
 }
 
+/** An OpenRouter model id such as vendor/model-name. Whether it exists is checked against OpenRouter's list when it is saved. */
+const orModel = z.string().trim().min(3).max(100).regex(/^[\w.-]+\/[\w.:+-]+$/, 'Use the form vendor/model-name');
 const EnvList = z.array(z.object({ name: z.string().trim().min(1).max(30), url: z.string().url().max(200) })).max(6);
 
 export function settingDefs(cfg: Pick<Config, 'MODEL_COMPANION' | 'MODEL_SAFETY' | 'MODEL_ANALYSIS' | 'BASIC_VOICE_MINUTES_PER_DAY'>): SettingDef[] {
   const choices = modelOptions(cfg.MODEL_COMPANION, cfg.MODEL_SAFETY, cfg.MODEL_ANALYSIS);
   const model = z.enum(choices.map(c => c.value) as [string, ...string[]], { errorMap: () => ({ message: 'Choose one of the listed models.' }) });
   return [
+    { key: 'llm.provider', group: 'Models', label: 'AI provider', description: 'Who serves every model call. “Anthropic” uses the Claude models below. “OpenRouter” uses the models chosen under Integrations → OpenRouter. After switching, run the safety evaluations.', kind: 'select', options: [{ value: 'anthropic', label: 'Anthropic · Claude, direct' }, { value: 'openrouter', label: 'OpenRouter · many vendors, one key' }], schema: z.enum(['anthropic', 'openrouter']), default: 'anthropic', ownerOnly: true },
     { key: 'models.companion', group: 'Models', label: 'Companion model', description: 'Writes the live replies. Speed matters most here.', kind: 'select', options: choices, schema: model, default: cfg.MODEL_COMPANION, ownerOnly: true },
     { key: 'models.safety', group: 'Models', label: 'Safety model', description: 'Classifies every message and reviews risky drafts. Keep it fast and careful.', kind: 'select', options: choices, schema: model, default: cfg.MODEL_SAFETY, ownerOnly: true },
     { key: 'models.analysis', group: 'Models', label: 'Analysis model', description: 'Journal reading, summaries, memory proposals and the weekly letter.', kind: 'select', options: choices, schema: model, default: cfg.MODEL_ANALYSIS, ownerOnly: true },
+
+    { key: 'openrouter.models.companion', group: 'Models', label: 'OpenRouter: companion model', description: 'Used for live replies when the AI provider is OpenRouter. Pick from the list OpenRouter offers.', kind: 'openrouter_model', schema: orModel, default: 'anthropic/claude-sonnet-4.5', ownerOnly: true },
+    { key: 'openrouter.models.safety', group: 'Models', label: 'OpenRouter: safety model', description: 'Classifies every message. Choose something fast and careful, and run the safety evaluation after changing it.', kind: 'openrouter_model', schema: orModel, default: 'anthropic/claude-haiku-4.5', ownerOnly: true },
+    { key: 'openrouter.models.analysis', group: 'Models', label: 'OpenRouter: analysis model', description: 'Journal reading, summaries, memories and the weekly letter.', kind: 'openrouter_model', schema: orModel, default: 'anthropic/claude-opus-4.5', ownerOnly: true },
 
     { key: 'governance.require_approval', group: 'Access', label: 'Changes need approval', description: 'When on, changes made by anyone below owner wait for someone more senior to approve them before they reach the app.', kind: 'bool', schema: z.boolean(), default: true, ownerOnly: true },
 

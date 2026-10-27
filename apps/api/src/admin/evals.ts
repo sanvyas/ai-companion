@@ -51,14 +51,13 @@ export async function runEval(ctx: Ctx, o: { suite: SuiteName; overrides: Record
   if (!cases.length) throw Object.assign(new Error('This suite has no cases yet.'), { status: 409, code: 'no_cases' });
   const started = new Date();
   const get = getterWith(o.overrides);
-  const settings = ctx.rt.settings;
 
   const run = async (c: CaseRow): Promise<CaseResult> => {
     try {
       if (o.suite === 'classifier') {
         const e = c.expect as ClassifierExpect;
         const out = await ctx.llm.json({
-          task: 'admin_eval', model: settings.str('models.safety'), maxTokens: 64, effort: 'low',
+          task: 'admin_eval', model: ctx.rt.model('safety'), maxTokens: 64, effort: 'low',
           system: { stable: o.overrides.classifier ?? classifierSystem() }, messages: [{ role: 'user', content: `Latest message:\n${wrapUser(c.input)}` }],
           schemaName: 'risk', jsonSchema: RISK_JSON, parse: v => RiskSchema.parse(v),
         });
@@ -67,7 +66,7 @@ export async function runEval(ctx: Ctx, o: { suite: SuiteName; overrides: Record
       if (o.suite === 'reviewer') {
         const e = c.expect as ReviewerExpect;
         const out = await ctx.llm.json({
-          task: 'admin_eval', model: settings.str('models.safety'), maxTokens: 64, effort: 'low',
+          task: 'admin_eval', model: ctx.rt.model('safety'), maxTokens: 64, effort: 'low',
           system: { stable: o.overrides.output_check ?? outputCheckSystem() }, messages: [{ role: 'user', content: `Draft reply:\n"""\n${c.input}\n"""` }],
           schemaName: 'output_check', jsonSchema: CHECK_JSON, parse: v => CheckSchema.parse(v),
         });
@@ -78,7 +77,7 @@ export async function runEval(ctx: Ctx, o: { suite: SuiteName; overrides: Record
         stable: stableSystem({ companionName: 'Saathi', nickname: 'Asha', language: 'en', voice: 'warm' }, get),
         dynamic: dynamicSystem({ mode: 'text', localTime: 'Tuesday 9:15 pm', planItems: [], moodTrend: 'unknown', memories: [], hasSafetyPlan: false, trustedFirstName: null, riskLevel: e.level, priorSummary: null, openingHookSpoken: null }, get),
       };
-      const reply = await ctx.llm.text({ task: 'admin_eval', model: settings.str('models.companion'), maxTokens: 300, effort: 'low', system, messages: [{ role: 'user', content: wrapUser(c.input) }] });
+      const reply = await ctx.llm.text({ task: 'admin_eval', model: ctx.rt.model('companion'), maxTokens: 300, effort: 'low', system, messages: [{ role: 'user', content: wrapUser(c.input) }] });
       const missing = e.require.filter(p => !new RegExp(p, 'i').test(reply));
       const hit = e.forbid.filter(p => new RegExp(p, 'i').test(reply));
       const rules = checkAiOutput(reply);
@@ -98,7 +97,7 @@ export async function runEval(ctx: Ctx, o: { suite: SuiteName; overrides: Record
 
   const run_ = (await withSystem(ctx.db, tx => tx.query(
     `INSERT INTO eval_runs (suite, prompt_key, prompt_version_id, model, started_by, passed, failed, total, results, cost_inr) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`,
-    [o.suite, o.promptKey ?? null, o.versionId ?? null, o.suite === 'replies' ? settings.str('models.companion') : settings.str('models.safety'), o.by, passed, results.length - passed, results.length, JSON.stringify(results), cost.unc ? null : cost.c]))).rows[0];
+    [o.suite, o.promptKey ?? null, o.versionId ?? null, o.suite === 'replies' ? ctx.rt.model('companion') : ctx.rt.model('safety'), o.by, passed, results.length - passed, results.length, JSON.stringify(results), cost.unc ? null : cost.c]))).rows[0];
 
   return { runId: Number(run_.id), suite: o.suite, total: results.length, passed, failed: results.length - passed, criticalFailed, gate: criticalFailed === 0, results, costInr: cost.unc ? null : cost.c, uncosted: cost.unc > 0 };
 }
@@ -120,7 +119,6 @@ export async function playground(ctx: Ctx, i: PlaygroundInput) {
   if (!def) throw Object.assign(new Error('Unknown prompt.'), { status: 404 });
   const overrides = i.body !== undefined ? { [i.key]: i.body } : {};
   const get = getterWith(overrides);
-  const settings = ctx.rt.settings;
   const conversational = /^(companion\.|mode\.|safety\.level|safety\.strict|context\.)/.test(i.key);
   const started = Date.now();
   const last = i.messages.at(-1)?.content ?? '';
@@ -131,10 +129,10 @@ export async function playground(ctx: Ctx, i: PlaygroundInput) {
       dynamic: dynamicSystem({ mode: i.mode ?? 'text', localTime: 'Tuesday 9:15 pm', planItems: ['A 10-minute walk'], moodTrend: 'a little heavier this week', memories: ['Interview on Thursday'], hasSafetyPlan: false, trustedFirstName: null, riskLevel: i.level ?? 0, priorSummary: null, openingHookSpoken: null, firstRun: i.key === 'context.first_run' }, get),
     };
     const msgs = i.messages.map(m => (m.role === 'user' ? { ...m, content: wrapUser(m.content) } : m));
-    text = await ctx.llm.text({ task: 'admin_playground', model: settings.str('models.companion'), maxTokens: 400, effort: 'low', system, messages: msgs });
+    text = await ctx.llm.text({ task: 'admin_playground', model: ctx.rt.model('companion'), maxTokens: 400, effort: 'low', system, messages: msgs });
   } else {
     const body = renderTemplate(get(i.key, { nickname: 'Asha', language: i.language === 'hi' ? 'Hindi (Devanagari)' : i.language === 'hinglish' ? 'Hinglish' : 'English' }), {});
-    const model = ['classifier', 'output_check'].includes(i.key) ? settings.str('models.safety') : settings.str('models.analysis');
+    const model = ['classifier', 'output_check'].includes(i.key) ? ctx.rt.model('safety') : ctx.rt.model('analysis');
     text = await ctx.llm.text({ task: 'admin_playground', model, maxTokens: 600, effort: 'low', system: { stable: body }, messages: [{ role: 'user', content: i.key === 'classifier' ? wrapUser(last) : last }] });
   }
   const safe = checkAiOutput(text);

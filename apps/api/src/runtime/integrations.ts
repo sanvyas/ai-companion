@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { testOpenRouter } from './openrouter.js';
 
 // Every outside service the platform can use. The portal lists these, stores the credentials sealed in the database,
 // and the live app reads them from there (falling back to the environment variable if none is saved).
@@ -60,6 +61,11 @@ export const INTEGRATIONS: IntegrationDef[] = [
     id: 'anthropic', label: 'Anthropic (Claude)', category: 'AI', purpose: 'Conversations, the safety classifier, journal reading, summaries and the weekly letter.',
     status: 'live', statusNote: 'Used immediately. Change it and the next message uses the new key.', docsUrl: 'https://console.anthropic.com/settings/keys', hosts: ['api.anthropic.com'],
     fields: [key('api_key', 'ANTHROPIC_API_KEY', { pattern: /^sk-ant-[\w-]{20,}$/, hint: 'Starts with sk-ant-' })], test: testAnthropic,
+  },
+  {
+    id: 'openrouter', label: 'OpenRouter', category: 'AI', purpose: 'One key for many vendors’ models. Use it instead of Anthropic by setting “AI provider” to OpenRouter and choosing the models below.',
+    status: 'live', statusNote: 'Used when “AI provider” is OpenRouter (Settings). Change the key and the next message uses it.', docsUrl: 'https://openrouter.ai/settings/keys', hosts: ['openrouter.ai'],
+    fields: [key('api_key', 'OPENROUTER_API_KEY', { pattern: /^sk-or-[\w-]{20,}$/, hint: 'Starts with sk-or-' })], test: testOpenRouter,
   },
   {
     id: 'sarvam', label: 'Sarvam', category: 'Voice', purpose: 'Indic speech-to-text and text-to-speech (Hindi, Hinglish, English voices).',

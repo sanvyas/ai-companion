@@ -10,7 +10,8 @@ import { createPush } from './push.js';
 /** Records every provider call with its token counts and, when a rate is set, its cost in rupees. */
 export function recordUsage(db: Db, log: FastifyBaseLogger, rt: Runtime) {
   return (u: LlmUsage) => {
-    const cost = u.ok ? rt.pricing.costInr({ provider: u.provider, inTokens: u.inTokens, outTokens: u.outTokens, cacheRead: u.cacheRead, cacheWrite: u.cacheWrite }) : null;
+    // The vendor's own figure wins when it gives one (OpenRouter does); otherwise use the entered rates.
+    const cost = !u.ok ? null : u.costUsd !== undefined ? Math.round(u.costUsd * rt.settings.num('cost.usd_inr') * 10_000) / 10_000 : rt.pricing.costInr({ provider: u.provider, inTokens: u.inTokens, outTokens: u.outTokens, cacheRead: u.cacheRead, cacheWrite: u.cacheWrite });
     // Fire and forget: usage accounting must never slow or fail a conversation.
     withSystem(db, tx => tx.query(
       'INSERT INTO usage_events (user_id, provider, kind, units, latency_ms, ok, model, in_tokens, out_tokens, cache_read, cache_write, cost_inr) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)',
@@ -21,7 +22,7 @@ export function recordUsage(db: Db, log: FastifyBaseLogger, rt: Runtime) {
 
 export function createProviders(cfg: Config, db: Db, log: FastifyBaseLogger, rt: Runtime) {
   return {
-    llm: createLlm(cfg, () => rt.secrets.get('anthropic', 'api_key'), recordUsage(db, log, rt)),
+    llm: createLlm(cfg, { provider: () => rt.llmProvider(), key: p => rt.secrets.get(p, 'api_key') }, recordUsage(db, log, rt)),
     otp: createOtp(cfg.otpProvider, log),
     push: createPush(name => rt.secrets.get('webpush', name)),
     // No vendor chosen: voice runs through the browser's own speech engines, and no calls are placed.

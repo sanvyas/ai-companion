@@ -70,7 +70,7 @@ async function weeklyLetter(ctx: Ctx, userId: string, now: Date): Promise<void> 
   });
   if (!data.wins.length && !data.moods.length) return; // nothing to say is better than a hollow letter
   const out = await ctx.llm.json({
-    task: 'letter', model: ctx.rt.settings.str('models.analysis'), userId, maxTokens: 500, effort: 'low',
+    task: 'letter', model: ctx.rt.model('analysis'), userId, maxTokens: 500, effort: 'low',
     system: { stable: prompt('letter', { language: data.u.language === 'hi' ? 'Hindi (Devanagari)' : data.u.language === 'hinglish' ? 'Hinglish in Latin script' : 'English', nickname: data.u.nickname || 'you' }) },
     messages: [{ role: 'user', content: `Wins this week: ${data.wins.join('; ') || 'none logged'}.\nMood taps (0 heavy to 4 lighter): ${data.moods.join(', ') || 'none'}.` }],
     schemaName: 'letter', jsonSchema: LETTER_JSON, parse: v => LetterSchema.parse(v),

@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { api, useLoad } from '../lib/api';
 import { ago } from '../lib/format';
 import { useSession } from '../lib/session';
+import { ModelPicker } from '../lib/ModelPicker';
 import { Badge, Banner, Button, Card, Confirm, Dialog, Field, Loading, PageHead, Problem, Table, Toggle, useAction } from '../lib/ui';
 
-interface SettingView { def: { key: string; group: string; label: string; description: string; kind: 'text' | 'long' | 'int' | 'number' | 'bool' | 'json' | 'select'; options?: { value: string; label: string }[]; ownerOnly?: boolean }; value: unknown; isDefault: boolean; updatedAt: string | null; updatedBy: string | null }
+interface SettingView { def: { key: string; group: string; label: string; description: string; kind: 'text' | 'long' | 'int' | 'number' | 'bool' | 'json' | 'select' | 'openrouter_model'; options?: { value: string; label: string }[]; ownerOnly?: boolean }; value: unknown; isDefault: boolean; updatedAt: string | null; updatedBy: string | null }
 interface Flag { key: string; description: string; enabled: boolean; rolloutPct: number; updatedBy: string | null; updatedAt: string; overrides: number }
 
 /** Switches that affect everyone ask first: turning on a pause, or turning sign-ups off. */
@@ -15,8 +16,9 @@ function SettingRow({ s, reload }: { s: SettingView; reload: () => void }) {
   const act = useAction();
   const [draft, setDraft] = useState<string>(typeof s.value === 'string' ? s.value : JSON.stringify(s.value, null, s.def.kind === 'json' ? 2 : 0));
   const [confirm, setConfirm] = useState<boolean | null>(null);
+  const [picking, setPicking] = useState(false);
   const allowed = can('settings.write') && (!s.def.ownerOnly || me?.admin.role === 'owner');
-  const save = (value: unknown) => act(() => api.put(`/settings/${s.def.key}`, { value }).then(reload), 'Saved. The app picks it up within seconds.');
+  const save = (value: unknown) => act(() => api.put(`/settings/${s.def.key}`, { value }).then(() => { reload(); return true; }), 'Saved. The app picks it up within seconds.');
   const dirty = typeof s.value === 'string' ? draft !== s.value : draft !== JSON.stringify(s.value, null, s.def.kind === 'json' ? 2 : 0);
   const parse = (): unknown => (s.def.kind === 'int' || s.def.kind === 'number' ? Number(draft) : s.def.kind === 'json' ? JSON.parse(draft) : draft);
 
@@ -32,6 +34,12 @@ function SettingRow({ s, reload }: { s: SettingView; reload: () => void }) {
           <Toggle on={s.value as boolean} label={s.def.label} disabled={!allowed} onChange={v => (isRisky(s.def.key, v) ? setConfirm(v) : void save(v))} />
         ) : s.def.kind === 'long' || s.def.kind === 'json' ? (
           <textarea className="input mono" rows={s.def.kind === 'json' ? 5 : 3} value={draft} onChange={e => setDraft(e.target.value)} disabled={!allowed} aria-label={s.def.label} />
+        ) : s.def.kind === 'openrouter_model' ? (
+          <>
+            <code style={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>{String(s.value)}</code>
+            <Button size="sm" disabled={!allowed} onClick={() => setPicking(true)}>Choose model</Button>
+            {picking && <ModelPicker title={s.def.label} current={String(s.value)} onClose={() => setPicking(false)} onChoose={id => save(id)} />}
+          </>
         ) : s.def.kind === 'select' ? (
           <select className="input" value={draft} onChange={e => setDraft(e.target.value)} disabled={!allowed} aria-label={s.def.label}>
             {!s.def.options?.some(o => o.value === draft) && <option value={draft}>{draft}</option>}
@@ -40,7 +48,7 @@ function SettingRow({ s, reload }: { s: SettingView; reload: () => void }) {
         ) : (
           <input className="input" value={draft} onChange={e => setDraft(e.target.value)} disabled={!allowed} aria-label={s.def.label} inputMode={s.def.kind === 'text' ? undefined : 'decimal'} />
         )}
-        {s.def.kind !== 'bool' && <Button size="sm" variant="primary" disabled={!allowed || !dirty} onClick={() => { try { void save(parse()); } catch { void act(async () => { throw new Error('That isn’t valid JSON.'); }); } }}>Save</Button>}
+        {s.def.kind !== 'bool' && s.def.kind !== 'openrouter_model' && <Button size="sm" variant="primary" disabled={!allowed || !dirty} onClick={() => { try { void save(parse()); } catch { void act(async () => { throw new Error('That isn’t valid JSON.'); }); } }}>Save</Button>}
         {!s.isDefault && allowed && <Button size="sm" variant="ghost" onClick={() => void act(() => api.del(`/settings/${s.def.key}`).then(reload), 'Back to the default.')}>Reset</Button>}
       </div>
       {confirm !== null && (

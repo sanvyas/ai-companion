@@ -30,7 +30,7 @@ export async function classifyWithModel(ctx: Ctx, userId: string, text: string, 
   try {
     const ctxLines = recent.slice(-4).map(m => `${m.role === 'user' ? 'User' : 'Companion'}: ${m.content.slice(0, 400)}`).join('\n');
     const out = await ctx.llm.json({
-      task: 'classify', model: ctx.rt.settings.str('models.safety'), userId, signal: ac.signal, maxTokens: 64, effort: 'low',
+      task: 'classify', model: ctx.rt.model('safety'), userId, signal: ac.signal, maxTokens: 64, effort: 'low',
       system: { stable: classifierSystem() },
       messages: [{ role: 'user', content: `${ctxLines ? `Recent turns:\n${ctxLines}\n\n` : ''}Latest message:\n${wrapUser(text)}` }],
       schemaName: 'risk', jsonSchema: RISK_JSON, parse: v => RiskSchema.parse(v),
@@ -59,7 +59,7 @@ export async function reviewDraft(ctx: Ctx, userId: string, draft: string, eleva
   if (!elevated || !ctx.llm.configured) return { ok: true };
   try {
     const out = await ctx.llm.json({
-      task: 'output_check', model: ctx.rt.settings.str('models.safety'), userId, maxTokens: 64, effort: 'low',
+      task: 'output_check', model: ctx.rt.model('safety'), userId, maxTokens: 64, effort: 'low',
       system: { stable: outputCheckSystem() },
       messages: [{ role: 'user', content: `Draft reply:\n"""\n${draft}\n"""` }],
       schemaName: 'output_check', jsonSchema: CHECK_JSON, parse: v => CheckSchema.parse(v),

@@ -175,7 +175,7 @@ const localTime = (tz: string) => new Intl.DateTimeFormat('en-IN', { weekday: 'l
 function buildRequest(ctx: Ctx, s: LiveSession, c: Awaited<ReturnType<typeof turnContext>>, userText: string, level: 0 | 1 | 2, strict = false) {
   const messages: LlmMessage[] = [...s.history.map(m => (m.role === 'user' ? { role: m.role, content: wrapUser(m.content) } : m)), { role: 'user', content: wrapUser(userText) }];
   return {
-    model: ctx.rt.settings.str('models.companion'),
+    model: ctx.rt.model('companion'),
     system: {
       stable: stableSystem({ companionName: s.companion.name, nickname: s.nickname, language: s.language, voice: s.companion.voice }),
       dynamic: dynamicSystem({ mode: s.mode, localTime: localTime(s.timezone), planItems: c.plan, moodTrend: c.mood, memories: c.memories, hasSafetyPlan: s.hasSafetyPlan, trustedFirstName: s.trustedFirst, riskLevel: level, priorSummary: s.priorSummary, openingHookSpoken: s.opening, strict, firstRun: s.firstRun && s.history.length === 0 }),
@@ -446,7 +446,7 @@ export async function endConversation(ctx: Ctx, userId: string, conversationId: 
 
   if (userTurns > 0 && ctx.llm.configured && !meta.conv.ended_at) {
     const text = transcript(meta.history);
-    const base = { model: ctx.rt.settings.str('models.analysis'), userId, maxTokens: 600, effort: 'low' as const };
+    const base = { model: ctx.rt.model('analysis'), userId, maxTokens: 600, effort: 'low' as const };
     const [s1, m1, c1] = await Promise.allSettled([
       ctx.llm.json({ ...base, task: 'summary', system: { stable: summarySystem() }, messages: [{ role: 'user', content: `Conversation:\n${text}` }], schemaName: 'summary', jsonSchema: SUMMARY_JSON, parse: v => SummarySchema.parse(v) }),
       meta.remember

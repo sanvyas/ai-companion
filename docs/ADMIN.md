@@ -47,6 +47,7 @@ Saving a key makes the app use it immediately only where the code exists.
 
 | Integration | State |
 |---|---|
+| OpenRouter | **Used by the app when “AI provider” is set to OpenRouter.** One key, many vendors' models. |
 | Anthropic | **Used by the app.** Conversations, safety, journal reading, summaries, letters. Add the key and chat works. |
 | Google sign-in client id | Used by the app. |
 | Web push (VAPID) | Used by the app. |
@@ -113,3 +114,12 @@ While no SMS vendor is connected, phone sign-in works only for people an owner h
 ## Choosing models
 
 Model settings are dropdowns, validated against the list in `apps/api/src/runtime/models.ts`. Add a line there when a new model is released.
+
+## Using OpenRouter instead of (or alongside) Anthropic
+
+1. **Integrations and keys → OpenRouter → Set**: paste a key from openrouter.ai/settings/keys (starts with `sk-or-`). **Test connection** shows whether it is accepted and how much credit is left.
+2. Under the key, **Choose model** for each job (companion replies, safety checks, analysis). The picker lists the text models OpenRouter offers for your key, with prices per million tokens, context size and whether the model follows structured (JSON) output reliably. **Try this model** sends one small real message and shows the reply, the speed and the cost in rupees. A model that OpenRouter doesn't offer is refused when you save.
+3. **Use OpenRouter for the app** switches who serves every call (replies, safety classifier, journal reading, summaries, letters). It applies to the next message, with no restart. **Switch back to Anthropic** reverses it. The same switch is the “AI provider” setting.
+4. **Then run the Evaluations.** A different model can judge risky messages differently, and the safety suites are how you check that it still catches the ones that matter before you invite people.
+
+OpenRouter reports the exact cost of each call, which the Cost page records as-is (converted at the rate under Settings → Cost). The default OpenRouter model ids are starting points: choose the ones you actually want from the live list. Prompt caching is not used through OpenRouter, so long conversations can cost more per message than through Anthropic directly.

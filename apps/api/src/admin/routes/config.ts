@@ -1,13 +1,15 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { Ctx } from '../../context.js';
-import { badRequest, forbidden, notFound } from '../../errors.js';
+import { AppError, badRequest, forbidden, notFound } from '../../errors.js';
 import { INTEGRATIONS, INTEGRATION_BY_ID } from '../../runtime/integrations.js';
+import { listModels, tryModel } from '../../runtime/openrouter.js';
 import { RATE_UNITS } from '../../runtime/pricing.js';
 import { body, guard, params, payload, record, show } from './util.js';
 
 export function configRoutes(app: FastifyInstance, ctx: Ctx) {
   const rt = ctx.rt;
+  const f = () => ctx.fetchImpl ?? fetch;
 
   // ------------------------------------------------------------------------------------------ settings
   app.get('/settings', guard(ctx, 'flags.read'), async () => ({ items: rt.settings.list() }));
@@ -20,6 +22,11 @@ export function configRoutes(app: FastifyInstance, ctx: Ctx) {
     const b = body(z.object({ value: z.unknown() }), req.body);
     const parsed = def.schema.safeParse(b.value);
     if (!parsed.success) throw badRequest('invalid_value', parsed.error.issues.map(i => i.message).join('; '));
+    // An OpenRouter model has to be one OpenRouter actually offers. If the list can't be reached, don't block on it.
+    if (key.startsWith('openrouter.models.')) {
+      const list = await listModels(f(), rt.secrets.get('openrouter', 'api_key')).catch(() => null);
+      if (list && !list.some(m => m.id === parsed.data)) throw badRequest('unknown_model', 'OpenRouter doesn’t offer that model. Choose one from the list.');
+    }
     const r = await rt.settings.set(key, parsed.data, req.admin!.email);
     await record(ctx, req, 'setting.changed', key, r.before, r.after);
     return { ok: true };
@@ -83,6 +90,22 @@ export function configRoutes(app: FastifyInstance, ctx: Ctx) {
     return { ok: true };
   });
 
+  // OpenRouter: the models its key can use, and a one-message try-out of any of them.
+  app.get('/integrations/openrouter/models', guard(ctx, 'integrations.read'), async req => {
+    const fresh = (req.query as { refresh?: string }).refresh === '1';
+    try { return { items: await listModels(f(), rt.secrets.get('openrouter', 'api_key'), fresh), keySet: !!rt.secrets.get('openrouter', 'api_key') }; }
+    catch (e) { if (e instanceof AppError) throw e; throw badRequest('openrouter_unreachable', (e as Error).message); }
+  });
+
+  app.post('/integrations/openrouter/try', { ...guard(ctx, 'integrations.write'), config: { rateLimit: { max: 20 * ctx.cfg.RATE_LIMIT_SCALE, timeWindow: '1 minute' } } }, async req => {
+    const b = body(z.object({ model: z.string().trim().regex(/^[\w.-]+\/[\w.:+-]+$/).max(100) }), req.body);
+    const key = rt.secrets.get('openrouter', 'api_key');
+    if (!key) throw badRequest('no_key', 'Add the OpenRouter API key first.');
+    const r = await tryModel(f(), key, b.model);
+    await record(ctx, req, 'openrouter.tried_model', b.model, undefined, { ok: r.ok, latencyMs: r.latencyMs });
+    return { ...r, costInr: r.costUsd !== undefined ? Math.round(r.costUsd * rt.settings.num('cost.usd_inr') * 10_000) / 10_000 : null };
+  });
+
   app.post('/integrations/:id/test', { ...guard(ctx, 'integrations.write'), config: { rateLimit: { max: 10 * ctx.cfg.RATE_LIMIT_SCALE, timeWindow: '1 minute' } } }, async req => {
     const id = (req.params as { id: string }).id;
     const def = INTEGRATION_BY_ID.get(id);
@@ -91,7 +114,7 @@ export function configRoutes(app: FastifyInstance, ctx: Ctx) {
     const values = rt.secrets.values(id);
     const missing = def.fields.filter(f => !values[f.name]);
     if (missing.length) return { ok: false, note: `Add ${missing.map(m => m.label).join(', ')} first.` };
-    const r = await def.test(values, fetch);
+    const r = await def.test(values, f());
     await rt.secrets.recordTest(id, r.ok, r.note);
     await record(ctx, req, 'integration.tested', id, undefined, { ok: r.ok });
     return r;

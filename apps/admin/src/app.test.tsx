@@ -233,3 +233,53 @@ describe('adding people', () => {
     expect(screen.getByText(/only time the code is shown/i)).toBeInTheDocument();
   });
 });
+
+describe('OpenRouter', () => {
+  const MODELS = [
+    { id: 'anthropic/claude-sonnet-4.5', name: 'Claude Sonnet 4.5', contextLength: 200000, promptPerM: 3, completionPerM: 15, structured: true, vendor: 'anthropic' },
+    { id: 'meta-llama/llama-3.3-70b-instruct', name: 'Llama 3.3 70B', contextLength: 131072, promptPerM: 0.1, completionPerM: 0.3, structured: false, vendor: 'meta-llama' },
+  ];
+  const field = (set: boolean) => ({ name: 'api_key', label: 'API key', secret: true, source: set ? 'portal' : 'none', last4: set ? 'wxyz' : null, value: null, updatedAt: null, updatedBy: null, lastTestAt: null, lastTestOk: null, lastTestNote: null });
+
+  it('lets an owner search the offered models, try one, and use it for a job', async () => {
+    signedIn();
+    routes['GET /settings'] = () => ({ json: { items: [
+      { def: { key: 'llm.provider', label: 'AI provider' }, value: 'anthropic' },
+      { def: { key: 'openrouter.models.companion', label: 'OpenRouter: companion model' }, value: 'anthropic/claude-sonnet-4.5' },
+    ] } });
+    routes['GET /integrations'] = () => ({ json: { items: [{ id: 'openrouter', label: 'OpenRouter', category: 'AI', purpose: 'Many models.', status: 'live', statusNote: 'Used when selected.', docsUrl: 'https://openrouter.ai/settings/keys', hosts: ['openrouter.ai'], testable: true, fields: [field(true)] }] } });
+    routes['GET /integrations/openrouter/models'] = () => ({ json: { items: MODELS, keySet: true } });
+    routes['POST /integrations/openrouter/try'] = () => ({ json: { ok: true, text: 'Long days do that. I am here.', latencyMs: 900, costInr: 0.017, inTokens: 30, outTokens: 9 } });
+    let saved: unknown;
+    routes['PUT /settings/openrouter.models.companion'] = b => { saved = b; return { json: { ok: true } }; };
+    location.hash = '#/integrations';
+    render(<App />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Choose model' }));
+    const list = await screen.findByRole('listbox', { name: 'Models' });
+    expect(within(list).getAllByRole('option')).toHaveLength(2);
+    fireEvent.change(screen.getByLabelText('Search'), { target: { value: 'llama' } });
+    expect(within(list).getAllByRole('option')).toHaveLength(1);
+    fireEvent.click(within(list).getByRole('option', { name: /Llama 3.3 70B/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Try this model' }));
+    expect(await screen.findByText(/Long days do that/)).toBeInTheDocument();
+    expect(screen.getByText(/Replied in 0.9 s · about ₹0.017/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Use this model' }));
+    await waitFor(() => expect(saved).toEqual({ value: 'meta-llama/llama-3.3-70b-instruct' }));
+  });
+
+  it('asks before switching the whole app to OpenRouter and reminds about the safety evaluations', async () => {
+    signedIn();
+    routes['GET /settings'] = () => ({ json: { items: [{ def: { key: 'llm.provider', label: 'AI provider' }, value: 'anthropic' }] } });
+    routes['GET /integrations'] = () => ({ json: { items: [{ id: 'openrouter', label: 'OpenRouter', category: 'AI', purpose: 'Many models.', status: 'live', statusNote: 'Used when selected.', docsUrl: 'https://openrouter.ai/settings/keys', hosts: [], testable: true, fields: [field(true)] }] } });
+    let saved: unknown;
+    routes['PUT /settings/llm.provider'] = b => { saved = b; return { json: { ok: true } }; };
+    location.hash = '#/integrations';
+    render(<App />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Use OpenRouter for the app' }));
+    const dlg = await screen.findByRole('dialog');
+    expect(within(dlg).getByText(/run the safety evaluations/i)).toBeInTheDocument();
+    expect(saved).toBeUndefined();
+    fireEvent.click(within(dlg).getByRole('button', { name: 'Yes, switch' }));
+    await waitFor(() => expect(saved).toEqual({ value: 'openrouter' }));
+  });
+});

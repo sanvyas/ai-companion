@@ -34,6 +34,14 @@ export class Runtime {
     for (const x of [this.settings, this.flags, this.secrets, this.prompts, this.pricing]) x.startPolling();
   }
 
+  /** Which vendor serves every model call right now. */
+  llmProvider(): 'anthropic' | 'openrouter' { return this.settings.str('llm.provider') === 'openrouter' ? 'openrouter' : 'anthropic'; }
+
+  /** The model for a purpose, from whichever vendor is active. Call sites never need to know which. */
+  model(slot: 'companion' | 'safety' | 'analysis'): string {
+    return this.settings.str(this.llmProvider() === 'openrouter' ? `openrouter.models.${slot}` : `models.${slot}`);
+  }
+
   stop() { for (const x of [this.settings, this.flags, this.secrets, this.prompts, this.pricing]) x.stop(); }
 }
 

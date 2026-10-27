@@ -113,7 +113,7 @@ export async function analyzeEntry(ctx: Ctx, userId: string, id: string): Promis
   if (level === 3) return { mood: 'heavier', noticed: '', memories: [], hook: '', step: '', careFlag: true, riskLevel: 3 };
 
   const out = await ctx.llm.json({
-    task: 'journal', model: ctx.rt.settings.str('models.analysis'), userId, maxTokens: 700, effort: 'low',
+    task: 'journal', model: ctx.rt.model('analysis'), userId, maxTokens: 700, effort: 'low',
     system: { stable: prompt('journal.analysis', { nickname: loaded.nick || 'the user', language: loaded.language === 'hi' ? 'Hindi (Devanagari)' : loaded.language === 'hinglish' ? 'Hinglish (Hindi-English in Latin script)' : 'English' }) },
     messages: [{ role: 'user', content: `<entry>\n${loaded.text.replace(/<\/?entry>/gi, '')}\n</entry>` }],
     schemaName: 'journal_analysis', jsonSchema: ANALYSIS_JSON, parse: v => ModelAnalysis.parse(v),

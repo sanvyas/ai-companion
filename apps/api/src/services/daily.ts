@@ -45,7 +45,7 @@ export async function getPlanToday(ctx: Ctx, userId: string): Promise<PlanItem[]
     try {
       const mem = await retrieveMemories(ctx, userId, 'plan for today small steps', 3);
       const out = await ctx.llm.json({
-        task: 'plan', model: ctx.rt.settings.str('models.companion'), userId, maxTokens: 200, effort: 'low',
+        task: 'plan', model: ctx.rt.model('companion'), userId, maxTokens: 200, effort: 'low',
         system: { stable: planSystem() }, messages: [{ role: 'user', content: `Things they have told me: ${mem.join(' | ') || 'nothing yet'}` }],
         schemaName: 'plan', jsonSchema: PLAN_JSON, parse: v => PlanSchema.parse(v),
       });
