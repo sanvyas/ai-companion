@@ -161,6 +161,7 @@ export class HttpApi implements Api {
   // ---------------------------------------------------------------------------------------------- calm, outside
   startCalm = (itemId: string, bg?: string, timerMinutes?: number) => this.req<{ id: string }>('POST', '/calm/sessions', { itemId, bgSound: bg, timerMinutes }, { idem: true });
   progressCalm = async (id: string, pct: number) => { await this.req('PATCH', `/calm/sessions/${id}`, { completedPct: pct }); };
+  story = (theme: Parameters<Api['story']>[0]) => this.req<Awaited<ReturnType<Api['story']>>>('POST', '/calm/story', { theme });
   events = (city?: string) => this.req<Awaited<ReturnType<Api['events']>>>('GET', `/outside/events${city ? `?city=${encodeURIComponent(city)}` : ''}`);
   markInterest = async (id: string) => { await this.req('POST', `/outside/events/${encodeURIComponent(id)}/interest`); };
 

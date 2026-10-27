@@ -1,10 +1,10 @@
 import type {
   Companion, Consent, ConsentUpdate, ConversationItem, ConversationMode, EndConversationResponse, Helpline, Insights, JournalAnalysis,
   JournalCreateBody, JournalEntry, MemoryItem, Me, MeUpdate, NotificationPrefs, OtpStartResponse, OutsideEvent, PlanItem, Privacy,
-  PrivacyUpdate, SafetyPlan, ServerMsg, Theme, TrustedContact, Letter,
+  PrivacyUpdate, SafetyPlan, ServerMsg, StoryResponse, StoryTheme, Theme, TrustedContact, Letter,
 } from '@saathi/contracts';
 
-export type { Companion, Consent, ConsentUpdate, ConversationItem, ConversationMode, EndConversationResponse, Helpline, Insights, JournalAnalysis, JournalCreateBody, JournalEntry, MemoryItem, Me, MeUpdate, NotificationPrefs, OtpStartResponse, OutsideEvent, PlanItem, Privacy, PrivacyUpdate, SafetyPlan, Theme, TrustedContact, Letter };
+export type { Companion, Consent, ConsentUpdate, ConversationItem, ConversationMode, EndConversationResponse, Helpline, Insights, JournalAnalysis, JournalCreateBody, JournalEntry, MemoryItem, Me, MeUpdate, NotificationPrefs, OtpStartResponse, OutsideEvent, PlanItem, Privacy, PrivacyUpdate, SafetyPlan, StoryResponse, StoryTheme, Theme, TrustedContact, Letter };
 
 export interface VoiceItem { id: string; label: string; gender: 'female' | 'male' | null; provider: 'device' | 'sarvam' }
 export interface VoiceList { language: string; serverVoices: boolean; items: VoiceItem[] }
@@ -97,6 +97,8 @@ export interface Api {
   // calm
   startCalm(itemId: string, bg?: string, timerMinutes?: number): Promise<{ id: string }>;
   progressCalm(id: string, pct: number): Promise<void>;
+  /** A short story written for tonight. The theme comes from a fixed list. */
+  story(theme: StoryTheme): Promise<StoryResponse>;
 
   // outside
   events(city?: string): Promise<{ city: string | null; items: OutsideEvent[] }>;

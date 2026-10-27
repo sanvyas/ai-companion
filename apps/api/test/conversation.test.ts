@@ -124,13 +124,13 @@ describe('safety pipeline', () => {
     const a = await signIn(t);
     const { chat } = await connect(port, await create(a), a.accessToken);
     t.llm.calls.length = 0;
-    t.llm.reply = () => 'That sounds really heavy. Are you thinking about ending your life? And are you safe right now?';
+    t.llm.reply = () => 'That sounds really heavy, and I’m glad you told me. Are you safe right now?';
     const out = await chat.turn('I feel hopeless and like a burden');
     t.llm.reply = null;
     expect(out.map(m => m.type)).toContain('care_card');
     expect(out.find(m => m.type === 'ack')).toMatchObject({ riskLevel: 2 });
     const call = t.llm.calls.find(c => c.task === 'companion')!;
-    expect(call.system).toContain('Ask directly and kindly whether they are thinking about ending their life');
+    expect(call.system).toContain('Ask kindly whether they are safe right now');
     expect(t.llm.calls.some(c => c.task === 'output_check')).toBe(true);
     chat.close();
   });
@@ -177,12 +177,12 @@ describe('safety pipeline', () => {
     await chat.turn('I feel hopeless');
     t.llm.calls.length = 0;
     await chat.turn('thanks, I had some tea');
-    expect(t.llm.calls.find(c => c.task === 'companion')!.system).toContain('Ask directly and kindly'); // still strict
+    expect(t.llm.calls.find(c => c.task === 'companion')!.system).toContain('Ask kindly whether they are safe'); // still strict
     await chat.turn('and a short walk');
     await chat.turn('feeling a bit lighter');
     t.llm.calls.length = 0;
     await chat.turn('looking at the sky');
-    expect(t.llm.calls.find(c => c.task === 'companion')!.system).not.toContain('Ask directly and kindly');
+    expect(t.llm.calls.find(c => c.task === 'companion')!.system).not.toContain('Ask kindly whether they are safe');
     chat.close();
   });
 

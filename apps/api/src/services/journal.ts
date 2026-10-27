@@ -1,4 +1,3 @@
-import { prompt } from '../runtime/prompts.js';
 import { z } from 'zod';
 import type { JournalAnalysis, JournalCreateBody, JournalEntry } from '@saathi/contracts';
 import { checkAiOutput, isSensitive, moodIndexFor, type RiskLevel } from '@saathi/domain';
@@ -7,6 +6,7 @@ import { withUser, type Tx } from '../db/pool.js';
 import { AppError, notFound } from '../errors.js';
 import { decodeCursor, encodeCursor } from '../http.js';
 import { addMemories } from './memory.js';
+import { journalSystem } from './prompts.js';
 import { classifyWithModel, logSafetyEvent, prefilter } from './safety.js';
 import { localDay } from './time.js';
 import { getDek } from './users.js';
@@ -114,7 +114,7 @@ export async function analyzeEntry(ctx: Ctx, userId: string, id: string): Promis
 
   const out = await ctx.llm.json({
     task: 'journal', model: ctx.rt.model('analysis'), userId, maxTokens: 700, effort: 'low',
-    system: { stable: prompt('journal.analysis', { nickname: loaded.nick || 'the user', language: loaded.language === 'hi' ? 'Hindi (Devanagari)' : loaded.language === 'hinglish' ? 'Hinglish (Hindi-English in Latin script)' : 'English' }) },
+    system: { stable: journalSystem({ nickname: loaded.nick || 'the user', language: loaded.language === 'hi' ? 'Hindi (Devanagari)' : loaded.language === 'hinglish' ? 'Hinglish (Hindi-English in Latin script)' : 'English' }) },
     messages: [{ role: 'user', content: `<entry>\n${loaded.text.replace(/<\/?entry>/gi, '')}\n</entry>` }],
     schemaName: 'journal_analysis', jsonSchema: ANALYSIS_JSON, parse: v => ModelAnalysis.parse(v),
   });

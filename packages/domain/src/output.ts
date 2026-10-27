@@ -1,9 +1,11 @@
+import { findUnsafeLanguage } from './lexicon';
+
 // Rule-based check on AI output (PRD 6.4 step 3). Runs on every sentence before it reaches the user.
 // It blocks content that gives method or means information, encourages harm, diagnoses, gives dosing
 // advice, or claims to be human. Style rules from the PRD (no guilt, no "you should") live in the prompt.
 // A model-based check (apps/api services/safety.ts) additionally runs whenever risk is elevated.
 
-export type OutputVerdict = { ok: true } | { ok: false; reason: 'human_claim' | 'diagnosis' | 'medication' | 'method' | 'encourages_harm' | 'romance' };
+export type OutputVerdict = { ok: true } | { ok: false; reason: 'human_claim' | 'diagnosis' | 'medication' | 'method' | 'encourages_harm' | 'romance' | 'unsafe_language' };
 
 const RULES: { reason: Exclude<OutputVerdict, { ok: true }>['reason']; re: RegExp }[] = [
   { reason: 'human_claim', re: /\b(i am|i'm|i’m) (a |an )?(real |actual )?(human|person|woman|man|girl|boy|therapist|doctor|counsel+or)\b(?! (like|and then)\b)/i },
@@ -20,8 +22,16 @@ const RULES: { reason: Exclude<OutputVerdict, { ok: true }>['reason']; re: RegEx
 
 export function checkAiOutput(text: string): OutputVerdict {
   for (const r of RULES) if (r.re.test(text)) return { ok: false, reason: r.reason };
+  // The specific rules above name what went wrong; this catches every other trigger word (see lexicon.ts).
+  if (findUnsafeLanguage(text).length) return { ok: false, reason: 'unsafe_language' };
   return { ok: true };
 }
+
+/**
+ * A gentler fixed line for when a reply only tripped the word list (a slip of wording, not a safety event): it asks
+ * to keep talking instead of pointing to a helpline. Never model output.
+ */
+export const SOFT_FALLBACK_LINE = 'I’m here, and I’m listening. Tell me a little more about how things feel right now, whenever you’re ready.';
 
 /** Fixed, reviewed line used when generation fails the check twice (PRD 6.4 step 3). Never model output. */
 export const SAFE_FALLBACK_LINE =

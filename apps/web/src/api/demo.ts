@@ -143,6 +143,9 @@ export class DemoApi implements Api {
   async safetyAck() { /* recorded server-side in the real app */ }
 
   async startCalm() { return { id: uuid() }; }
+  async story(theme: string) {
+    return { title: `Evening story: ${theme}`, generated: false, lines: ['Tonight you sit somewhere quiet, as the light turns soft and golden.', 'There is nothing you need to do. Just listen, and let your body get heavy and warm.', 'A cup of tea waits beside you, exactly warm enough.', 'Your breath slows, in and out, in and out.', 'Everything that needed doing has been done enough.', 'Rest here as long as you like. Sleep well.'] };
+  }
   async progressCalm(_id: string, pct: number) { if (pct >= 90) this.wins.unshift({ id: uuid(), kind: 'calm', label: 'A calm session', createdAt: new Date().toISOString() }); }
 
   async events() {

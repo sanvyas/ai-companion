@@ -134,3 +134,22 @@ Voices come from Sarvam's `bulbul:v3` model once its key is added under Integrat
 During a call, a replies' sentences are spoken by Sarvam for anyone who chose a Sarvam voice (never in plain text chat). If Sarvam fails for a sentence, the app says that sentence with the phone's own voice instead. Spend is recorded per character (provider `sarvam`, rate on Cost and pricing) so it shows up on the Cost page.
 
 To add voices, add a line to `apps/api/src/services/voices.ts` (speaker name and gender, from Sarvam's list). Only voices listed there can be chosen. The pricing seed for Sarvam (₹3 per 1,000 characters) is unverified: check it on their price page.
+
+## Tone, safe language and stories
+
+**One companion, six ways of being with someone.** For every turn the app picks a stance in code (`packages/domain/src/tone.ts`) from what the person just said, their mood taps and the stance of the turn before, then adds that stance's prompt (`tone.listen`, `tone.energise`, `tone.ground`, `tone.celebrate`, `tone.steady`, `tone.play`) to the turn. Listening wins whenever someone wants to be heard or the risk is elevated; a low, flat message gets a gentle lift like a good support group; anxiety gets grounding; good news gets celebrated. The choice is deterministic so it can be tested, and the model may still adapt when the conversation clearly says otherwise. Check-in and walk openings pick their tone from the recent mood.
+
+**Words that are never written.** `packages/domain/src/lexicon.ts` holds a word list (English, Hinglish and Hindi) of words about suicide, death, harming oneself or anyone, violence, dangerous health events, harsh labels and despair, including idioms ("killing it", "dead tired", "skip lunch"). It tolerates look-alike spelling, zero-width characters and spacing tricks. Feeling words (heavy, tired, lonely, hurting) are deliberately allowed. The list is applied in four places:
+
+1. the `style.safe_language` rules are appended **in code** to every prompt that writes words a person will read, so editing a prompt in the portal cannot remove them;
+2. replies are checked sentence by sentence before being shown; a sentence with a banned word is held back and the reply is rewritten once, or replaced by a fixed gentle line;
+3. plans, letters, summaries, memories, check-in notes and stories are checked the same way (`services/guard.ts`): one strict retry, then a reviewed fixed text, or, for the Sunday letter, nothing is sent;
+4. built-in content (calm sessions, events, small steps) is checked by tests.
+
+A held-back draft is recorded in the error log by **category only** (`unsafe_language`), never the words, so the Errors page shows how often it happens.
+
+**Calm stories.** Sleep tab → “A story made for tonight”: the person picks a place from a fixed list (never free text), and `POST /calm/story` writes a short story in their language, shaped by their recent mood, through the same check, falling back to a reviewed story. The story is not stored. Narration is still the phone’s own voice.
+
+**Evaluations.** The *Companion replies* suite now includes tone cases (venting, low, good news, anxious, idioms, skipped meals, anger) and a new *Plans, stories, letters, openings* suite makes the model write each of those and fails any that contain a banned word or are the wrong shape. Run both with the real key after changing any prompt; the unit tests cannot judge what a real model writes.
+
+**Known limits.** The word list will miss things a person can say in ways no list anticipates and will occasionally hold back a harmless sentence (that costs a gentle fallback line, never safety). Level 2 no longer asks about ending a life in direct words, because the same words would be blocked in the reply; it asks whether the person is safe and offers Tele-MANAS. Have a clinician review `safety.level2` and the crisis screens before launch. Fallback stories are English only.

@@ -115,6 +115,8 @@ export interface AppState {
   pBg: SoundId | null;
   pTimer: string;
   pSession: string | null;
+  /** A story is being written. */
+  storyBusy: boolean;
   sounds: Partial<Record<SoundId, true>>;
 
   // journal
@@ -177,7 +179,7 @@ export function initialState(): AppState {
     micOk: false, pendingMode: null, pendingFirst: false, mouth: 0, speakingNow: false, sampleLang: 'English', deviceVoice: '', voicesList: [], studioMode: 'idle', walkEnded: false, walkSeconds: 0,
     msgs: [], draft: '', typing: false, careCard: false, risk: initialRisk,
     notif: null, cards: [], prefs: null, pushState: 'unknown',
-    calmTab: 'meditate', calmCat: 'All', player: null, pPlaying: false, pElapsed: 0, pEnded: false, pLineText: '', pLineIdx: 0, pBg: null, pTimer: 'End of story', pSession: null, sounds: {},
+    calmTab: 'meditate', calmCat: 'All', player: null, pPlaying: false, pElapsed: 0, pEnded: false, pLineText: '', pLineIdx: 0, pBg: null, pTimer: 'End of story', pSession: null, storyBusy: false, sounds: {},
     jEntries: [], jNext: null, jMode: 'write', jText: '', jPrompt: null, jShare: false, jStage: 'edit', jResult: null, jError: null, dictating: false, jReadId: null,
     plan: [], mood: null, small: 0, smallReply: null, events: [], eventsCity: null, eventId: null, eventStage: 'detail', day: null, insights: null, letter: null,
     memories: [], editingId: null, editText: '', recent: [], safetyPlan: null, retention: 90,

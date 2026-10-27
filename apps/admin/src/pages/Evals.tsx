@@ -4,7 +4,7 @@ import { ago, inr, when } from '../lib/format';
 import { useSession } from '../lib/session';
 import { Badge, Banner, Button, Card, Dialog, Field, Loading, PageHead, Problem, Table, Toggle, useAction } from '../lib/ui';
 
-interface Suite { name: 'classifier' | 'reviewer' | 'replies'; label: string; description: string; for: string[]; cases: number; last: { id: number; passed: number; failed: number; total: number; created_at: string } | null }
+interface Suite { name: 'classifier' | 'reviewer' | 'replies' | 'writing'; label: string; description: string; for: string[]; cases: number; last: { id: number; passed: number; failed: number; total: number; created_at: string } | null }
 interface Case { id: number; suite: string; label: string; input: string; expect: Record<string, unknown>; active: boolean }
 interface Run { id: number; suite: string; prompt_key: string | null; prompt_version_id: number | null; model: string; started_by: string; passed: number; failed: number; total: number; cost_inr: number | null; created_at: string }
 interface Out { runId: number; passed: number; failed: number; criticalFailed: number; gate: boolean; costInr: number | null; results: { label: string; input: string; pass: boolean; critical: boolean; expected: string; got: string }[] }
@@ -61,7 +61,7 @@ export function Evals() {
         ))}
       </div>
 
-      <Card title={cur.label} sub={`Used for: ${cur.for.join(', ')}`} actions={can('prompts.write') && <><Button size="sm" onClick={() => setAdding(true)}>Add a case</Button><Button size="sm" variant="primary" busy={busy} onClick={() => void run()}>Run now</Button></>}>
+      <Card title={cur.label} sub={`Used for: ${cur.for.join(', ')}`} actions={can('prompts.write') && <>{suite !== 'writing' && <Button size="sm" onClick={() => setAdding(true)}>Add a case</Button>}<Button size="sm" variant="primary" busy={busy} onClick={() => void run()}>Run now</Button></>}>
         {out && (
           <div className="stack" style={{ marginBottom: 12 }}>
             <div className="row"><Badge tone={out.gate ? 'ok' : 'bad'}>{out.gate ? 'All critical cases pass' : `${out.criticalFailed} critical failed`}</Badge><span className="num">{out.passed}/{out.passed + out.failed} passed</span><span className="faint">{out.costInr === null ? 'cost not priced yet' : inr(out.costInr)}</span></div>

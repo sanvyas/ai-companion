@@ -6,6 +6,8 @@ import { withUser, type Tx } from '../db/pool.js';
 import { AppError, forbidden, notFound } from '../errors.js';
 import { LlmFailure, LlmRefusal, LlmUnavailable, type LlmMessage } from '../providers/llm.js';
 import { checkinExtractSystem, dynamicSystem, memoryProposalSystem, stableSystem, summarySystem } from './prompts.js';
+import { assessTone, openingTone, SOFT_FALLBACK_LINE, type Stance, type Tone } from '@saathi/domain';
+import { allClean, keepClean } from './guard.js';
 import { SAFE_FALLBACK_LINE, classifyWithModel, logSafetyEvent, prefilter, reviewDraft, wrapUser } from './safety.js';
 import { retrieveMemories } from './memory.js';
 import { getCompanion, getTrusted } from './profile.js';
@@ -22,6 +24,8 @@ export interface LiveSession {
   nickname: string;
   timezone: string;
   companion: { name: string; look: string; voice: string };
+  /** The stance used on the previous turn, so a short "hmm" doesn't flip the tone. */
+  lastStance?: Stance | null;
   remember: boolean;
   persist: boolean;
   hasSafetyPlan: boolean;
@@ -164,23 +168,30 @@ async function turnContext(ctx: Ctx, s: LiveSession, text: string) {
     }),
     withUser(ctx.db, s.userId, async tx => {
       const r = (await tx.query<{ avg: string | null; n: number }>(`SELECT avg(value)::numeric(3,1) AS avg, count(*)::int AS n FROM mood_logs WHERE day >= current_date - 7`)).rows[0];
-      if (!r.n || r.avg === null) return 'unknown';
+      const today = (await tx.query<{ value: number }>(`SELECT value FROM mood_logs WHERE day = (now() AT TIME ZONE $1)::date`, [s.timezone])).rows[0]?.value ?? null;
+      if (!r.n || r.avg === null) return { text: 'unknown', trend: 'unknown' as const, today };
       const a = Number(r.avg);
-      return a < 1.5 ? 'heavier lately' : a < 2.7 ? 'somewhere in between' : 'lighter lately';
+      return a < 1.5 ? { text: 'heavier lately', trend: 'heavier' as const, today } : a < 2.7 ? { text: 'somewhere in between', trend: 'between' as const, today } : { text: 'lighter lately', trend: 'lighter' as const, today };
     }),
   ]);
-  return { memories, plan, mood };
+  return { memories, plan, mood: mood.text, moodTrend: mood.trend, moodToday: mood.today };
+}
+
+/** How to sound on this turn: from their words, the turns before, and how today has felt. */
+function toneFor(s: LiveSession, c: Awaited<ReturnType<typeof turnContext>>, userText: string, level: number): Tone {
+  const recentUser = s.history.filter(m => m.role === 'user').slice(-4).map(m => m.content);
+  return assessTone({ text: userText, recentUser, moodToday: c.moodToday, moodTrend: c.moodTrend, riskLevel: Math.max(level, s.risk.level) as 0 | 1 | 2 | 3, previous: s.lastStance ?? null });
 }
 
 const localTime = (tz: string) => new Intl.DateTimeFormat('en-IN', { weekday: 'long', hour: 'numeric', minute: '2-digit', hour12: true, timeZone: tz }).format(new Date());
 
-function buildRequest(ctx: Ctx, s: LiveSession, c: Awaited<ReturnType<typeof turnContext>>, userText: string, level: 0 | 1 | 2, strict = false) {
+function buildRequest(ctx: Ctx, s: LiveSession, c: Awaited<ReturnType<typeof turnContext>>, userText: string, level: 0 | 1 | 2, strict = false, tone?: Tone) {
   const messages: LlmMessage[] = [...s.history.map(m => (m.role === 'user' ? { role: m.role, content: wrapUser(m.content) } : m)), { role: 'user', content: wrapUser(userText) }];
   return {
     model: ctx.rt.model('companion'),
     system: {
       stable: stableSystem({ companionName: s.companion.name, nickname: s.nickname, language: s.language, voice: s.companion.voice }),
-      dynamic: dynamicSystem({ mode: s.mode, localTime: localTime(s.timezone), planItems: c.plan, moodTrend: c.mood, memories: c.memories, hasSafetyPlan: s.hasSafetyPlan, trustedFirstName: s.trustedFirst, riskLevel: level, priorSummary: s.priorSummary, openingHookSpoken: s.opening, strict, firstRun: s.firstRun && s.history.length === 0 }),
+      dynamic: dynamicSystem({ mode: s.mode, localTime: localTime(s.timezone), planItems: c.plan, moodTrend: c.mood, memories: c.memories, hasSafetyPlan: s.hasSafetyPlan, trustedFirstName: s.trustedFirst, riskLevel: level, priorSummary: s.priorSummary, openingHookSpoken: s.opening, strict, firstRun: s.firstRun && s.history.length === 0, tone: tone ?? toneFor(s, c, userText, level) }),
     },
     messages,
     maxTokens: s.mode === 'text' ? 400 : 260,
@@ -217,6 +228,8 @@ export async function handleTurn(ctx: Ctx, s: LiveSession, text: string, emit: E
   const userMsgP = persistMessage(ctx, s, 'user', text, pre.level).catch(e => ctx.log.error({ err: (e as Error).message }, 'persist user message failed'));
 
   const c = await turnContext(ctx, s, text);
+  const tone = toneFor(s, c, text, pre.level);
+  s.lastStance = tone.stance;
   const classifier = classifyWithModel(ctx, s.userId, text, s.history).then(m => (m === null ? pre.level : (Math.max(pre.level, m) as RiskLevel)));
   const strictFromStart = pre.level >= 2 || s.risk.level >= 2;
 
@@ -229,13 +242,14 @@ export async function handleTurn(ctx: Ctx, s: LiveSession, text: string, emit: E
       finalLevel = await classifier;
       if (finalLevel === 3) { await userMsgP; return crisis(ctx, s, text, emit, clientId, 'classifier', true); }
       emit({ type: 'ack', clientId, riskLevel: finalLevel });
-      sentences = await strictReply(ctx, s, c, text, 2, signal);
+      sentences = await strictReply(ctx, s, c, text, 2, signal, tone);
       for (const sent of sentences) emit({ type: 'sentence', text: sent, index: s.sentenceIndex++ });
     } else {
       // Normal path: stream sentence by sentence, but release nothing until the classifier has answered.
       const split = new SentenceSplitter();
       let acked = false;
       let first = true;
+      let heldBack: string | null = null;
       const release = async (sent: string): Promise<'ok' | 'stop'> => {
         if (!acked) {
           finalLevel = await classifier;
@@ -246,6 +260,7 @@ export async function handleTurn(ctx: Ctx, s: LiveSession, text: string, emit: E
         }
         const v = await reviewDraft(ctx, s.userId, sent, false);
         if (!v.ok) {
+          heldBack = v.reason;
           await logSafetyEvent(ctx, s.userId, finalLevel, s.mode, 'output_check');
           return 'stop';
         }
@@ -264,7 +279,7 @@ export async function handleTurn(ctx: Ctx, s: LiveSession, text: string, emit: E
 
       let stopped: 'ok' | 'stop' = 'ok';
       // Video replies start with a tag: hold the first fragment until the tag is complete.
-      const gen = ctx.llm.stream({ task: 'companion', ...buildRequest(ctx, s, c, text, Math.min(pre.level, 1) as 0 | 1), signal });
+      const gen = ctx.llm.stream({ task: 'companion', ...buildRequest(ctx, s, c, text, Math.min(pre.level, 1) as 0 | 1, false, tone), signal });
       let pendingTag = s.mode === 'video' ? '' : null;
       outer: for await (const delta of gen) {
         let d = delta;
@@ -284,7 +299,12 @@ export async function handleTurn(ctx: Ctx, s: LiveSession, text: string, emit: E
         ac.abort();
         // Either the classifier raised the level (regenerate with the safety block) or a sentence failed the check.
         if (finalLevel >= 2) {
-          const again = await strictReply(ctx, s, c, text, 2, new AbortController().signal);
+          const again = await strictReply(ctx, s, c, text, 2, new AbortController().signal, tone);
+          for (const sent of again) { sentences.push(sent); emit({ type: 'sentence', text: sent, index: s.sentenceIndex++ }); }
+        } else if (heldBack === 'unsafe_language') {
+          // A slip of wording, not a safety event. If nothing has reached the person yet, write the reply again plainly;
+          // otherwise close gently. Either way the held-back words never leave the server.
+          const again = sentences.length ? [SOFT_FALLBACK_LINE] : await strictReply(ctx, s, c, text, Math.min(finalLevel, 1) as 0 | 1, new AbortController().signal, tone, true);
           for (const sent of again) { sentences.push(sent); emit({ type: 'sentence', text: sent, index: s.sentenceIndex++ }); }
         } else {
           sentences.push(SAFE_FALLBACK_LINE);
@@ -322,14 +342,17 @@ export async function handleTurn(ctx: Ctx, s: LiveSession, text: string, emit: E
 }
 
 /** Buffered generation with the output check on the whole draft. Regenerates once, then the fixed fallback. */
-async function strictReply(ctx: Ctx, s: LiveSession, c: Awaited<ReturnType<typeof turnContext>>, text: string, level: 2, signal: AbortSignal): Promise<string[]> {
+async function strictReply(ctx: Ctx, s: LiveSession, c: Awaited<ReturnType<typeof turnContext>>, text: string, level: 0 | 1 | 2, signal: AbortSignal, tone: Tone, strictFirst = false): Promise<string[]> {
+  let reason: string | null = null;
   for (let attempt = 0; attempt < 2; attempt++) {
-    const draft = (await ctx.llm.text({ task: 'companion', ...buildRequest(ctx, s, c, text, level, attempt > 0), signal })).replace(/<emotion>[^<]*<\/emotion>\s*/g, '').trim();
-    const verdict = await reviewDraft(ctx, s.userId, draft, true);
+    const draft = (await ctx.llm.text({ task: 'companion', ...buildRequest(ctx, s, c, text, level, strictFirst || attempt > 0, tone), signal })).replace(/<emotion>[^<]*<\/emotion>\s*/g, '').trim();
+    const verdict = await reviewDraft(ctx, s.userId, draft, level >= 2);
     if (verdict.ok && draft) return splitForEmit(draft);
+    reason = verdict.ok ? 'empty' : verdict.reason;
     await logSafetyEvent(ctx, s.userId, level, s.mode, 'output_check');
   }
-  return [SAFE_FALLBACK_LINE];
+  // A wording slip at ordinary risk gets the gentle line; anything else gets the reviewed safety line.
+  return [level < 2 && reason === 'unsafe_language' ? SOFT_FALLBACK_LINE : SAFE_FALLBACK_LINE];
 }
 
 const splitForEmit = (t: string) => { const sp = new SentenceSplitter(); return [...sp.push(t + ' '), ...sp.end()]; };
@@ -362,6 +385,8 @@ export async function handleOpening(ctx: Ctx, s: LiveSession, emit: Emit): Promi
   const out: string[] = [];
   try {
     const c = await turnContext(ctx, s, '');
+    const tone = openingTone(c.moodToday, c.moodTrend, s.firstRun ? 'first' : s.mode === 'checkin' ? 'checkin' : s.mode === 'walk' ? 'walk' : 'other');
+    s.lastStance = tone.stance;
     emit({ type: 'thinking' });
     const split = new SentenceSplitter();
     let first = true;
@@ -377,7 +402,7 @@ export async function handleOpening(ctx: Ctx, s: LiveSession, emit: Emit): Promi
       return true;
     };
     let ok = true;
-    for await (const d of ctx.llm.stream({ task: 'companion', ...buildRequest(ctx, s, c, cue, 0), signal: ac.signal })) {
+    for await (const d of ctx.llm.stream({ task: 'companion', ...buildRequest(ctx, s, c, cue, 0, false, tone), signal: ac.signal })) {
       for (const sent of split.push(d)) { if (!(ok = await say(sent))) break; }
       if (!ok) break;
     }
@@ -425,6 +450,9 @@ async function loadHistory(ctx: Ctx, tx: Tx, userId: string, conversationId: str
   return rows.map(m => ({ role: m.role === 'ai' ? 'assistant' as const : 'user' as const, content: ctx.crypto.decrypt(dek, userId, 'message', m.text_enc) }));
 }
 
+const GENTLE_SUMMARY = 'You took some time to talk things through.';
+const HEAVY_FIELD = 'Something heavy';
+
 const transcript = (h: LlmMessage[]) => h.map(m => `${m.role === 'user' ? 'User' : 'Companion'}: ${m.content}`).join('\n');
 
 export async function endConversation(ctx: Ctx, userId: string, conversationId: string, feeling?: 'better' | 'same' | 'worse'): Promise<z.infer<typeof EndConversationResponse> | { summary: string; proposedMemories: ProposedMemory[]; checkinResult: CheckinResult | null }> {
@@ -458,9 +486,15 @@ export async function endConversation(ctx: Ctx, userId: string, conversationId: 
         ? ctx.llm.json({ ...base, task: 'checkin', system: { stable: checkinExtractSystem() }, messages: [{ role: 'user', content: `Check-in conversation:\n${text}` }], schemaName: 'checkin', jsonSchema: CHECKIN_JSON, parse: v => CheckinSchema.parse(v) })
         : Promise.resolve(null),
     ]);
-    if (s1.status === 'fulfilled') summary = s1.value.summary;
-    if (m1.status === 'fulfilled') proposed = m1.value.memories.map(m => ({ ...m, text: m.text.slice(0, 120) }));
-    if (c1.status === 'fulfilled') checkin = c1.value;
+    // What the model writes here is shown back to the person later, so it gets the same word check as a reply. A line that
+    // fails is replaced by a neutral one (or dropped, for lists) rather than regenerated: these run after the person has left.
+    if (s1.status === 'fulfilled') summary = allClean([s1.value.summary]) ? s1.value.summary : GENTLE_SUMMARY;
+    if (m1.status === 'fulfilled') proposed = keepClean(m1.value.memories, m => m.text).map(m => ({ ...m, text: m.text.slice(0, 120) }));
+    if (c1.status === 'fulfilled' && c1.value) {
+      const c = c1.value;
+      const field = (t: string) => (allClean([t]) ? t : HEAVY_FIELD);
+      checkin = { ...c, sleep: field(c.sleep), food: field(c.food), people: field(c.people), okayThing: field(c.okayThing), intentions: keepClean(c.intentions, t => t) };
+    }
   }
 
   await withUser(ctx.db, userId, async tx => {

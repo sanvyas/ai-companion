@@ -42,7 +42,7 @@ export const mockCompanion: CompanionProvider = {
     if (level === 2) {
       return {
         level,
-        lines: ['I’m really glad you told me. That sounds so heavy.', 'Can I ask you something directly? Are you thinking about ending your life?', 'And are you safe right now? Is anyone with you?'],
+        lines: ['I’m really glad you told me. That sounds so heavy.', 'Can I ask you something directly, because I care? Are you safe right now?', 'Is anyone with you?'],
       };
     }
     if (/(are you (real|human|a person|a bot|an ai)|real person|talking to a human)/.test(l)) {

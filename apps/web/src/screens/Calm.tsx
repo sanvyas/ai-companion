@@ -1,9 +1,9 @@
 import { C, BLOBS, serif, shadow } from '../theme';
 import { set, useStore } from '../state/store';
-import { openPlayer } from '../state/actions';
+import { openPlayer, playStory } from '../state/actions';
 import { stopAllSounds, toggleSound } from '../audio/sounds';
 import { toast } from '../state/actions';
-import { CALM_CATS, CALM_ITEMS, SOUND_DEFS } from '../data/calm';
+import { CALM_CATS, CALM_ITEMS, SOUND_DEFS, STORY_THEMES } from '../data/calm';
 import { useTimeOfDay } from '../hooks';
 import { Svg, P } from '../components/icons';
 import { Chip, HelpPill, OutlineButton, Scroll, Segmented, flex } from '../components/ui';
@@ -26,6 +26,7 @@ export function Calm() {
   const feat = CALM_ITEMS.find(x => x.id === (tab === 'sleep' ? 'monsoon' : evening ? 'winddown' : 'morning'))!;
   const meta = (x: (typeof CALM_ITEMS)[number]) => `${x.cat} · ${x.mins} min`;
   const anyOn = Object.keys(sounds).length > 0;
+  const busy = useStore(s => s.storyBusy);
 
   return (
     <main aria-label="Calm" style={{ position: 'absolute', inset: 0, ...flex('column'), background: C.paper }}>
@@ -55,6 +56,19 @@ export function Calm() {
               <span style={{ flex: 'none', width: 56, height: 56, borderRadius: '50%', background: C.moonText, display: 'grid', placeItems: 'center' }}><Svg d={P.play} size={20} stroke="none" fill="#2B3A63" /></span>
             </div>
           </button>
+        )}
+
+        {tab === 'sleep' && (
+          <section aria-label="A story made for tonight" style={{ background: C.white, borderRadius: 28, padding: 18, boxShadow: shadow.cardSoft, ...flex('column', 12) }}>
+            <div style={flex('column', 4)}>
+              <span style={{ fontSize: 17, fontWeight: 600 }}>A story made for tonight</span>
+              <span style={{ fontSize: 15, color: C.muted, lineHeight: 1.4 }}>Pick a place and {compName} will write a new, quiet story, just for you.</span>
+            </div>
+            <div role="group" aria-label="Story place" style={{ ...flex('row', 8), overflowX: 'auto', margin: '0 -18px', padding: '0 18px' }}>
+              {STORY_THEMES.map(t => <Chip key={t.id} label={t.label} on={false} onClick={() => { if (!busy) void playStory(t.id); }} pad={16} />)}
+            </div>
+            <div role="status" aria-live="polite" style={{ fontSize: 13, color: C.muted, minHeight: 18 }}>{busy ? 'Writing your story…' : ''}</div>
+          </section>
         )}
 
         {tab === 'meditate' && (

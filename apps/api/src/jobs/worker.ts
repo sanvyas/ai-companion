@@ -1,8 +1,8 @@
-import { prompt } from '../runtime/prompts.js';
 import { anonId } from '../routes/events.js';
 import { z } from 'zod';
-import { checkAiOutput } from '@saathi/domain';
 import type { Ctx } from '../context.js';
+import { generateSafe } from '../services/guard.js';
+import { letterSystem } from '../services/prompts.js';
 import { withSystem, type Tx } from '../db/pool.js';
 import { addInboxCard, notify } from '../services/notifier.js';
 import { getDek } from '../services/users.js';
@@ -69,16 +69,25 @@ async function weeklyLetter(ctx: Ctx, userId: string, now: Date): Promise<void> 
     return { u, wins, moods, dek };
   });
   if (!data.wins.length && !data.moods.length) return; // nothing to say is better than a hollow letter
-  const out = await ctx.llm.json({
-    task: 'letter', model: ctx.rt.model('analysis'), userId, maxTokens: 500, effort: 'low',
-    system: { stable: prompt('letter', { language: data.u.language === 'hi' ? 'Hindi (Devanagari)' : data.u.language === 'hinglish' ? 'Hinglish in Latin script' : 'English', nickname: data.u.nickname || 'you' }) },
-    messages: [{ role: 'user', content: `Wins this week: ${data.wins.join('; ') || 'none logged'}.\nMood taps (0 heavy to 4 lighter): ${data.moods.join(', ') || 'none'}.` }],
-    schemaName: 'letter', jsonSchema: LETTER_JSON, parse: v => LetterSchema.parse(v),
+  const avg = data.moods.length ? data.moods.reduce((a, b) => a + b, 0) / data.moods.length : null;
+  const week = avg === null ? 'unknown' : avg < 1.7 ? 'heavier' : avg > 2.5 ? 'lighter' : 'in between';
+  const system = letterSystem({ language: data.u.language === 'hi' ? 'Hindi (Devanagari)' : data.u.language === 'hinglish' ? 'Hinglish in Latin script' : 'English', nickname: data.u.nickname || 'you' });
+  // A letter that cannot be made clean is not sent: a missing letter is better than a careless one.
+  const safe = await generateSafe(ctx, {
+    label: 'letter',
+    run: hint => ctx.llm.json({
+      task: 'letter', model: ctx.rt.model('analysis'), userId, maxTokens: 500, effort: 'low',
+      system: { stable: hint ? `${system}\n\n${hint}` : system },
+      messages: [{ role: 'user', content: `Wins this week: ${data.wins.join('; ') || 'none logged'}.\nMood taps (0 heavy to 4 lighter): ${data.moods.join(', ') || 'none'}.\nThe week felt: ${week}.` }],
+      schemaName: 'letter', jsonSchema: LETTER_JSON, parse: v => LetterSchema.parse(v),
+    }),
+    texts: v => [v.body],
+    fallback: () => ({ body: '' }),
   });
-  if (!checkAiOutput(out.body).ok) return;
+  if (!safe.value.body) return;
   await withSystem(ctx.db, async tx => {
     await tx.query(`INSERT INTO letters (user_id, week_start, body_enc) VALUES ($1, ($2::timestamptz AT TIME ZONE $3)::date, $4) ON CONFLICT (user_id, week_start) DO NOTHING`,
-      [userId, now, data.u.timezone, ctx.crypto.encrypt(data.dek, userId, 'letter', out.body)]);
+      [userId, now, data.u.timezone, ctx.crypto.encrypt(data.dek, userId, 'letter', safe.value.body)]);
   });
   await notify(ctx, userId, 'letter', now);
 }

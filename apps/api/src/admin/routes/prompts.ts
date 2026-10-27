@@ -111,7 +111,7 @@ export function promptRoutes(app: FastifyInstance, ctx: Ctx) {
   });
 
   app.post('/evals/run', { ...guard(ctx, 'prompts.write'), config: heavy(4) }, async req => {
-    const b = body(z.object({ suite: z.enum(['classifier', 'reviewer', 'replies']), promptKey: z.string().optional(), versionId: z.number().int().optional(), body: z.string().max(12_000).optional() }), req.body);
+    const b = body(z.object({ suite: z.enum(['classifier', 'reviewer', 'replies', 'writing']), promptKey: z.string().optional(), versionId: z.number().int().optional(), body: z.string().max(12_000).optional() }), req.body);
     const overrides: Record<string, string> = {};
     let versionId = b.versionId;
     if (b.versionId) {

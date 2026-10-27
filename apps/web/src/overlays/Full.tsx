@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { C, serif } from '../theme';
 import { set, useStore } from '../state/store';
 import { acknowledgeHelp, closeBreathe, closePlayer, confirmSafe, openBreathe, openPlayer, setPlayerBg, startCall, stepPlayer, toast, togglePlay } from '../state/actions';
-import { CALM_ITEMS, PLAYER_BG_CHIPS, SLEEP_TIMERS } from '../data/calm';
+import { findCalm, PLAYER_BG_CHIPS, SLEEP_TIMERS } from '../data/calm';
 import { EMERGENCY, TELE_MANAS } from '../data/helplines';
 import { useDialog } from '../components/useDialog';
 import { Disc, Orb, useReduceMotion } from '../components/figures';
@@ -48,7 +48,7 @@ export function Player() {
   const voice = useStore(s => s.voice);
   const nick = useStore(s => s.nick);
   const ref = useDialog<HTMLDivElement>(closePlayer);
-  const it = CALM_ITEMS.find(x => x.id === id);
+  const it = findCalm(id);
   if (!it?.lines) return null;
   const sleep = it.kind === 'sleep';
   const total = it.lines.length;
@@ -163,7 +163,7 @@ export function Crisis() {
         <button onClick={openBreathe} style={btn(false)}><span>Breathe with me</span><span style={sub}>One minute</span></button>
         <button onClick={() => void startCall('voice')} style={btn(false)}><span>Stay with me</span><span style={sub}>Voice</span></button>
       </div>
-      <div style={{ fontSize: 17, lineHeight: 1.55, color: C.amberText, marginTop: 8, textWrap: 'pretty' }}>If you can, move away from anything you could use to hurt yourself.</div>
+      <div style={{ fontSize: 17, lineHeight: 1.55, color: C.amberText, marginTop: 8, textWrap: 'pretty' }}>If you can, put anything that could be unsafe out of reach, and stay with someone.</div>
       <div style={{ marginTop: 'auto', paddingTop: 12 }}>
         {!confirm ? (
           <TextButton onClick={() => set({ crisisConfirm: true })} style={{ width: '100%', color: C.amberInk }}>I’m safe right now</TextButton>

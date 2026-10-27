@@ -5,7 +5,7 @@ import { analyzeJournalLocally, classify } from '@saathi/domain';
 // Adapter boundary for the language model (PRD section 4/6). Every call is tagged with a task so usage can be
 // recorded per purpose and so the mock can answer deterministically in tests.
 
-export type LlmTask = 'companion' | 'sit' | 'classify' | 'output_check' | 'summary' | 'memories' | 'checkin' | 'journal' | 'plan' | 'letter' | 'admin_playground' | 'admin_eval';
+export type LlmTask = 'companion' | 'sit' | 'classify' | 'output_check' | 'summary' | 'memories' | 'checkin' | 'journal' | 'plan' | 'letter' | 'story' | 'admin_playground' | 'admin_eval';
 export interface LlmMessage { role: 'user' | 'assistant'; content: string }
 
 export interface LlmBase {
@@ -300,6 +300,8 @@ export class MockLlm implements LlmProvider {
   /** If set, failNext only applies to calls with this task. */
   failTask: LlmTask | null = null;
   reply: ((req: LlmBase) => string) | null = null;
+  /** Tests can replace a structured answer. Return undefined to use the built-in one. */
+  jsonReply: ((schemaName: string, system: string) => unknown) | null = null;
 
   private record(req: LlmBase, schemaName?: string) {
     this.calls.push({ task: req.task, schemaName, system: `${req.system.stable}\n${req.system.dynamic ?? ''}`, messages: req.messages });
@@ -327,6 +329,8 @@ export class MockLlm implements LlmProvider {
 
   async json<T>(req: LlmJson<T>): Promise<T> {
     this.record(req, req.schemaName);
+    const forced = this.jsonReply?.(req.schemaName, req.system.stable);
+    if (forced !== undefined) return req.parse(forced);
     let user = req.messages.filter(m => m.role === 'user').at(-1)?.content ?? '';
     // Classify only the latest message, not the recent-turns context that precedes it.
     const tagged = [...user.matchAll(/<user_message>\n([\s\S]*?)\n<\/user_message>/g)].at(-1);
@@ -341,6 +345,7 @@ export class MockLlm implements LlmProvider {
       case 'checkin': v = { sleep: 'About six hours', food: 'Lunch', people: 'A call with a friend', okayThing: 'Chai on the balcony', mood: 2, intentions: ['Balcony chai, 8 a.m.', 'Short walk after lunch'] }; break;
       case 'plan': v = { items: ['A glass of water', 'Two minutes at the window', 'Message someone you like'] }; break;
       case 'letter': v = { body: 'This week you stepped out and you rested. One small invitation for next week: a short walk.' }; break;
+      case 'story': v = { title: 'Rain on the veranda', lines: ['You sit on a quiet veranda as the first soft rain begins.', 'The air smells of wet earth, and a cup of warm tea waits beside you.', 'The rain taps slowly on the roof, again and again.', 'Your breath slows to match it.', 'Everything that needed doing has been done enough.', 'Rest here as long as you like. Sleep well.'] }; break;
       default: throw new LlmFailure(`mock has no answer for ${req.schemaName}`);
     }
     return req.parse(v);

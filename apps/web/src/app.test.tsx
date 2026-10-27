@@ -259,3 +259,29 @@ describe('avatar and voice', () => {
     expect(await screen.findByText(/Natural voices aren’t switched on yet/)).toBeInTheDocument();
   });
 });
+
+describe('calm stories written for tonight', () => {
+  it('asks for a story by place, opens the player with it, and says so if it can’t', async () => {
+    const spy = vi.spyOn(api, 'story');
+    await signedIn('calm');
+    set({ calmTab: 'sleep' });
+    render(<App />);
+    expect(await screen.findByText('A story made for tonight')).toBeInTheDocument();
+    fireEvent.click(within(screen.getByRole('group', { name: 'Story place' })).getByRole('button', { name: 'Garden' }));
+    await waitFor(() => expect(spy).toHaveBeenCalledWith('garden'));
+    await waitFor(() => expect(getState().player).toMatch(/^story-/));
+    expect(await screen.findByRole('dialog', { name: /Evening story: garden/ })).toBeInTheDocument();
+    expect(getState().storyBusy).toBe(false);
+  });
+
+  it('shows a plain message and stays on the page when the story can’t be written', async () => {
+    vi.spyOn(api, 'story').mockRejectedValue(new Error('offline'));
+    await signedIn('calm');
+    set({ calmTab: 'sleep' });
+    render(<App />);
+    fireEvent.click(within(await screen.findByRole('group', { name: 'Story place' })).getByRole('button', { name: 'Rain' }));
+    await waitFor(() => expect(getState().toast).toMatch(/couldn’t write a story/));
+    expect(getState().player).toBeNull();
+    expect(getState().storyBusy).toBe(false);
+  });
+});

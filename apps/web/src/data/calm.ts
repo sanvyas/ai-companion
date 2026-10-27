@@ -27,6 +27,21 @@ export const CALM_ITEMS: CalmItem[] = [
   { id: 'garden', kind: 'sleep', cat: 'Sleep story', title: 'A tea garden at dusk', mins: 20, desc: 'Slow paths between green rows.', tint: '#F1C79B', bg: 'crickets', lines: ['This evening we’re walking through a tea garden, just as the sun goes down.', 'The rows of tea bushes curve over the hills like green waves.', 'The path under your feet is soft and damp. Each step is slow.', 'The air is cooling. The leaves smell fresh and a little sweet.', 'Far off, a bell rings from a small temple. Then silence.', 'The sky turns orange, then pink, then a deep blue.', 'You find a wooden bench at the top of the hill and sit down.', 'The garden goes still. The first stars appear.', 'Rest here as long as you like.', 'Sleep well.'] },
 ];
 
+/** Stories written for the person this evening. Held for the session only; the server keeps nothing but the calm-session record. */
+const generated: CalmItem[] = [];
+export const findCalm = (id: string | null | undefined) => CALM_ITEMS.find(x => x.id === id) ?? generated.find(x => x.id === id);
+export function addGeneratedStory(title: string, lines: string[]): CalmItem {
+  const item: CalmItem = { id: `story-${Date.now()}`, kind: 'sleep', cat: 'Sleep story', title, mins: Math.max(3, Math.round(lines.length * 0.6)), desc: 'Written for you tonight.', tint: '#B7B1E6', lines };
+  generated.push(item);
+  if (generated.length > 5) generated.shift();
+  return item;
+}
+
+export const STORY_THEMES: { id: 'rain' | 'garden' | 'train' | 'sea' | 'village' | 'courtyard'; label: string }[] = [
+  { id: 'rain', label: 'Rain' }, { id: 'garden', label: 'Garden' }, { id: 'train', label: 'Train' },
+  { id: 'sea', label: 'Seaside' }, { id: 'village', label: 'Village' }, { id: 'courtyard', label: 'Courtyard' },
+];
+
 export const CALM_CATS = ['All', 'Stress', 'Anxiety', 'Focus', 'Self-kindness'];
 
 export const SOUND_DEFS: { id: SoundId; label: string; tint: string }[] = [

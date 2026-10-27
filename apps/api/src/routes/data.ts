@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { CalmSessionBody, CalmSessionPatch, JournalCommitBody, JournalCreateBody, JournalPatchBody, MemoryBulkBody, MemoryPatch, MoodBody, PlanCreateBody, PlanPatchBody, SafetyAckBody, SafetyPlan, Plan } from '@saathi/contracts';
+import { CalmSessionBody, CalmSessionPatch, StoryBody, JournalCommitBody, JournalCreateBody, JournalPatchBody, MemoryBulkBody, MemoryPatch, MoodBody, PlanCreateBody, PlanPatchBody, SafetyAckBody, SafetyPlan, Plan } from '@saathi/contracts';
 import type { Ctx } from '../context.js';
 import { withUser } from '../db/pool.js';
 import { AppError } from '../errors.js';
@@ -11,6 +11,7 @@ import { analyzeEntry, commitEntry, createEntry, deleteEntry, discardAnalysis, l
 import { addPlanItem, getInsights, getPlanToday, getSafetyPlan, logMood, putSafetyPlan, queueJob, setPlanDone } from '../services/daily.js';
 import { HOBBIES, getCalmItem, getEvent, listCalm, listEvents, markInterest, progressCalm, startCalm } from '../services/catalogue.js';
 import { logSafetyEvent } from '../services/safety.js';
+import { makeStory } from '../services/story.js';
 import { getDek } from '../services/users.js';
 import { withIdempotency } from '../services/idempotency.js';
 import { getPrefs } from '../services/daily.js';
@@ -88,6 +89,8 @@ export function dataRoutes(app: FastifyInstance, ctx: Ctx) {
     return { items: await listCalm(ctx, uid(req), q.tab, q.category) };
   });
   app.get('/calm/items/:id', auth, async req => getCalmItem(ctx, uid(req), parse(z.object({ id: z.string().max(64) }), req.params).id));
+  // A fresh story costs a model call, so it is rate limited per person; the theme is a fixed list, never free text.
+  app.post('/calm/story', { ...adult, config: { rateLimit: { max: 8 * ctx.cfg.RATE_LIMIT_SCALE, timeWindow: '1 hour' } } }, async req => makeStory(ctx, uid(req), parse(StoryBody, req.body).theme));
   app.post('/calm/sessions', auth, async (req, reply) => withIdempotency(ctx, req, reply, async () => ({ status: 201, body: await startCalm(ctx, uid(req), parse(CalmSessionBody, req.body)) })));
   app.patch('/calm/sessions/:id', auth, async req => progressCalm(ctx, uid(req), idOf(req), parse(CalmSessionPatch, req.body).completedPct));
 

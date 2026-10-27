@@ -1,5 +1,6 @@
+import type { StoryTheme } from '@saathi/contracts';
 import { api, isDemo } from '../api';
-import { CALM_ITEMS } from '../data/calm';
+import { addGeneratedStory, findCalm } from '../data/calm';
 import { stopDictation, startDictation } from '../audio/dictation';
 import { isSpeaking, pauseNarration, say, stopSpeech, ttsSupported } from '../audio/speech';
 import { stopAllSounds, toggleSound } from '../audio/sounds';
@@ -135,7 +136,7 @@ let pIv: ReturnType<typeof setInterval> | undefined;
 
 function reportProgress(done: boolean) {
   const s = getState();
-  const it = CALM_ITEMS.find(x => x.id === s.player);
+  const it = findCalm(s.player);
   if (!s.pSession || !it?.lines) return;
   const pct = done ? 100 : Math.round((Math.min(pLine, it.lines.length) / it.lines.length) * 100);
   void api.progressCalm(s.pSession, pct).catch(() => undefined);
@@ -144,7 +145,7 @@ function reportProgress(done: boolean) {
 function playLine() {
   const st = getState();
   if (!st.player || !st.pPlaying) return;
-  const it = CALM_ITEMS.find(x => x.id === st.player);
+  const it = findCalm(st.player);
   if (!it?.lines) return;
   if (pLine >= it.lines.length) {
     set({ pPlaying: false, pEnded: true, pLineIdx: it.lines.length });
@@ -160,7 +161,7 @@ function playLine() {
 }
 
 export function openPlayer(id: string) {
-  const it = CALM_ITEMS.find(x => x.id === id);
+  const it = findCalm(id);
   if (!it) return;
   if (!it.lines) { openBreathe(); return; }
   stopSpeech();
@@ -190,6 +191,21 @@ export function openPlayer(id: string) {
   }, 1000);
 }
 
+/** Ask for a story written for tonight and start playing it. Falls back to a reviewed story on the server, and says so if offline. */
+export async function playStory(theme: StoryTheme) {
+  if (getState().storyBusy) return;
+  set({ storyBusy: true });
+  try {
+    const r = await api.story(theme);
+    const it = addGeneratedStory(r.title, r.lines);
+    openPlayer(it.id);
+  } catch {
+    toast('I couldn’t write a story just now. One of the ones below is ready whenever you are.');
+  } finally {
+    set({ storyBusy: false });
+  }
+}
+
 export function closePlayer() {
   const had = !!getState().player && !getState().pEnded;
   if (had) reportProgress(false);
@@ -205,7 +221,7 @@ export function togglePlay() {
 }
 
 export function stepPlayer(delta: -1 | 1) {
-  const it = CALM_ITEMS.find(x => x.id === getState().player);
+  const it = findCalm(getState().player);
   if (!it?.lines) return;
   clearTimeout(pNext);
   pauseNarration();

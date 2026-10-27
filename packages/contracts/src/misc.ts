@@ -43,6 +43,11 @@ export const CalmItem = z.object({ id: z.string(), kind: z.enum(['meditation', '
 export const CalmItemFull = CalmItem.extend({ lines: z.array(z.string()).nullable() });
 export const CalmSessionBody = z.object({ itemId: z.string().max(64), bgSound: z.string().max(32).optional(), timerMinutes: z.number().int().min(1).max(240).optional() });
 export const CalmSessionPatch = z.object({ completedPct: z.number().int().min(0).max(100) });
+/** Themes are a fixed list, never free text: the person picks a mood for the story, the app writes the rest. */
+export const STORY_THEMES = ['rain', 'garden', 'train', 'sea', 'village', 'courtyard'] as const;
+export const StoryTheme = z.enum(STORY_THEMES);
+export const StoryBody = z.object({ theme: StoryTheme });
+export const StoryResponse = z.object({ title: z.string().max(80), lines: z.array(z.string().max(600)).min(3).max(14), generated: z.boolean() });
 
 // ---- outside
 export const OutsideEvent = z.object({ id: z.string(), city: z.string(), title: z.string(), venue: z.string(), startsAt: z.string(), beginnerFriendly: z.boolean(), groupSize: z.string().nullable(), category: z.string(), price: z.string(), organiser: z.string().nullable(), details: z.record(z.unknown()), interested: z.boolean() });
@@ -70,6 +75,8 @@ export type Insights = z.infer<typeof Insights>;
 export type SafetyPlan = z.infer<typeof SafetyPlan>;
 export type Helpline = z.infer<typeof Helpline>;
 export type CalmItem = z.infer<typeof CalmItem>;
+export type StoryTheme = z.infer<typeof StoryTheme>;
+export type StoryResponse = z.infer<typeof StoryResponse>;
 export type OutsideEvent = z.infer<typeof OutsideEvent>;
 export type NotificationPrefs = z.infer<typeof NotificationPrefs>;
 export type Letter = z.infer<typeof Letter>;
