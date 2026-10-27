@@ -5,6 +5,7 @@
   "workspaces": ["apps/*", "packages/*"],
   "scripts": {
     "dev:web": "npm -w @saathi/web run dev",
+    "dev:admin": "npm -w @saathi/admin run dev",
     "dev:api": "npm -w @saathi/api run dev",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",

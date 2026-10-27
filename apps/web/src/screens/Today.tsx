@@ -9,7 +9,7 @@ import { HelpPill, PrimaryButton, Scroll, SectionLabel, flex } from '../componen
 
 function Tile({ title, desc, onClick, discBg, icon, dark }: { title: string; desc: string; onClick: () => void; discBg: string; icon: string; dark?: boolean }) {
   return (
-    <button onClick={onClick} style={{ textAlign: 'left', border: 'none', borderRadius: 24, padding: 16, background: dark ? 'linear-gradient(145deg,#2B3A63,#5A5493)' : C.white, color: dark ? C.moonText : C.ink, ...flex('column', 6), minHeight: 128, boxShadow: dark ? '0 12px 28px rgba(42,46,69,.18)' : shadow.card }}>
+    <button data-track={`tile.${title.toLowerCase().replace(/[^a-z]+/g, '_')}`} onClick={onClick} style={{ textAlign: 'left', border: 'none', borderRadius: 24, padding: 16, background: dark ? 'linear-gradient(145deg,#2B3A63,#5A5493)' : C.white, color: dark ? C.moonText : C.ink, ...flex('column', 6), minHeight: 128, boxShadow: dark ? '0 12px 28px rgba(42,46,69,.18)' : shadow.card }}>
       <span style={{ width: 44, height: 44, borderRadius: '50%', background: discBg, display: 'grid', placeItems: 'center' }}><Svg d={icon} stroke={dark ? C.moonText : C.ink} /></span>
       <span style={{ fontSize: 17, fontWeight: 600, marginTop: 2 }}>{title}</span>
       <span style={{ fontSize: 13, color: dark ? C.lavenderDeep : C.muted, lineHeight: 1.4 }}>{desc}</span>
@@ -57,7 +57,7 @@ export function Today() {
             <span style={{ fontSize: 17, fontWeight: 600 }}>A quiet moment for you?</span>
             <span style={{ fontSize: 15, color: C.muted, lineHeight: 1.45 }}>Your evening check-in is here whenever you are. Two minutes, or skip it.</span>
             <div style={{ ...flex('row', 8), alignItems: 'center' }}>
-              <button onClick={() => { void dismissCard(checkinCard.id); void startCheckin(); }} style={{ height: 48, padding: '0 20px', borderRadius: 24, border: 'none', background: C.teal, color: C.white, fontSize: 15, fontWeight: 600 }}>Check in</button>
+              <button data-track="card.checkin" onClick={() => { void dismissCard(checkinCard.id); void startCheckin(); }} style={{ height: 48, padding: '0 20px', borderRadius: 24, border: 'none', background: C.teal, color: C.white, fontSize: 15, fontWeight: 600 }}>Check in</button>
               <button onClick={() => void dismissCard(checkinCard.id)} style={{ height: 48, padding: '0 12px', background: 'none', border: 'none', color: C.teal, fontSize: 15, fontWeight: 600 }}>Not now</button>
             </div>
           </section>
@@ -72,8 +72,8 @@ export function Today() {
             </div>
           </div>
           <div style={flex('row', 8)}>
-            <PrimaryButton onClick={() => go('talk')} style={{ flex: 1.4, boxShadow: shadow.primary }}>Talk</PrimaryButton>
-            <button onClick={() => void startCall('sit')} style={{ flex: 1, height: 56, borderRadius: 28, border: `1.5px solid ${C.teal}`, background: C.white, color: C.teal, fontSize: 15, fontWeight: 600 }}>Just sit</button>
+            <span data-track="today.talk" style={{ display: 'contents' }}><PrimaryButton onClick={() => go('talk')} style={{ flex: 1.4, boxShadow: shadow.primary }}>Talk</PrimaryButton></span>
+            <button data-track="today.sit" onClick={() => void startCall('sit')} style={{ flex: 1, height: 56, borderRadius: 28, border: `1.5px solid ${C.teal}`, background: C.white, color: C.teal, fontSize: 15, fontWeight: 600 }}>Just sit</button>
           </div>
         </section>
 
@@ -90,7 +90,7 @@ export function Today() {
           <div style={flex('column', 2)}><h2 style={{ fontFamily: serif, fontSize: 22, fontWeight: 400, margin: 0 }}>How are you?</h2><span style={{ fontSize: 15, color: C.muted }}>One tap helps me notice how your weeks go.</span></div>
           <div role="group" aria-label="How are you?" style={{ ...flex('row'), justifyContent: 'space-between', padding: '0 2px' }}>
             {MOODS.map((m, i) => (
-              <button key={m.label} aria-label={m.label} aria-pressed={mood === i} onClick={() => void tapMood(i)}
+              <button key={m.label} data-track={`mood.${i}`} aria-label={m.label} aria-pressed={mood === i} onClick={() => void tapMood(i)}
                 style={{ width: 48, height: 48, border: 'none', background: m.color, borderRadius: m.radius, boxShadow: mood === i ? ring : '0 6px 16px rgba(42,46,69,.10)', transition: 'box-shadow 400ms' }} />
             ))}
           </div>

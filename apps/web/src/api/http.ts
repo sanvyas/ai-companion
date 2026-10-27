@@ -1,5 +1,5 @@
 import type { ServerMsg } from '@saathi/contracts';
-import { ApiError, type Api, type ConvEvents, type ConvTransport, type PublicConfig } from './types';
+import { ApiError, type AnalyticsEvent, type Api, type ConvEvents, type ConvTransport, type PublicConfig } from './types';
 
 const RT_KEY = 'saathi.rt';
 const BASE = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? 'http://localhost:8787';
@@ -25,7 +25,7 @@ export class HttpApi implements Api {
   hasSession() { return !!(this.access || readRt()); }
 
   // ---------------------------------------------------------------------------------------------- plumbing
-  private async raw(method: string, path: string, body?: unknown, opts: { auth?: boolean; idem?: boolean; blob?: boolean } = {}): Promise<Response> {
+  private async raw(method: string, path: string, body?: unknown, opts: { auth?: boolean; idem?: boolean; blob?: boolean; keepalive?: boolean } = {}): Promise<Response> {
     const headers: Record<string, string> = {};
     if (body !== undefined) headers['Content-Type'] = 'application/json';
     if (opts.idem) headers['Idempotency-Key'] = crypto.randomUUID();
@@ -33,10 +33,10 @@ export class HttpApi implements Api {
       await this.ensureAccess();
       if (this.access) headers.Authorization = `Bearer ${this.access}`;
     }
-    return fetch(`${BASE}${path}`, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
+    return fetch(`${BASE}${path}`, { method, headers, body: body === undefined ? undefined : JSON.stringify(body), keepalive: opts.keepalive });
   }
 
-  private async req<T>(method: string, path: string, body?: unknown, opts: { auth?: boolean; idem?: boolean } = {}): Promise<T> {
+  private async req<T>(method: string, path: string, body?: unknown, opts: { auth?: boolean; idem?: boolean; keepalive?: boolean } = {}): Promise<T> {
     let res = await this.raw(method, path, body, opts);
     if (res.status === 401 && opts.auth !== false && (await this.refresh())) res = await this.raw(method, path, body, opts);
     if (res.status === 204) return undefined as T;
@@ -170,6 +170,7 @@ export class HttpApi implements Api {
   inbox = async () => (await this.req<{ cards: { id: string; kind: string }[] }>('GET', '/inbox')).cards;
   dismissCard = async (id: string) => { await this.req('POST', `/inbox/${id}/dismiss`); };
   notificationOpened = async (kind: string) => { await this.req('POST', '/notifications/opened', { kind }); };
+  sendEvents = async (sessionId: string, events: AnalyticsEvent[]) => { await this.req('POST', '/events', { sessionId, platform: 'web', appVersion: import.meta.env.VITE_APP_VERSION ?? '0.1.0', events }, { keepalive: true }); };
 
   // ---------------------------------------------------------------------------------------------- conversations
   createConversation = (mode: Parameters<Api['createConversation']>[0], continueFrom?: string, first?: boolean) => this.req<Awaited<ReturnType<Api['createConversation']>>>('POST', '/conversations', { mode, continueFrom, first }, { idem: true });

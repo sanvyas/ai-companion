@@ -19,6 +19,7 @@ import { meRoutes } from './routes/me.js';
 import { conversationRoutes } from './routes/conversations.js';
 import { dataRoutes } from './routes/data.js';
 import { inboxRoutes, notificationRoutes } from './routes/notifications.js';
+import { eventRoutes } from './routes/events.js';
 import { publicRoutes } from './routes/public.js';
 import { adminRoutes } from './admin/index.js';
 import { captureError } from './admin/errors.js';
@@ -95,6 +96,7 @@ export async function buildApp(cfg: Config, opts: BuildOpts = {}): Promise<{ app
   dataRoutes(app, ctx);
   notificationRoutes(app, ctx);
   inboxRoutes(app, ctx);
+  eventRoutes(app, ctx);
   await adminRoutes(app, ctx);
 
   app.addHook('onClose', async () => { rt.stop(); if (!opts.db) await db.end(); });

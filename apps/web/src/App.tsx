@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { getState, saveUi, subscribe, useStore, type Screen } from './state/store';
 import { bindUi, handleNotificationOpen, startTicker, teardownAll } from './state/actions';
 import { boot } from './state/session';
+import { startAnalytics } from './state/analytics';
 import { listenForNotificationOpens, registerServiceWorker } from './state/push';
 import { loadVoices } from './audio/speech';
 import { Age, CompanionPicker, Consent, Intro, Language, NameScreen, OtpScreen, Under, Welcome } from './screens/Onboarding';
@@ -55,9 +56,10 @@ export function App() {
     loadVoices();
     const stopTicker = startTicker();
     const stopPush = listenForNotificationOpens(handleNotificationOpen);
+    const stopAnalytics = startAnalytics();
     void registerServiceWorker();
     void boot();
-    return () => { stopTicker(); stopPush(); teardownAll(); };
+    return () => { stopTicker(); stopPush(); stopAnalytics(); teardownAll(); };
   }, []);
 
   // Persist display preferences only. Everything personal stays on the server (see store.ts).

@@ -1,4 +1,5 @@
 import { ApiError, api, isDemo, type Consent, type ConsentUpdate, type Me, type Privacy, type PrivacyUpdate } from '../api';
+import { trackStep } from './analytics';
 import { builtinHelplines, getState, resetState, set, type Language, type Persona, type Look } from './store';
 
 // Boot, sign-in and the person's own settings. The server is the source of truth: screens read mirrors in the store,
@@ -163,6 +164,7 @@ export async function finishOnboarding(consent: ConsentUpdate): Promise<boolean>
     await api.putConsent(consent);
     await api.patchMe({ onboarded: true });
     applyMe(await api.me());
+    trackStep('onboarding_done');
     return true;
   } catch (e) {
     toastFn(errMsg(e));

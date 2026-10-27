@@ -1,0 +1,73 @@
+# Started from the admin portal's Developer page (or by hand from the Actions tab). It builds the chosen ref, publishes
+# a container image for the API, and calls the deploy hook of the chosen environment.
+#
+# Set up once, per GitHub Environment (Settings → Environments → staging, production):
+#   secret DEPLOY_HOOK_URL   a URL your host exposes to pull and restart the image (Render, Fly, Railway, Coolify, ...)
+#   variable WEB_API_URL     the public URL of that environment's API, baked into the web and admin builds
+# Turn on "Required reviewers" for production so a second person approves every production deploy.
+name: Deploy
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Where to deploy
+        type: choice
+        options: [staging, production]
+        required: true
+      ref:
+        description: Branch, tag or commit to deploy
+        default: main
+        required: true
+concurrency:
+  group: deploy-${{ inputs.environment }}
+  cancel-in-progress: false
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: '${{ inputs.ref }}' }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run typecheck
+      - name: Build web and admin
+        run: |
+          npm run build -w @saathi/web
+          npm run build -w @saathi/admin
+        env:
+          VITE_API_URL: ${{ vars.WEB_API_URL }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: static-${{ inputs.environment }}
+          path: |
+            apps/web/dist
+            apps/admin/dist
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with: { registry: ghcr.io, username: '${{ github.actor }}', password: '${{ secrets.GITHUB_TOKEN }}' }
+      - name: Image tag
+        id: tag
+        run: echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/api:${{ inputs.environment }}
+            ghcr.io/${{ github.repository }}/api:${{ steps.tag.outputs.sha }}
+          build-args: |
+            GIT_SHA=${{ steps.tag.outputs.sha }}
+            BUILD_TIME=${{ github.event.repository.updated_at }}
+      - name: Tell the host to pull the new image
+        env: { DEPLOY_HOOK_URL: '${{ secrets.DEPLOY_HOOK_URL }}' }
+        run: |
+          if [ -z "$DEPLOY_HOOK_URL" ]; then echo "No DEPLOY_HOOK_URL set for ${{ inputs.environment }}. The image is published; deploy it with your host."; exit 0; fi
+          curl -fsS -X POST "$DEPLOY_HOOK_URL"

@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import type { FastifyInstance } from 'fastify';
 import type { Ctx } from '../../context.js';
 import { withSystem } from '../../db/pool.js';
@@ -8,8 +7,9 @@ import { liveSessionCount } from '../../services/conversations.js';
 import { guard } from './util.js';
 
 const started = Date.now();
+/** Set APP_VERSION, GIT_SHA and BUILD_TIME at build time (the Docker image and CI do). */
 export const buildInfo = () => ({
-  version: (() => { try { return (JSON.parse(readFileSync(new URL('../../../package.json', import.meta.url), 'utf8')) as { version: string }).version; } catch { return '0.0.0'; } })(),
+  version: process.env.APP_VERSION ?? process.env.npm_package_version ?? '0.0.0',
   commit: process.env.GIT_SHA ?? null,
   builtAt: process.env.BUILD_TIME ?? null,
   node: process.version,

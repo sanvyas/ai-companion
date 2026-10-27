@@ -14,7 +14,7 @@ export function Nav() {
   const key = NAV_KEY[screen] ?? screen;
   const col = (k: string) => (key === k ? C.teal : C.muted);
   const item = (k: Screen, label: string, d: string, extra?: { fill?: string; round?: boolean }) => (
-    <button onClick={() => go(k)} aria-current={key === k ? 'page' : undefined} style={{ background: 'none', border: 'none', ...flex('column', 4), alignItems: 'center', color: col(k) }}>
+    <button data-track={`nav.${k}`} onClick={() => go(k)} aria-current={key === k ? 'page' : undefined} style={{ background: 'none', border: 'none', ...flex('column', 4), alignItems: 'center', color: col(k) }}>
       <Svg d={d} size={24} stroke="currentColor" fill={extra?.fill ?? 'none'} />
       <span style={{ fontSize: 13, fontWeight: 600 }}>{label}</span>
     </button>
@@ -23,7 +23,7 @@ export function Nav() {
     <nav aria-label="Main" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 'var(--nav-h)', padding: '0 8px var(--sa-bottom)', background: 'rgba(251,247,240,.94)', backdropFilter: 'blur(16px)', boxShadow: '0 -10px 30px rgba(42,46,69,.06)', display: 'grid', gridTemplateColumns: 'repeat(5,minmax(0,1fr))', alignItems: 'center', zIndex: 20 }}>
       {item('today', 'Today', 'M16.5 11a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0zM3 19.5h18')}
       {item('outside', 'Outside', 'M3 19c3.5-6 6.5-9 9-9s5.5 3 9 9M19 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0z')}
-      <button onClick={() => go('talk')} aria-label="Talk" aria-current={screen === 'talk' ? 'page' : undefined} style={{ background: 'none', border: 'none', ...flex('column', 4), alignItems: 'center', color: C.teal }}>
+      <button data-track="nav.talk" onClick={() => go('talk')} aria-label="Talk" aria-current={screen === 'talk' ? 'page' : undefined} style={{ background: 'none', border: 'none', ...flex('column', 4), alignItems: 'center', color: C.teal }}>
         <span style={{ width: 60, height: 60, borderRadius: '50%', background: C.teal, display: 'grid', placeItems: 'center', marginTop: -18, boxShadow: '0 10px 24px rgba(63,122,112,.35)' }}>
           <svg width="26" height="26" viewBox="0 0 24 24" fill="#FFFFFF" stroke="#FFFFFF" strokeWidth="1.75" strokeLinecap="round" aria-hidden><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" fill="none" /></svg>
         </span>

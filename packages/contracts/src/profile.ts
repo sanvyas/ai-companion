@@ -10,6 +10,8 @@ export const Consent = z.object({
   healthData: z.boolean(),
   location: z.enum(['off', 'city', 'precise']),
   improveModels: z.boolean(),
+  /** Share which screens and buttons are used (never what is written or said) so the product can improve. */
+  analytics: z.boolean(),
 });
 export const ConsentUpdate = Consent.omit({ version: true, acceptedAt: true }).partial();
 
@@ -50,6 +52,8 @@ export const Me = z.object({
   privacy: Privacy,
   companion: Companion,
   trustedContact: z.object({ name: z.string(), relation: z.string(), phoneMasked: z.string() }).nullable(),
+  /** Feature flags that apply to this person, set from the admin portal. */
+  flags: z.record(z.boolean()),
   features: z.object({ otp: z.boolean(), google: z.boolean(), llm: z.boolean(), stt: z.boolean(), tts: z.boolean(), push: z.boolean(), calls: z.boolean() }),
 });
 

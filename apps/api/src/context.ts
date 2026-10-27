@@ -22,4 +22,6 @@ export interface Ctx {
   tts: TtsProvider | null;
   telephony: TelephonyProvider | null;
   log: FastifyBaseLogger;
+  /** Outbound HTTP for the Developer page. Tests replace it; production uses the global fetch. */
+  fetchImpl?: typeof fetch;
 }

@@ -1,4 +1,5 @@
 import { prompt } from '../runtime/prompts.js';
+import { anonId } from '../routes/events.js';
 import { z } from 'zod';
 import { checkAiOutput } from '@saathi/domain';
 import type { Ctx } from '../context.js';
@@ -87,6 +88,8 @@ async function maintenance(ctx: Ctx): Promise<void> {
     // Transcript retention per user setting (PRD 5.3). 36500 days = until deleted.
     await tx.query(`DELETE FROM messages m USING privacy_settings p WHERE p.user_id = m.user_id AND p.transcript_retention_days < 36500 AND m.created_at < now() - make_interval(days => p.transcript_retention_days)`);
     await tx.query(`DELETE FROM safety_events WHERE created_at < now() - interval '1 year'`);
+    await tx.query('DELETE FROM analytics_events WHERE created_at < now() - make_interval(days => $1)', [ctx.rt.settings.num('analytics.retention_days')]);
+    await tx.query(`DELETE FROM error_log WHERE last_seen < now() - interval '60 days'`);
     await tx.query(`DELETE FROM otp_challenges WHERE created_at < now() - interval '1 day'`);
     await tx.query(`DELETE FROM idempotency_keys WHERE created_at < now() - interval '2 days'`);
     await tx.query(`DELETE FROM refresh_tokens WHERE expires_at < now() - interval '7 days'`);
@@ -102,6 +105,8 @@ async function purgeAccount(ctx: Ctx, userId: string): Promise<void> {
     const still = (await tx.query('SELECT deletion_requested_at FROM users WHERE id = $1', [userId])).rows[0];
     if (!still?.deletion_requested_at) return; // cancelled in the meantime
     await tx.query('DELETE FROM users WHERE id = $1', [userId]);
+    // Their usage events were already detached from them; analytics rows carry only a one-way id we can recompute.
+    await tx.query('DELETE FROM analytics_events WHERE anon_id = $1', [anonId(ctx, userId)]);
   });
   ctx.crypto.forget(userId);
 }

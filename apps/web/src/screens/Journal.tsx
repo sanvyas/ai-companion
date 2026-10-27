@@ -30,12 +30,12 @@ export function JournalList() {
       <JournalTabs active="journal" />
       <Scroll pad="20px 24px var(--scroll-bottom)">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: 10 }}>
-          <button onClick={() => startJournal('write')} style={{ textAlign: 'left', border: 'none', borderRadius: 28, padding: 18, background: C.white, boxShadow: shadow.card, ...flex('column', 8) }}>
+          <button data-track="journal.write" onClick={() => startJournal('write')} style={{ textAlign: 'left', border: 'none', borderRadius: 28, padding: 18, background: C.white, boxShadow: shadow.card, ...flex('column', 8) }}>
             <span style={{ width: 44, height: 44, borderRadius: '50%', background: C.peach, display: 'grid', placeItems: 'center' }}><Svg d={P.pen} /></span>
             <span style={{ fontSize: 17, fontWeight: 600 }}>Write</span>
             <span style={{ fontSize: 13, color: C.muted, lineHeight: 1.4 }}>Type at your own pace, with a prompt if you like.</span>
           </button>
-          <button onClick={() => startJournal('speak')} style={{ textAlign: 'left', border: 'none', borderRadius: 28, padding: 18, background: C.teal, color: C.white, boxShadow: '0 12px 32px rgba(63,122,112,.25)', ...flex('column', 8) }}>
+          <button data-track="journal.talk_it_out" onClick={() => startJournal('speak')} style={{ textAlign: 'left', border: 'none', borderRadius: 28, padding: 18, background: C.teal, color: C.white, boxShadow: '0 12px 32px rgba(63,122,112,.25)', ...flex('column', 8) }}>
             <span style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(255,255,255,.18)', display: 'grid', placeItems: 'center' }}><Svg d={P.mic} stroke="#FFFFFF" /></span>
             <span style={{ fontSize: 17, fontWeight: 600 }}>Talk it out</span>
             <span style={{ fontSize: 13, color: C.white, lineHeight: 1.4 }}>Just speak. I’ll write it down for you.</span>

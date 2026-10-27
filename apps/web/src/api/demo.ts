@@ -23,9 +23,9 @@ export class DemoApi implements Api {
   private _me: Me = {
     id: uuid(), nickname: 'Aarav', language: 'hinglish', timezone: 'Asia/Kolkata', city: 'Bengaluru', phoneMasked: '+91 ••••• 210', subscription: 'basic',
     ageConfirmed18: true, onboarded: false, pendingDeletion: false,
-    consent: { version: 1, acceptedAt: null, remember: false, notifications: false, calls: false, healthData: false, location: 'off', improveModels: false },
+    consent: { version: 1, acceptedAt: null, remember: false, notifications: false, calls: false, healthData: false, location: 'off', improveModels: false, analytics: false },
     privacy: { lockScreenPreviews: false, discreetMode: false, appLock: 'off', quickHide: true, transcriptRetentionDays: 90 },
-    companion: { name: 'Saathi', look: 'asha', voice: 'warm' },
+    companion: { name: 'Saathi', look: 'asha', voice: 'warm' }, flags: {},
     trustedContact: { name: TRUSTED_CONTACT.name, relation: TRUSTED_CONTACT.relation, phoneMasked: '+91 ••••• 233' },
     features: { otp: true, google: false, llm: true, stt: false, tts: false, push: false, calls: false },
   };
@@ -156,6 +156,7 @@ export class DemoApi implements Api {
   async inbox() { return this.cards; }
   async dismissCard(id: string) { this.cards = this.cards.filter(c => c.id !== id); }
   async notificationOpened() { /* no-op */ }
+  async sendEvents() { /* the demo tracks nothing */ }
 
   async createConversation(mode: Parameters<Api['createConversation']>[0]) { return { id: uuid(), mode, voice: { serverStt: false, serverTts: false } }; }
   async startWalk() { return { id: uuid(), mode: 'walk' as const, voice: { serverStt: false, serverTts: false } }; }

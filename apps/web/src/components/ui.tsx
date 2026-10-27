@@ -21,6 +21,7 @@ export const Scroll = ({ children, pad = '24px 24px var(--scroll-bottom)', gap =
 export function HelpPill({ dark = false, small = false }: { dark?: boolean; small?: boolean }) {
   return (
     <button
+      data-track="help.open"
       onClick={() => openSheet('support')}
       style={{
         height: small ? 40 : 44, padding: small ? '0 14px' : '0 16px', borderRadius: 22, flex: 'none',

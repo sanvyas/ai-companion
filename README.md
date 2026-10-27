@@ -49,6 +49,17 @@ packages/domain  Pure, tested rules: safety classifier, output check, journal an
 - **Scheduler.** Check-ins (9 a.m. / 9 p.m. local), Sunday letter, quiet-week message, retention and account-purge jobs. Idempotent jobs table with deterministic keys. At most 2 push + 1 call a day, quiet hours 10 p.m. to 8 a.m., back-off when ignored, silence after a quiet week, generic lock-screen text unless previews are on.
 - **Voice.** Server STT/TTS slots exist (PCM over the same WebSocket, barge-in under 200 ms, amplitude-driven lip-sync). With none configured the web app uses the browser's `SpeechRecognition` and `speechSynthesis` through the same pipeline.
 
+## Admin portal and developer platform
+
+`apps/admin` is the founders' control room: people, cost in rupees, every AI prompt (edit, test, evaluate, publish, roll back), safety review, settings and kill switches, API keys that the app picks up without a restart, usage analytics (opt-in only), infrastructure health, GitHub commits/CI/deploys, and an append-only audit log. Sign-in is password plus authenticator code.
+
+```bash
+npm run admin:create -w @saathi/api -- --email you@example.com --name "You"
+npm run dev:admin        # http://localhost:5174
+```
+
+Full guide, including what is live versus key-stored-only: [`docs/ADMIN.md`](docs/ADMIN.md).
+
 ## Safety behaviour (PRD 6.4, 8.10)
 
 - Level 2 shows the care card; level 3 takes over with the crisis screen and the fixed script, recorded server-side as a safety event.

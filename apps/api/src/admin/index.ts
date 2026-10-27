@@ -5,6 +5,7 @@ import { authRoutes } from './routes/auth.js';
 import { configRoutes } from './routes/config.js';
 import { contentRoutes } from './routes/content.js';
 import { costRoutes } from './routes/cost.js';
+import { devRoutes } from './routes/dev.js';
 import { infraRoutes } from './routes/infra.js';
 import { overviewRoutes } from './routes/overview.js';
 import { promptRoutes } from './routes/prompts.js';
@@ -24,5 +25,6 @@ export async function adminRoutes(app: FastifyInstance, ctx: Ctx) {
     costRoutes(scope, ctx);
     analyticsRoutes(scope, ctx);
     infraRoutes(scope, ctx);
+    devRoutes(scope, ctx);
   }, { prefix: '/admin/api' });
 }

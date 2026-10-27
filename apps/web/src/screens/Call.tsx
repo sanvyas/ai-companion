@@ -53,7 +53,7 @@ export function Call() {
       <div style={{ padding: '0 24px calc(var(--sa-bottom) + 32px)', ...flex('column', 18) }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,minmax(0,1fr))', gap: 8 }}>
           {ctrls.map(c => (
-            <button key={c.label} onClick={c.tap} aria-pressed={c.label === 'Text' ? undefined : c.on} style={{ background: 'none', border: 'none', ...flex('column', 8), alignItems: 'center', color: C.moonText }}>
+            <button key={c.label} data-track={`call.${c.label.toLowerCase()}`} onClick={c.tap} aria-pressed={c.label === 'Text' ? undefined : c.on} style={{ background: 'none', border: 'none', ...flex('column', 8), alignItems: 'center', color: C.moonText }}>
               <span style={{ width: 64, height: 64, borderRadius: '50%', background: c.on ? C.moonText : 'rgba(255,255,255,.1)', display: 'grid', placeItems: 'center', transition: 'background 400ms' }}>
                 <Svg d={c.icon} size={24} stroke={c.on ? '#1B2340' : C.moonText} />
               </span>
@@ -61,7 +61,7 @@ export function Call() {
             </button>
           ))}
         </div>
-        <button onClick={() => (sit ? void endCall() : setAsking(true))} disabled={s.busy && !s.conv} style={{ height: 56, borderRadius: 28, border: 'none', background: C.moonText, color: '#1B2340', fontSize: 17, fontWeight: 600 }}>End</button>
+        <button data-track="call.end" onClick={() => (sit ? void endCall() : setAsking(true))} disabled={s.busy && !s.conv} style={{ height: 56, borderRadius: 28, border: 'none', background: C.moonText, color: '#1B2340', fontSize: 17, fontWeight: 600 }}>End</button>
       </div>
       {asking && !s.callEnded && <FeelingSheet reduce={reduce} onPick={f => { setAsking(false); void endCall(f); }} />}
       {s.callEnded && <ClosingSheet reduce={reduce} />}

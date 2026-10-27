@@ -11,7 +11,7 @@ type Row = Record<string, unknown>;
 const toConsent = (r: Row): Consent => ({
   version: r.version as number, acceptedAt: r.accepted_at ? (r.accepted_at as Date).toISOString() : null,
   remember: r.remember as boolean, notifications: r.notifications as boolean, calls: r.calls as boolean,
-  healthData: r.health_data as boolean, location: r.location as Consent['location'], improveModels: r.improve_models as boolean,
+  healthData: r.health_data as boolean, location: r.location as Consent['location'], improveModels: r.improve_models as boolean, analytics: r.analytics as boolean,
 });
 const toPrivacy = (r: Row): Privacy => ({
   lockScreenPreviews: r.lock_screen_previews as boolean, discreetMode: r.discreet_mode as boolean,
@@ -57,6 +57,7 @@ export async function getMe(ctx: Ctx, userId: string): Promise<Me> {
       privacy: await getPrivacy(tx, userId),
       companion: await getCompanion(tx, userId),
       trustedContact: trusted ? { name: trusted.name, relation: trusted.relation, phoneMasked: maskPhone(trusted.phone) } : null,
+      flags: ctx.rt.flags.forUser(userId),
       features: {
         otp: ctx.otp.canSend, google: !!ctx.rt.secrets.get('google', 'client_id'), llm: ctx.llm.configured,
         stt: !!ctx.stt, tts: !!ctx.tts, push: ctx.push.enabled, calls: !!ctx.telephony,
@@ -82,7 +83,7 @@ export async function updateMe(ctx: Ctx, userId: string, b: MeUpdate): Promise<v
 }
 
 const CONSENT_COLS: Record<keyof ConsentUpdate, string> = {
-  remember: 'remember', notifications: 'notifications', calls: 'calls', healthData: 'health_data', location: 'location', improveModels: 'improve_models',
+  remember: 'remember', notifications: 'notifications', calls: 'calls', healthData: 'health_data', location: 'location', improveModels: 'improve_models', analytics: 'analytics',
 };
 
 export async function updateConsent(ctx: Ctx, userId: string, b: ConsentUpdate): Promise<Consent> {

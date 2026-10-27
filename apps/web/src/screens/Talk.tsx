@@ -12,7 +12,7 @@ function RowCard({ rows, label }: { rows: Row[]; label: string }) {
   return (
     <div role="list" aria-label={label} style={{ background: C.white, borderRadius: 28, padding: '4px 18px', boxShadow: shadow.card, ...flex('column') }}>
       {rows.map((tm, i) => (
-        <button role="listitem" key={tm.label} onClick={tm.onTap} style={{ ...flex('row', 14), alignItems: 'center', textAlign: 'left', border: 'none', background: 'none', padding: '14px 0', borderBottom: i < rows.length - 1 ? `1px solid ${C.rule}` : 'none' }}>
+        <button role="listitem" key={tm.label} data-track={`talk.${tm.label.toLowerCase().replace(/[^a-z]+/g, '_')}`} onClick={tm.onTap} style={{ ...flex('row', 14), alignItems: 'center', textAlign: 'left', border: 'none', background: 'none', padding: '14px 0', borderBottom: i < rows.length - 1 ? `1px solid ${C.rule}` : 'none' }}>
           <div style={{ flex: 'none', width: 48, height: 48, borderRadius: '50%', background: tm.tint, display: 'grid', placeItems: 'center' }}><Svg d={tm.icon} /></div>
           <div style={{ flex: 1, ...flex('column', 2) }}><span style={{ fontSize: 17, fontWeight: 600 }}>{tm.label}</span><span style={{ fontSize: 15, color: C.muted, lineHeight: 1.4 }}>{tm.desc}</span></div>
           <Chevron />

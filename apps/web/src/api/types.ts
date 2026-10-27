@@ -6,7 +6,9 @@ import type {
 
 export type { Companion, Consent, ConsentUpdate, ConversationItem, ConversationMode, EndConversationResponse, Helpline, Insights, JournalAnalysis, JournalCreateBody, JournalEntry, MemoryItem, Me, MeUpdate, NotificationPrefs, OtpStartResponse, OutsideEvent, PlanItem, Privacy, PrivacyUpdate, SafetyPlan, Theme, TrustedContact, Letter };
 
-export interface PublicConfig { otp: boolean; google: boolean; googleClientId: string | null; llm: boolean; stt: boolean; tts: boolean; push: boolean }
+export interface PublicConfig { otp: boolean; google: boolean; googleClientId: string | null; llm: boolean; stt: boolean; tts: boolean; push: boolean; signupsOpen?: boolean; voicePaused?: boolean; analytics?: boolean }
+
+export interface AnalyticsEvent { name: 'screen_view' | 'click' | 'step' | 'error'; screen?: string; el?: string; durationMs?: number; step?: string; result?: string; at?: number }
 
 export class ApiError extends Error {
   constructor(public readonly status: number, public readonly code: string, message: string, public readonly details?: unknown) { super(message); }
@@ -102,6 +104,9 @@ export interface Api {
   inbox(): Promise<{ id: string; kind: string }[]>;
   dismissCard(id: string): Promise<void>;
   notificationOpened(kind: string): Promise<void>;
+
+  // product analytics (only for people who opted in)
+  sendEvents(sessionId: string, events: AnalyticsEvent[]): Promise<void>;
 
   // conversations
   createConversation(mode: ConversationMode, continueFrom?: string, first?: boolean): Promise<{ id: string; mode: ConversationMode; voice: { serverStt: boolean; serverTts: boolean } }>;

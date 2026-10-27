@@ -208,18 +208,19 @@ export function CompanionPicker() {
   );
 }
 
-type Draft = Required<Pick<ConsentUpdate, 'remember' | 'notifications' | 'healthData'>> & { location: 'off' | 'city' };
+type Draft = Required<Pick<ConsentUpdate, 'remember' | 'notifications' | 'healthData' | 'analytics'>> & { location: 'off' | 'city' };
 
-const CONSENTS: { k: 'remember' | 'notifications' | 'healthData' | 'city'; label: string; desc: string }[] = [
+const CONSENTS: { k: 'remember' | 'notifications' | 'healthData' | 'city' | 'analytics'; label: string; desc: string }[] = [
   { k: 'remember', label: 'Remember things from our chats', desc: 'So I can ask how things went. You can see, edit and delete everything.' },
   { k: 'notifications', label: 'Notifications and check-ins', desc: 'Gentle, private, never more than twice a day.' },
   { k: 'city', label: 'Your city', desc: 'To suggest small things nearby. Never your exact location.' },
+  { k: 'analytics', label: 'Share how I use Saathi', desc: 'Which screens and buttons get used, never what you write or say. It helps us make the app better.' },
   { k: 'healthData', label: 'Sleep and steps', desc: 'From Health Connect or Apple Health. Needs the phone app, so it does nothing in a browser yet.' },
 ];
 
 export function Consent() {
   const compName = useStore(s => s.compName);
-  const [d, setD] = useState<Draft>({ remember: false, notifications: false, healthData: false, location: 'off' });
+  const [d, setD] = useState<Draft>({ remember: false, notifications: false, healthData: false, analytics: false, location: 'off' });
   const [busy, setBusy] = useState(false);
   const value = (k: typeof CONSENTS[number]['k']) => (k === 'city' ? d.location === 'city' : d[k]);
   const flip = (k: typeof CONSENTS[number]['k']) => setD(p => (k === 'city' ? { ...p, location: p.location === 'city' ? 'off' : 'city' } : { ...p, [k]: !p[k] }));
@@ -238,7 +239,7 @@ export function Consent() {
       <div style={{ marginTop: 'auto' }}>
         <PrimaryButton disabled={busy} onClick={async () => {
           setBusy(true);
-          const ok = await finishOnboarding({ remember: d.remember, notifications: d.notifications, healthData: d.healthData, location: d.location });
+          const ok = await finishOnboarding({ remember: d.remember, notifications: d.notifications, healthData: d.healthData, analytics: d.analytics, location: d.location });
           setBusy(false);
           if (ok) await startCall('voice', true);
         }} style={{ width: '100%', opacity: busy ? 0.7 : 1 }}>Say hello to {compName}</PrimaryButton>
