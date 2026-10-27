@@ -3,7 +3,7 @@ import { z } from 'zod';
 import type { Ctx } from '../../context.js';
 import { withSystem } from '../../db/pool.js';
 import { badRequest, notFound } from '../../errors.js';
-import { body, guard, record } from './util.js';
+import { body, guard, params, payload, show, record } from './util.js';
 
 // The catalogue the app shows: helplines (safety critical, each number needs a person to verify it), events and the
 // read-only calm library.
@@ -31,7 +31,7 @@ export function contentRoutes(app: FastifyInstance, ctx: Ctx) {
     items: await q(`SELECT id, name, description, number, tel, kind, city, languages, hours, sort, active, verified_at::text AS verified_at, (verified_at IS NULL OR verified_at < current_date - 100) AS stale FROM helplines ORDER BY sort, id`),
   }));
 
-  app.post('/content/helplines', guard(ctx, 'content.write'), async req => {
+  app.post('/content/helplines', guard(ctx, 'content.write', req => `Add helpline “${show(payload(req).name)}”`), async req => {
     const b = body(Helpline.extend({ id: z.string().trim().regex(/^[a-z0-9-]{3,40}$/) }), req.body);
     const r = await q(`INSERT INTO helplines (id,name,description,number,tel,kind,city,languages,hours,sort,active) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) ON CONFLICT (id) DO NOTHING RETURNING id`, [b.id, b.name, b.description, b.number, b.tel, b.kind, b.city, b.languages, b.hours, b.sort, b.active]);
     if (!r.length) throw badRequest('exists', 'A helpline with that id already exists.');
@@ -43,7 +43,7 @@ export function contentRoutes(app: FastifyInstance, ctx: Ctx) {
    * Send only what changes. Any edit to the number or dial string clears "verified": a changed number has to be checked
    * by a person again.
    */
-  app.put('/content/helplines/:id', guard(ctx, 'content.write'), async req => {
+  app.put('/content/helplines/:id', guard(ctx, 'content.write', req => `Edit helpline “${params(req).id}” (${Object.keys(payload(req)).join(', ')})`), async req => {
     const id = (req.params as { id: string }).id;
     const patch = body(HelplinePatch, req.body);
     const cur = (await q<{ name: string; description: string; number: string; tel: string; kind: string; city: string | null; languages: string[]; hours: string; sort: number; active: boolean }>(
@@ -57,7 +57,7 @@ export function contentRoutes(app: FastifyInstance, ctx: Ctx) {
     return { ok: true, verificationCleared: dialChanged };
   });
 
-  app.post('/content/helplines/:id/verify', guard(ctx, 'content.write'), async req => {
+  app.post('/content/helplines/:id/verify', guard(ctx, 'content.write', req => `Mark helpline “${params(req).id}” as verified`), async req => {
     const id = (req.params as { id: string }).id;
     const b = body(z.object({ note: z.string().trim().min(3).max(200) }), req.body);
     const r = await q('UPDATE helplines SET verified_at = current_date WHERE id = $1 RETURNING id', [id]);
@@ -70,7 +70,7 @@ export function contentRoutes(app: FastifyInstance, ctx: Ctx) {
     items: await q(`SELECT id, city, title, venue, starts_at, category, price, group_size, organiser, beginner_friendly, details, active, (SELECT count(*)::int FROM event_interests i WHERE i.event_id = events.id) AS interested FROM events ORDER BY starts_at DESC LIMIT 200`),
   }));
 
-  app.put('/content/events/:id', guard(ctx, 'content.write'), async req => {
+  app.put('/content/events/:id', guard(ctx, 'content.write', req => `Save event “${show(payload(req).title ?? params(req).id)}”`), async req => {
     const id = (req.params as { id: string }).id;
     const b = body(Event, { ...(req.body as object), id });
     await q(`INSERT INTO events (id,city,title,venue,starts_at,category,price,group_size,organiser,beginner_friendly,details,active) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
@@ -80,7 +80,7 @@ export function contentRoutes(app: FastifyInstance, ctx: Ctx) {
     return { ok: true };
   });
 
-  app.delete('/content/events/:id', guard(ctx, 'content.write'), async req => {
+  app.delete('/content/events/:id', guard(ctx, 'content.write', req => `Hide event “${params(req).id}”`), async req => {
     const id = (req.params as { id: string }).id;
     const r = await q('UPDATE events SET active = false WHERE id = $1 RETURNING id', [id]);
     if (!r.length) throw notFound('That event');

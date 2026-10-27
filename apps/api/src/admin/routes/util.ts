@@ -2,10 +2,11 @@ import type { FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { Ctx } from '../../context.js';
 import { badRequest } from '../../errors.js';
-import { audit, adminGuard } from '../auth.js';
+import { audit, adminGuard, type GateSummary } from '../auth.js';
 import type { Permission } from '../rbac.js';
 
-export const guard = (ctx: Ctx, perm?: Permission) => ({ preHandler: adminGuard(ctx, perm) });
+/** `gate` describes a change in words; writes by anyone below owner then wait for a more senior admin to approve them. */
+export const guard = (ctx: Ctx, perm?: Permission, gate?: GateSummary) => ({ preHandler: adminGuard(ctx, perm, gate) });
 
 /** Record an admin write. Never pass a secret in `before` or `after`. */
 export const record = (ctx: Ctx, req: FastifyRequest, action: string, target?: string, before?: unknown, after?: unknown) =>
@@ -24,3 +25,8 @@ export const intParam = (v: unknown, def: number, min: number, max: number) => {
 
 export const uuid = z.string().uuid();
 export const day = (d: Date | string) => (typeof d === 'string' ? d : d.toISOString()).slice(0, 10);
+
+// Short, plain descriptions of a request for the approval queue.
+export const params = (req: FastifyRequest) => req.params as Record<string, string>;
+export const payload = (req: FastifyRequest) => (req.body ?? {}) as Record<string, unknown>;
+export const show = (v: unknown) => { const t = typeof v === 'string' ? v : JSON.stringify(v); return t && t.length > 80 ? `${t.slice(0, 80)}…` : t; };

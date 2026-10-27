@@ -19,17 +19,18 @@ In production, serve the admin build (`npm run build -w @saathi/admin`, output `
 | Page | Use it to |
 |---|---|
 | Overview | See health of backend, AI, product and infrastructure at a glance; spend; safety events; things that need attention. |
-| People | Search people (never phone numbers), see plan, activity, consents; change plan, suspend or restore, request account deletion, set per-person flag overrides. No journal or conversation content is shown anywhere. |
+| People | Add people (owner) and give them a sign-in code. Search people (never phone numbers), see plan, activity, consents; change plan, suspend or restore, request account deletion, set per-person flag overrides. No journal or conversation content is shown anywhere. |
 | Cost and pricing | Spend by day, feature, vendor and model, in rupees; budget warning; edit price rates; re-price older usage. Usage with no rate is shown as unpriced, never as ₹0. |
 | Prompts | Every instruction the AI follows. Edit as a draft, test in the playground, run the evaluations, publish, roll back. Each publish keeps the old version. |
 | Evaluations | Safety and quality test cases per prompt. A safety-critical prompt can only be published by an owner after a passing run on that exact version. |
 | Safety review | The queue of risky replies flagged for human review. |
-| Settings and flags | Models, limits, maintenance mode, kill switches, sign-up gate, per-person flag overrides. Changes apply within seconds, no restart. |
+| Settings and flags | Models (chosen from a list), limits, maintenance mode, kill switches, sign-up gate, per-person flag overrides. Changes apply within seconds, no restart. |
 | Content | Helplines (with last-verified dates) and local events. |
 | Usage analytics | Screens, steps and clicks from people who opted in. Anonymous id only. |
 | Integrations and keys | Paste a vendor key; it is encrypted, never shown again, and used by the app on the next request. |
 | Infrastructure | Database, job queue, errors, versions, migrations. |
 | Developer | Commits, pull requests, CI runs and deploy buttons for each environment (GitHub). |
+| Approvals | Changes waiting for someone more senior to approve, with approve, reject and withdraw. |
 | Audit log | Every admin action with before and after values. Append-only. |
 | Admins | Add people, change roles, end sessions. |
 
@@ -94,3 +95,21 @@ These workflows and `apps/api/Dockerfile` have not been run on real GitHub runne
 - The Developer page shows and triggers; it does not edit code or merge.
 - Voice, SMS and call cost lines stay empty until those adapters exist.
 - The evaluation suites use seeded synthetic cases. With the mock model one critical case fails by design; re-run against the real model before inviting anyone.
+
+## Approvals: who can change the live app
+
+Changes by anyone **below owner** do not reach the app straight away. They wait on the **Approvals** page for someone strictly more senior who is also allowed to make that change (support → engineer or owner; engineer → owner). Approving runs the very same request again, as the approver, so every validation, audit entry and live reload applies exactly as if the approver had made it. You can't approve your own change. A rejection needs a reason, and the person who asked can withdraw a change that is still waiting.
+
+Covered: settings, feature flags (and per-person overrides), price rates and re-pricing, publishing or reverting a prompt, helplines and events, a person's plan, and deploys. Not covered, on purpose: drafting prompts, the test bench, evaluations, reviewing safety events, and pausing or removing a person (those need to be quick, and are still audited).
+
+Owners apply their own changes directly, because there is no one above them. The owner-only switch “Changes need approval” turns the whole mechanism off. The safety rules still hold when an owner approves: a safety prompt still needs its passing evaluation at that moment.
+
+## Inviting people (sign-in codes)
+
+While no SMS vendor is connected, phone sign-in works only for people an owner has added under **People → Add a person**. Give each person their six-digit code (shown once; “New code” makes another, “Remove” stops it). Five wrong codes lock that person for 15 minutes. Only keyed hashes of the phone and code are stored. Once an SMS vendor exists, invited codes keep working until you remove them.
+
+`BETA_LOGINS_BOOTSTRAP="9876543210:123456"` (comma-separated `phone:code` pairs) adds invites at startup if they don't exist yet. It never overwrites. Remove the variable once real people are added in the portal.
+
+## Choosing models
+
+Model settings are dropdowns, validated against the list in `apps/api/src/runtime/models.ts`. Add a line there when a new model is released.

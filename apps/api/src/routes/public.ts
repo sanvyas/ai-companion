@@ -2,11 +2,12 @@ import type { FastifyInstance } from 'fastify';
 import type { Ctx } from '../context.js';
 import { withSystem } from '../db/pool.js';
 import { listHelplines } from '../services/helplines.js';
+import { hasAnyInvite } from '../services/invites.js';
 import { buildInfo } from '../admin/routes/overview.js';
 
 export function publicRoutes(app: FastifyInstance, ctx: Ctx) {
   // What the sign-in screen needs before anyone is signed in.
-  app.get('/public-config', async () => ({ otp: ctx.otp.canSend, google: !!ctx.rt.secrets.get('google', 'client_id'), googleClientId: ctx.rt.secrets.get('google', 'client_id') ?? null, llm: ctx.llm.configured, stt: !!ctx.stt, tts: !!ctx.tts, push: ctx.push.enabled, signupsOpen: ctx.rt.settings.bool('access.signups_open'), voicePaused: ctx.rt.settings.bool('kill.voice'), analytics: ctx.rt.settings.bool('analytics.enabled') }));
+  app.get('/public-config', async () => ({ otp: ctx.otp.canSend || (await hasAnyInvite(ctx)), google: !!ctx.rt.secrets.get('google', 'client_id'), googleClientId: ctx.rt.secrets.get('google', 'client_id') ?? null, llm: ctx.llm.configured, stt: !!ctx.stt, tts: !!ctx.tts, push: ctx.push.enabled, signupsOpen: ctx.rt.settings.bool('access.signups_open'), voicePaused: ctx.rt.settings.bool('kill.voice'), analytics: ctx.rt.settings.bool('analytics.enabled') }));
   app.get('/healthz', async () => ({ ok: true }));
   // Which build is running. No secrets; used by the admin portal's environment checks.
   app.get('/version', async () => ({ ...buildInfo(), environment: ctx.cfg.NODE_ENV }));

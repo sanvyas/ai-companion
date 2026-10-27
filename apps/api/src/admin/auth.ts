@@ -6,7 +6,8 @@ import type { Ctx } from '../context.js';
 import { withSystem } from '../db/pool.js';
 import { AppError, badRequest, forbidden, unauthorized } from '../errors.js';
 import { DUMMY_HASH, hashPassword, passwordProblem, verifyPassword } from './password.js';
-import { can, type Permission, type Role } from './rbac.js';
+import { hmacHex } from '../crypto/envelope.js';
+import { can, isHigher, ROLES, type Permission, type Role } from './rbac.js';
 import { newTotpSecret, otpauthUri, verifyTotp } from './totp.js';
 
 export const COOKIE = 'saathi_admin';
@@ -112,9 +113,25 @@ export async function changePassword(ctx: Ctx, admin: AdminPrincipal, current: s
 }
 
 // ------------------------------------------------------------------------------------------------ request guard
-/** Resolves the session cookie, enforces the second factor, idle timeout and the CSRF header on writes. */
-export function adminGuard(ctx: Ctx, permission?: Permission) {
-  return async (req: FastifyRequest, _reply?: FastifyReply) => {
+/** Describes a change in words, for the approval queue. Return null to let a particular request through ungated. */
+export type GateSummary = (req: FastifyRequest) => string | null | Promise<string | null>;
+
+const replaySig = (ctx: Ctx, changeId: string, approverId: string) => hmacHex(ctx.cfg.JWT_SECRET, `replay:${changeId}:${approverId}`);
+/** Header carried only by the in-process replay of an approved change. It is signed, single-use and loopback-only. */
+export const replayHeader = (ctx: Ctx, changeId: string, approverId: string) => `${changeId}.${approverId}.${replaySig(ctx, changeId, approverId)}`;
+
+/** Who could approve something asked for by `role` that needs `permission`: strictly more senior, and allowed to do it. */
+export const approverRoles = (role: Role, permission?: Permission): Role[] => ROLES.filter(r => isHigher(r, role) && (!permission || can(r, permission)));
+
+/**
+ * Resolves the session cookie, enforces the second factor, idle timeout and the CSRF header on writes.
+ * With `gate`, a write from anyone below owner is parked in the approval queue instead of running.
+ */
+export function adminGuard(ctx: Ctx, permission?: Permission, gate?: GateSummary) {
+  return async (req: FastifyRequest, reply?: FastifyReply) => {
+    const replay = req.headers['x-approved-change'];
+    if (typeof replay === 'string') return replayAs(ctx, req, replay, permission);
+
     const token = req.cookies[COOKIE];
     if (!token) throw unauthorized();
     const r = (await withSystem(ctx.db, tx => tx.query<{ session_id: string; csrf_token: string; last_seen_at: Date; id: string; email: string; name: string; role: Role; active: boolean }>(
@@ -123,11 +140,36 @@ export function adminGuard(ctx: Ctx, permission?: Permission) {
         WHERE s.token_hash = $1 AND s.revoked_at IS NULL AND s.expires_at > now() AND s.mfa_done`, [sha(token)]))).rows[0];
     if (!r || !r.active) throw unauthorized();
     if (Date.now() - r.last_seen_at.getTime() > IDLE_MINUTES * 60_000) throw unauthorized('You were signed out after a while. Please sign in again.');
-    if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method) && req.headers['x-csrf-token'] !== r.csrf_token) throw forbidden('csrf', 'That request didn’t come from the portal.');
+    const writes = !['GET', 'HEAD', 'OPTIONS'].includes(req.method);
+    if (writes && req.headers['x-csrf-token'] !== r.csrf_token) throw forbidden('csrf', 'That request didn’t come from the portal.');
     req.admin = { id: r.id, email: r.email, name: r.name, role: r.role, sessionId: r.session_id, csrf: r.csrf_token };
     if (Date.now() - r.last_seen_at.getTime() > 60_000) void withSystem(ctx.db, tx => tx.query('UPDATE admin_sessions SET last_seen_at = now() WHERE id = $1', [r.session_id])).catch(() => undefined);
     if (permission && !can(r.role, permission)) throw forbidden('forbidden', 'Your role can’t do that.');
+
+    const summary = gate && writes ? await gate(req) : null;
+    if (summary && r.role !== 'owner' && ctx.rt.settings.bool('governance.require_approval')) {
+      const approvers = approverRoles(r.role, permission);
+      const id = (await withSystem(ctx.db, tx => tx.query<{ id: string }>(
+        `INSERT INTO change_requests (summary, permission, method, url, body, requested_by, requested_email, requested_role)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id`,
+        [summary.slice(0, 300), permission ?? '', req.method, req.url, req.body === undefined ? null : JSON.stringify(req.body), r.id, r.email, r.role]))).rows[0].id;
+      await audit(ctx, r, req, 'change.requested', id, undefined, { summary });
+      return reply!.code(202).send({ pending: true, id, summary, approvers, message: `Sent to ${approvers.join(' or ') || 'an owner'} for approval. It reaches the app once approved.` });
+    }
   };
+}
+
+/** The in-process replay of an approved change. It runs as the approver, so every existing check still applies. */
+async function replayAs(ctx: Ctx, req: FastifyRequest, header: string, permission?: Permission) {
+  const [changeId, approverId, sig] = header.split('.');
+  const loopback = req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1';
+  if (!loopback || !changeId || !approverId || !sig || sig !== replaySig(ctx, changeId, approverId)) throw unauthorized();
+  const r = (await withSystem(ctx.db, tx => tx.query<{ id: string; email: string; name: string; role: Role; active: boolean }>(
+    `SELECT a.id, a.email, a.name, a.role, a.active FROM change_requests c JOIN admin_users a ON a.id = c.decided_by
+      WHERE c.id = $1 AND c.status = 'applying' AND c.decided_by = $2`, [changeId, approverId]))).rows[0];
+  if (!r || !r.active) throw unauthorized();
+  req.admin = { id: r.id, email: r.email, name: r.name, role: r.role, sessionId: '', csrf: '' };
+  if (permission && !can(r.role, permission)) throw forbidden('forbidden', 'Your role can’t do that.');
 }
 
 // ------------------------------------------------------------------------------------------------ audit

@@ -4,7 +4,8 @@ import type { Ctx } from '../../context.js';
 import { withSystem } from '../../db/pool.js';
 import { maskPhone } from '../../crypto/envelope.js';
 import { notFound } from '../../errors.js';
-import { body, guard, intParam, record, uuid } from './util.js';
+import { createInvite, forgetInviteCache, listInvites, resetInviteCode } from '../../services/invites.js';
+import { body, guard, intParam, params, payload, record, uuid } from './util.js';
 
 // People, as the business sees them: who they are in the system, what they use and what it costs. Never what they
 // wrote or said. No query here selects a column that holds journal text, messages, memories, summaries or letters.
@@ -75,7 +76,7 @@ export function userRoutes(app: FastifyInstance, ctx: Ctx) {
     return { profile: { ...profile, phone: maskedPhone(id, dek_wrapped, phone_enc) }, consent, privacy, notifications: prefs, counts, usage30d: usage, conversationsByMode: byMode, safetyEvents: safety, flagOverrides: overrides, flags: ctx.rt.flags.forUser(id) };
   });
 
-  app.patch('/users/:id/plan', guard(ctx, 'users.write'), async req => {
+  app.patch('/users/:id/plan', guard(ctx, 'users.write', req => `Change plan to ${payload(req).subscription} for person ${params(req).id.slice(0, 8)}`), async req => {
     const id = body(uuid, (req.params as { id: string }).id);
     const b = body(z.object({ subscription: z.enum(['basic', 'plus']) }), req.body);
     const before = (await q<{ subscription: string }>('SELECT subscription FROM users WHERE id = $1', [id]))[0];
@@ -115,12 +116,45 @@ export function userRoutes(app: FastifyInstance, ctx: Ctx) {
     return { ok: true };
   });
 
-  app.put('/users/:id/flags/:key', guard(ctx, 'flags.write'), async req => {
+  app.put('/users/:id/flags/:key', guard(ctx, 'flags.write', req => `Flag “${params(req).key}” for person ${params(req).id.slice(0, 8)}: ${payload(req).enabled === null ? 'clear override' : payload(req).enabled ? 'turn on' : 'turn off'}`), async req => {
     const { id, key } = req.params as { id: string; key: string };
     body(uuid, id);
     const b = body(z.object({ enabled: z.boolean().nullable() }), req.body);
     await ctx.rt.flags.setOverride(key, id, b.enabled);
     await record(ctx, req, 'user.flag_override', id, undefined, { key, enabled: b.enabled });
+    return { ok: true };
+  });
+
+  // ------------------------------------------------------------------------------------------ invited sign-ins
+  // Owners let people in. Until an SMS vendor is connected, the code shown here is how that person signs in.
+  app.get('/invites', guard(ctx, 'users.invite'), async () => ({
+    items: (await listInvites(ctx)).map(r => ({
+      id: r.id, phone: `••••••${r.phone_last4}`, label: r.label, createdBy: r.created_by, createdAt: r.created_at, lastUsedAt: r.last_used_at,
+      status: r.revoked_at ? 'revoked' : r.locked_until && r.locked_until > new Date() ? 'locked' : r.signed_in ? 'signed_in' : 'waiting',
+    })),
+  }));
+
+  app.post('/invites', guard(ctx, 'users.invite'), async req => {
+    const b = body(z.object({ phone: z.string().min(8).max(20), label: z.string().trim().max(60).optional(), code: z.string().regex(/^\d{6}$/, 'Use six digits').optional() }), req.body);
+    const r = await createInvite(ctx, { phone: b.phone, label: b.label, code: b.code, by: req.admin!.email });
+    forgetInviteCache();
+    await record(ctx, req, 'invite.created', `••••${r.phoneLast4}`, undefined, { label: b.label ?? '' });
+    return { id: r.id, code: r.code, phone: `••••••${r.phoneLast4}` };
+  });
+
+  app.post('/invites/:id/reset', guard(ctx, 'users.invite'), async req => {
+    const id = body(uuid, (req.params as { id: string }).id);
+    const r = await resetInviteCode(ctx, id);
+    if (!r) throw notFound('That invite');
+    await record(ctx, req, 'invite.code_reset', `••••${r.phoneLast4}`);
+    return { code: r.code, phone: `••••••${r.phoneLast4}` };
+  });
+
+  app.delete('/invites/:id', guard(ctx, 'users.invite'), async req => {
+    const id = body(uuid, (req.params as { id: string }).id);
+    const rows = await q<{ phone_last4: string }>('UPDATE invited_logins SET revoked_at = now() WHERE id = $1 AND revoked_at IS NULL RETURNING phone_last4', [id]);
+    if (!rows[0]) throw notFound('That invite');
+    await record(ctx, req, 'invite.revoked', `••••${rows[0].phone_last4}`);
     return { ok: true };
   });
 }

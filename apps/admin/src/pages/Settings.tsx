@@ -4,7 +4,7 @@ import { ago } from '../lib/format';
 import { useSession } from '../lib/session';
 import { Badge, Banner, Button, Card, Confirm, Dialog, Field, Loading, PageHead, Problem, Table, Toggle, useAction } from '../lib/ui';
 
-interface SettingView { def: { key: string; group: string; label: string; description: string; kind: 'text' | 'long' | 'int' | 'number' | 'bool' | 'json'; ownerOnly?: boolean }; value: unknown; isDefault: boolean; updatedAt: string | null; updatedBy: string | null }
+interface SettingView { def: { key: string; group: string; label: string; description: string; kind: 'text' | 'long' | 'int' | 'number' | 'bool' | 'json' | 'select'; options?: { value: string; label: string }[]; ownerOnly?: boolean }; value: unknown; isDefault: boolean; updatedAt: string | null; updatedBy: string | null }
 interface Flag { key: string; description: string; enabled: boolean; rolloutPct: number; updatedBy: string | null; updatedAt: string; overrides: number }
 
 /** Switches that affect everyone ask first: turning on a pause, or turning sign-ups off. */
@@ -32,6 +32,11 @@ function SettingRow({ s, reload }: { s: SettingView; reload: () => void }) {
           <Toggle on={s.value as boolean} label={s.def.label} disabled={!allowed} onChange={v => (isRisky(s.def.key, v) ? setConfirm(v) : void save(v))} />
         ) : s.def.kind === 'long' || s.def.kind === 'json' ? (
           <textarea className="input mono" rows={s.def.kind === 'json' ? 5 : 3} value={draft} onChange={e => setDraft(e.target.value)} disabled={!allowed} aria-label={s.def.label} />
+        ) : s.def.kind === 'select' ? (
+          <select className="input" value={draft} onChange={e => setDraft(e.target.value)} disabled={!allowed} aria-label={s.def.label}>
+            {!s.def.options?.some(o => o.value === draft) && <option value={draft}>{draft}</option>}
+            {s.def.options?.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
         ) : (
           <input className="input" value={draft} onChange={e => setDraft(e.target.value)} disabled={!allowed} aria-label={s.def.label} inputMode={s.def.kind === 'text' ? undefined : 'decimal'} />
         )}

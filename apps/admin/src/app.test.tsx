@@ -10,7 +10,7 @@ let routes: Record<string, Handler> = {};
 let calls: { method: string; path: string; body: unknown; headers: Record<string, string> }[] = [];
 
 const ME = (role: string, permissions: string[]) => ({ admin: { id: 'a1', email: 'founder@example.com', name: 'Founder', role }, csrf: 'csrf-token', permissions, environment: 'development' });
-const ALL = ['overview.read', 'users.read', 'users.write', 'cost.read', 'cost.write', 'analytics.read', 'infra.read', 'infra.write', 'audit.read', 'flags.read', 'flags.write', 'settings.write', 'prompts.read', 'prompts.write', 'prompts.publish', 'prompts.publish_safety', 'integrations.read', 'integrations.write', 'safety.read', 'safety.review', 'content.read', 'content.write', 'dev.read', 'dev.deploy', 'dev.deploy_prod', 'admins.manage'];
+const ALL = ['overview.read', 'users.read', 'users.write', 'cost.read', 'cost.write', 'analytics.read', 'infra.read', 'infra.write', 'audit.read', 'flags.read', 'flags.write', 'settings.write', 'prompts.read', 'prompts.write', 'prompts.publish', 'prompts.publish_safety', 'integrations.read', 'integrations.write', 'safety.read', 'safety.review', 'content.read', 'content.write', 'dev.read', 'dev.deploy', 'dev.deploy_prod', 'admins.manage', 'users.invite', 'changes.read'];
 
 beforeEach(() => {
   calls = []; routes = {}; location.hash = '';
@@ -155,5 +155,81 @@ describe('people', () => {
     expect(confirm).not.toBeDisabled();
     fireEvent.click(confirm);
     await waitFor(() => expect(suspended).toEqual({ reason: 'asked by email' }));
+  });
+});
+
+describe('model choices', () => {
+  it('lets you pick a model from a list instead of typing one', async () => {
+    signedIn();
+    routes['GET /settings'] = () => ({ json: { items: [{ def: { key: 'models.companion', group: 'Models', label: 'Companion model', description: 'Live replies.', kind: 'select', options: [{ value: 'claude-sonnet-5-5', label: 'Claude Sonnet 5.5 · balanced' }, { value: 'claude-haiku-5-5', label: 'Claude Haiku 5.5 · fastest' }], ownerOnly: true }, value: 'claude-sonnet-5-5', isDefault: true, updatedAt: null, updatedBy: null }] } });
+    routes['GET /flags'] = () => ({ json: { items: [] } });
+    let saved: unknown;
+    routes['PUT /settings/models.companion'] = b => { saved = b; return { json: { ok: true } }; };
+    location.hash = '#/settings';
+    render(<App />);
+    const pick = await screen.findByLabelText('Companion model');
+    expect(pick.tagName).toBe('SELECT');
+    expect(within(pick).getAllByRole('option').map(o => o.textContent)).toEqual(['Claude Sonnet 5.5 · balanced', 'Claude Haiku 5.5 · fastest']);
+    fireEvent.change(pick, { target: { value: 'claude-haiku-5-5' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(saved).toEqual({ value: 'claude-haiku-5-5' }));
+  });
+});
+
+describe('approvals', () => {
+  it('tells an engineer their change is waiting instead of claiming it was saved', async () => {
+    signedIn('engineer', ['overview.read', 'flags.read', 'settings.write', 'changes.read']);
+    routes['GET /settings'] = () => ({ json: { items: [{ def: { key: 'limits.voice_minutes_per_day', group: 'Limits', label: 'Voice minutes per day (Basic)', description: 'Per person.', kind: 'int' }, value: 10, isDefault: true, updatedAt: null, updatedBy: null }] } });
+    routes['GET /flags'] = () => ({ json: { items: [] } });
+    routes['GET /changes/count'] = () => ({ json: { inbox: 0, mine: 0 } });
+    routes['PUT /settings/limits.voice_minutes_per_day'] = () => ({ status: 202, json: { pending: true, id: 'c1', summary: 'x', approvers: ['owner'], message: 'Sent to owner for approval. It reaches the app once approved.' } });
+    location.hash = '#/settings';
+    render(<App />);
+    fireEvent.change(await screen.findByLabelText('Voice minutes per day (Basic)'), { target: { value: '15' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByText(/Sent to owner for approval/)).toBeInTheDocument();
+    expect(screen.queryByText(/Saved\. The app picks it up/)).not.toBeInTheDocument();
+  });
+
+  it('shows an owner what is waiting, lets them approve, and asks for a reason to reject', async () => {
+    signedIn();
+    const item = { id: 'c1', summary: 'Change setting “Voice minutes per day (Basic)” to 15', method: 'PUT', path: '/settings/limits.voice_minutes_per_day', body: { value: 15 }, status: 'pending', requestedBy: 'eng@example.com', requestedRole: 'engineer', requestedAt: new Date().toISOString(), decidedBy: null, decidedAt: null, note: null, error: null, canDecide: true, canWithdraw: false, approvers: ['owner'] };
+    routes['GET /changes'] = () => ({ json: { required: true, inbox: [item], waiting: [], history: [] } });
+    routes['GET /changes/count'] = () => ({ json: { inbox: 1, mine: 0 } });
+    let approved = false; let rejected: unknown;
+    routes['POST /changes/c1/approve'] = () => { approved = true; return { json: { ok: true } }; };
+    routes['POST /changes/c1/reject'] = b => { rejected = b; return { json: { ok: true } }; };
+    location.hash = '#/changes';
+    render(<App />);
+    expect(await screen.findByText(/Voice minutes per day \(Basic\)” to 15/)).toBeInTheDocument();
+    expect(screen.getByText(/Asked by eng@example.com/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Reject' }));
+    const dlg = await screen.findByRole('dialog');
+    const confirmBtn = within(dlg).getByRole('button', { name: 'Reject' });
+    expect(confirmBtn).toBeDisabled();
+    fireEvent.change(within(dlg).getByLabelText('Why?'), { target: { value: 'Too generous for the beta' } });
+    fireEvent.click(confirmBtn);
+    await waitFor(() => expect(rejected).toEqual({ note: 'Too generous for the beta' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Approve' }));
+    await waitFor(() => expect(approved).toBe(true));
+  });
+});
+
+describe('adding people', () => {
+  it('adds a person and shows their sign-in code once', async () => {
+    signedIn();
+    routes['GET /users'] = () => ({ json: { items: [], nextCursor: null } });
+    routes['GET /invites'] = () => ({ json: { items: [] } });
+    let sent: unknown;
+    routes['POST /invites'] = b => { sent = b; return { json: { id: 'i1', code: '482913', phone: '••••••3210' } }; };
+    location.hash = '#/users';
+    render(<App />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Add a person' }));
+    fireEvent.change(screen.getByLabelText('Phone number'), { target: { value: '9876543210' } });
+    fireEvent.change(screen.getByLabelText('Name or note (only you see this)'), { target: { value: 'Priya' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add and show code' }));
+    expect(await screen.findByText('482913')).toBeInTheDocument();
+    expect(sent).toEqual({ phone: '9876543210', label: 'Priya' });
+    expect(screen.getByText(/only time the code is shown/i)).toBeInTheDocument();
   });
 });

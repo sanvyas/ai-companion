@@ -19,6 +19,7 @@ const pages: Record<string, ReturnType<typeof lazy>> = {
   infra: lazy(() => import('./pages/Infra').then(m => ({ default: m.Infra }))),
   developer: lazy(() => import('./pages/Developer').then(m => ({ default: m.Developer }))),
   audit: lazy(() => import('./pages/Audit').then(m => ({ default: m.Audit }))),
+  changes: lazy(() => import('./pages/Changes').then(m => ({ default: m.Changes }))),
   admins: lazy(() => import('./pages/Admins').then(m => ({ default: m.Admins }))),
 };
 

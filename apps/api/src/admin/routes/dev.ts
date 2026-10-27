@@ -4,7 +4,7 @@ import type { Ctx } from '../../context.js';
 import { badRequest } from '../../errors.js';
 import { GitHub, GitHubError, parseRepo } from '../github.js';
 import { buildInfo } from './overview.js';
-import { body, guard, record } from './util.js';
+import { body, guard, params, payload, record } from './util.js';
 
 // The Developer page: what is in the repository, what CI is doing, which version each environment runs, and the
 // deploy buttons. The portal starts the deploy workflow; the workflow (in .github/workflows) does the work.
@@ -41,7 +41,7 @@ export function devRoutes(app: FastifyInstance, ctx: Ctx) {
     catch (e) { return { ...base, configured: true, error: (e as Error).message }; }
   });
 
-  app.post('/dev/deploy', guard(ctx, 'dev.deploy'), async req => {
+  app.post('/dev/deploy', guard(ctx, 'dev.deploy', req => `Deploy “${payload(req).ref ?? 'main'}” to ${payload(req).environment}`), async req => {
     const b = body(z.object({ environment: z.enum(['staging', 'production']), ref: z.string().trim().regex(/^[\w./-]{1,80}$/).default('main'), confirm: z.string().optional() }), req.body);
     if (b.environment === 'production') {
       const { can } = await import('../rbac.js');
@@ -55,7 +55,7 @@ export function devRoutes(app: FastifyInstance, ctx: Ctx) {
     return { ok: true, note: 'The deploy workflow was started. Watch it under Recent runs.' };
   });
 
-  app.post('/dev/runs/:id/rerun', guard(ctx, 'dev.deploy'), async req => {
+  app.post('/dev/runs/:id/rerun', guard(ctx, 'dev.deploy', req => `Re-run workflow run ${params(req).id}`), async req => {
     const id = Number((req.params as { id: string }).id);
     const gh = github();
     if ('missing' in gh) throw badRequest('not_configured', `Add ${gh.missing.join(' and ')} first.`);

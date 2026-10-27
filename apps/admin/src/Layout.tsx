@@ -10,7 +10,7 @@ const GROUPS: { title: string | null; items: NavItem[] }[] = [
   { title: 'Business', items: [{ id: 'users', label: 'People', perm: 'users.read' }, { id: 'cost', label: 'Cost and pricing', perm: 'cost.read' }] },
   { title: 'AI', items: [{ id: 'prompts', label: 'Prompts', perm: 'prompts.read' }, { id: 'evals', label: 'Evaluations', perm: 'prompts.read' }, { id: 'safety', label: 'Safety review', perm: 'safety.read' }] },
   { title: 'Product', items: [{ id: 'settings', label: 'Settings and flags', perm: 'flags.read' }, { id: 'content', label: 'Content', perm: 'content.read' }, { id: 'analytics', label: 'Usage analytics', perm: 'analytics.read' }] },
-  { title: 'Platform', items: [{ id: 'integrations', label: 'Integrations and keys', perm: 'integrations.read' }, { id: 'infra', label: 'Infrastructure', perm: 'infra.read' }, { id: 'developer', label: 'Developer', perm: 'dev.read' }, { id: 'audit', label: 'Audit log', perm: 'audit.read' }, { id: 'admins', label: 'Admins', perm: 'admins.manage' }] },
+  { title: 'Platform', items: [{ id: 'changes', label: 'Approvals', perm: 'changes.read' }, { id: 'integrations', label: 'Integrations and keys', perm: 'integrations.read' }, { id: 'infra', label: 'Infrastructure', perm: 'infra.read' }, { id: 'developer', label: 'Developer', perm: 'dev.read' }, { id: 'audit', label: 'Audit log', perm: 'audit.read' }, { id: 'admins', label: 'Admins', perm: 'admins.manage' }] },
 ];
 
 function useTheme() {
@@ -43,6 +43,8 @@ export function Layout({ children }: { children: ReactNode }) {
   const [pw, setPw] = useState(false);
   const queue = useLoad<{ stats: { level: number; unreviewed: number }[] }>(can('safety.read') ? '/safety/events?level=2&reviewed=no&limit=1' : null, { every: 60_000 });
   const waiting = (queue.data?.stats ?? []).filter(s => s.level >= 2).reduce((a, s) => a + s.unreviewed, 0);
+  const changes = useLoad<{ inbox: number; mine: number }>(can('changes.read') ? '/changes/count' : null, { every: 30_000 });
+  useEffect(() => { const f = () => void changes.reload(); window.addEventListener('saathi:changes', f); return () => window.removeEventListener('saathi:changes', f); });
   useEffect(() => setOpen(false), [route.join('/')]);
 
   return (
@@ -54,7 +56,7 @@ export function Layout({ children }: { children: ReactNode }) {
             const items = g.items.filter(i => !i.perm || can(i.perm));
             if (!items.length) return null;
             return <div key={g.title ?? 'top'}>{g.title && <div className="nav-group">{g.title}</div>}{items.map(i => (
-              <a key={i.id} href={`#/${i.id}`} aria-current={route[0] === i.id ? 'page' : undefined}>{i.label}{i.id === 'safety' && waiting > 0 && <span className="count" aria-label={`${waiting} waiting`}>{waiting}</span>}</a>
+              <a key={i.id} href={`#/${i.id}`} aria-current={route[0] === i.id ? 'page' : undefined}>{i.label}{i.id === 'safety' && waiting > 0 && <span className="count" aria-label={`${waiting} waiting`}>{waiting}</span>}{i.id === 'changes' && (changes.data?.inbox ?? 0) > 0 && <span className="count" aria-label={`${changes.data!.inbox} to approve`}>{changes.data!.inbox}</span>}</a>
             ))}</div>;
           })}
         </nav>

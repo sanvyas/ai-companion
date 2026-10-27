@@ -31,8 +31,17 @@ async function req<T>(method: string, path: string, body?: unknown): Promise<T> 
     if (res.status === 401 && !path.startsWith('/auth/')) signedOutListeners.forEach(f => f());
     throw new ApiError(res.status, json?.error?.code ?? 'error', json?.error?.message ?? `The server answered ${res.status}.`);
   }
+  // A change by someone below owner is queued for approval instead of applied. Remember it so the caller can say so.
+  if (res.status === 202 && (json as { pending?: boolean } | undefined)?.pending) {
+    pending = (json as { message?: string }).message ?? 'Sent for approval.';
+    window.dispatchEvent(new Event('saathi:changes'));
+  }
   return json as T;
 }
+
+let pending: string | null = null;
+/** The message for the last write that was queued for approval, once. */
+export const takePending = () => { const p = pending; pending = null; return p; };
 
 export const api = {
   get: <T = unknown>(p: string) => req<T>('GET', p),

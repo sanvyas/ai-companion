@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { api, useLoad } from '../lib/api';
 import { ago, day, inr, num, when } from '../lib/format';
 import { useSession } from '../lib/session';
-import { Badge, Button, Card, Confirm, Empty, Field, Loading, PageHead, Problem, Table, Toggle, useAction } from '../lib/ui';
+import { Badge, Banner, Button, Card, Confirm, Copy, Dialog, Empty, Field, Loading, PageHead, Problem, Table, Toggle, useAction } from '../lib/ui';
 import { go, useRoute } from '../lib/router';
 
 interface Row { id: string; nickname: string; phone: string | null; signIn: string; createdAt: string; lastActiveAt: string; plan: 'basic' | 'plus'; onboarded: boolean; language: string; city: string | null; status: 'active' | 'suspended' | 'pending_deletion'; conversations30d: number; consent: { remember: boolean; notifications: boolean; analytics: boolean } }
@@ -14,7 +14,66 @@ export function Users() {
   return route[1] ? <Detail id={route[1]} /> : <List />;
 }
 
+interface Invite { id: string; phone: string; label: string; createdBy: string; createdAt: string; lastUsedAt: string | null; status: 'waiting' | 'signed_in' | 'locked' | 'revoked' }
+const inviteBadge = (s: Invite['status']) => s === 'signed_in' ? <Badge tone="ok">Signed in</Badge> : s === 'waiting' ? <Badge tone="warn">Waiting</Badge> : s === 'locked' ? <Badge tone="bad">Locked</Badge> : <Badge>Revoked</Badge>;
+
+/** Shows a sign-in code once. It is never stored in clear, so this is the only chance to copy it. */
+function CodeShown({ title, phone, code, onClose }: { title: string; phone: string; code: string; onClose: () => void }) {
+  return (
+    <Dialog title={title} onClose={onClose} footer={<Button variant="primary" onClick={onClose}>Done</Button>}>
+      <p>Give <b className="mono">{phone}</b> this code. It is how they sign in to Saathi until text-message codes are connected.</p>
+      <div className="row" style={{ justifyContent: 'center', margin: '16px 0' }}><code style={{ fontSize: 32, letterSpacing: 6 }}>{code}</code><Copy text={code} /></div>
+      <Banner tone="warn"><span>This is the only time the code is shown. It isn’t stored, so if it’s lost you’ll need to make a new one.</span></Banner>
+    </Dialog>
+  );
+}
+
+function AddPerson({ onClose, done }: { onClose: () => void; done: (r: { phone: string; code: string }) => void }) {
+  const [phone, setPhone] = useState('');
+  const [label, setLabel] = useState('');
+  const [code, setCode] = useState('');
+  const [busy, setBusy] = useState(false);
+  const act = useAction();
+  const valid = phone.replace(/\D/g, '').length >= 10 && (!code || /^\d{6}$/.test(code));
+  return (
+    <Dialog title="Add a person" onClose={onClose} footer={<><Button onClick={onClose}>Cancel</Button><Button variant="primary" busy={busy} disabled={!valid} onClick={async () => { setBusy(true); const r = await act(() => api.post<{ code: string; phone: string }>('/invites', { phone, label: label || undefined, code: code || undefined })); setBusy(false); if (r) { done(r); onClose(); } }}>Add and show code</Button></>}>
+      <Field label="Phone number" hint="Indian numbers can be typed without +91.">{id => <input id={id} className="input mono" inputMode="tel" value={phone} onChange={e => setPhone(e.target.value)} autoComplete="off" placeholder="98765 43210" />}</Field>
+      <Field label="Name or note (only you see this)">{id => <input id={id} className="input" value={label} onChange={e => setLabel(e.target.value)} placeholder="Priya, cousin" />}</Field>
+      <Field label="Sign-in code" hint="Leave empty to make a random six-digit code.">{id => <input id={id} className="input mono" inputMode="numeric" maxLength={6} value={code} onChange={e => setCode(e.target.value.replace(/\D/g, ''))} autoComplete="off" placeholder="Random" />}</Field>
+    </Dialog>
+  );
+}
+
+function Invited() {
+  const { data, error, reload } = useLoad<{ items: Invite[] }>('/invites');
+  const [adding, setAdding] = useState(false);
+  const [shown, setShown] = useState<{ title: string; phone: string; code: string } | null>(null);
+  const [revoke, setRevoke] = useState<Invite | null>(null);
+  const act = useAction();
+  return (
+    <Card flush title="Invited people" sub="Only these phone numbers can sign in while text-message codes aren’t connected. Each gets a six-digit code from you."
+      actions={<Button variant="primary" size="sm" onClick={() => setAdding(true)}>Add a person</Button>}>
+      {error ? <Problem message={error} onRetry={reload} /> : !data ? <Loading /> : (
+        <Table rows={data.items} rowKey={r => r.id} empty="No one invited yet. Add a person to give them a sign-in code." cols={[
+          { head: 'Person', cell: r => <><b>{r.label || 'No note'}</b><div className="faint mono">{r.phone}</div></> },
+          { head: 'Status', cell: r => inviteBadge(r.status) },
+          { head: 'Added by', cell: r => r.createdBy, nowrap: true },
+          { head: 'Last signed in', cell: r => (r.lastUsedAt ? ago(r.lastUsedAt) : '·'), nowrap: true },
+          { head: '', right: true, cell: r => <div className="row tight" style={{ justifyContent: 'flex-end' }}>
+            <Button size="sm" onClick={() => void act(async () => { const x = await api.post<{ code: string; phone: string }>(`/invites/${r.id}/reset`); setShown({ title: 'New sign-in code', ...x }); void reload(); })}>New code</Button>
+            {r.status !== 'revoked' && <Button size="sm" variant="danger" onClick={() => setRevoke(r)}>Remove</Button>}
+          </div> },
+        ]} />
+      )}
+      {adding && <AddPerson onClose={() => setAdding(false)} done={r => { setShown({ title: 'Person added', ...r }); void reload(); }} />}
+      {shown && <CodeShown {...shown} onClose={() => setShown(null)} />}
+      {revoke && <Confirm title="Remove this person’s sign-in?" confirmLabel="Remove" danger onClose={() => setRevoke(null)} onConfirm={async () => { await act(() => api.del(`/invites/${revoke.id}`).then(reload), 'Removed. Their code no longer works.'); }}><p>{revoke.label || revoke.phone} won’t be able to sign in with their code. Their existing account and data stay as they are.</p></Confirm>}
+    </Card>
+  );
+}
+
 function List() {
+  const { can } = useSession();
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
   const [pages, setPages] = useState<Row[][]>([]);
@@ -25,6 +84,7 @@ function List() {
   return (
     <>
       <PageHead title="People" sub="Who has an account and how they use the app. You see profile settings and counts only, never journals, chats, memories or summaries." />
+      {can('users.invite') && <Invited />}
       <Card flush title={<div className="row"><input className="input" style={{ width: 240 }} placeholder="Search by nickname or id" value={q} onChange={e => { setQ(e.target.value); setPages([]); setCursor(null); }} aria-label="Search people" /><select className="input" style={{ width: 160 }} value={status} onChange={e => { setStatus(e.target.value); setPages([]); }} aria-label="Filter"><option value="">Everyone</option><option value="plus">Plus</option><option value="suspended">Paused</option><option value="pending_deletion">Leaving</option></select></div>}>
         {first.error ? <Problem message={first.error} onRetry={first.reload} /> : first.loading && !first.data ? <Loading /> : (
           <Table rows={rows} rowKey={r => r.id} onRow={r => go(`users/${r.id}`)} empty="No one matches."

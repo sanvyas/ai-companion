@@ -4,7 +4,7 @@ import type { Ctx } from '../../context.js';
 import { badRequest, forbidden, notFound } from '../../errors.js';
 import { INTEGRATIONS, INTEGRATION_BY_ID } from '../../runtime/integrations.js';
 import { RATE_UNITS } from '../../runtime/pricing.js';
-import { body, guard, record } from './util.js';
+import { body, guard, params, payload, record, show } from './util.js';
 
 export function configRoutes(app: FastifyInstance, ctx: Ctx) {
   const rt = ctx.rt;
@@ -12,7 +12,7 @@ export function configRoutes(app: FastifyInstance, ctx: Ctx) {
   // ------------------------------------------------------------------------------------------ settings
   app.get('/settings', guard(ctx, 'flags.read'), async () => ({ items: rt.settings.list() }));
 
-  app.put('/settings/:key', guard(ctx, 'settings.write'), async req => {
+  app.put('/settings/:key', guard(ctx, 'settings.write', req => `Change setting “${rt.settings.def(params(req).key)?.label ?? params(req).key}” to ${show(payload(req).value)}`), async req => {
     const key = (req.params as { key: string }).key;
     const def = rt.settings.def(key);
     if (!def) throw notFound('That setting');
@@ -25,7 +25,7 @@ export function configRoutes(app: FastifyInstance, ctx: Ctx) {
     return { ok: true };
   });
 
-  app.delete('/settings/:key', guard(ctx, 'settings.write'), async req => {
+  app.delete('/settings/:key', guard(ctx, 'settings.write', req => `Reset setting “${rt.settings.def(params(req).key)?.label ?? params(req).key}” to its default`), async req => {
     const key = (req.params as { key: string }).key;
     const def = rt.settings.def(key);
     if (!def) throw notFound('That setting');
@@ -38,7 +38,7 @@ export function configRoutes(app: FastifyInstance, ctx: Ctx) {
   // ------------------------------------------------------------------------------------------ feature flags
   app.get('/flags', guard(ctx, 'flags.read'), async () => ({ items: rt.flags.list() }));
 
-  app.put('/flags/:key', guard(ctx, 'flags.write'), async req => {
+  app.put('/flags/:key', guard(ctx, 'flags.write', req => { const b = payload(req); return `Flag “${params(req).key}”: ${[b.enabled !== undefined ? (b.enabled ? 'turn on' : 'turn off') : '', b.rolloutPct !== undefined ? `roll out to ${b.rolloutPct}%` : '', b.description !== undefined ? 'edit description' : ''].filter(Boolean).join(', ') || 'update'}`; }), async req => {
     const key = (req.params as { key: string }).key;
     const b = body(z.object({ description: z.string().max(200).optional(), enabled: z.boolean().optional(), rolloutPct: z.number().int().min(0).max(100).optional() }), req.body);
     try {
@@ -48,7 +48,7 @@ export function configRoutes(app: FastifyInstance, ctx: Ctx) {
     return { ok: true };
   });
 
-  app.delete('/flags/:key', guard(ctx, 'flags.write'), async req => {
+  app.delete('/flags/:key', guard(ctx, 'flags.write', req => `Delete flag “${params(req).key}”`), async req => {
     const key = (req.params as { key: string }).key;
     await rt.flags.remove(key);
     await record(ctx, req, 'flag.deleted', key);
@@ -100,21 +100,21 @@ export function configRoutes(app: FastifyInstance, ctx: Ctx) {
   // ------------------------------------------------------------------------------------------ prices
   app.get('/pricing', guard(ctx, 'cost.read'), async () => ({ items: rt.pricing.list(), units: RATE_UNITS, usdInr: rt.settings.num('cost.usd_inr') }));
 
-  app.put('/pricing', guard(ctx, 'cost.write'), async req => {
+  app.put('/pricing', guard(ctx, 'cost.write', req => { const b = payload(req); return `Set price for ${b.provider}/${b.unit} to ${b.rate} ${b.currency}`; }), async req => {
     const b = body(z.object({ provider: z.string().trim().min(2).max(100).regex(/^[\w.:-]+$/), unit: z.enum(RATE_UNITS as [string, ...string[]]), rate: z.number().min(0).max(1e9), currency: z.enum(['INR', 'USD']), sourceNote: z.string().max(200).default(''), verified: z.boolean().default(false) }), req.body);
     await rt.pricing.upsert(b as Parameters<typeof rt.pricing.upsert>[0], req.admin!.email);
     await record(ctx, req, 'pricing.set', `${b.provider}/${b.unit}`, undefined, { rate: b.rate, currency: b.currency, verified: b.verified });
     return { ok: true };
   });
 
-  app.delete('/pricing/:id', guard(ctx, 'cost.write'), async req => {
+  app.delete('/pricing/:id', guard(ctx, 'cost.write', () => 'Delete a price rate'), async req => {
     const id = Number((req.params as { id: string }).id);
     await rt.pricing.remove(id);
     await record(ctx, req, 'pricing.deleted', String(id));
     return { ok: true };
   });
 
-  app.post('/pricing/recost', guard(ctx, 'cost.write'), async req => {
+  app.post('/pricing/recost', guard(ctx, 'cost.write', () => 'Re-price past usage with the current rates'), async req => {
     const n = await rt.pricing.recost();
     await record(ctx, req, 'pricing.recost', undefined, undefined, { updated: n });
     return { updated: n };

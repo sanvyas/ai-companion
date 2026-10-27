@@ -85,9 +85,13 @@ describe('the Developer page', () => {
 
   it('deploys to staging for an engineer, and to production only for an owner who types the word', async () => {
     const eng = await adminLogin(t, 'engineer');
-    const ok = await call(eng, 'POST', '/dev/deploy', { environment: 'staging', ref: 'main' });
-    expect(ok.statusCode).toBe(200);
-    expect((await call(eng, 'POST', '/dev/deploy', { environment: 'production', ref: 'main', confirm: 'production' })).statusCode).toBe(400);
+    // An engineer's deploy waits for an owner, and nothing is dispatched until then.
+    seen.length = 0;
+    const ask = await call(eng, 'POST', '/dev/deploy', { environment: 'staging', ref: 'main' });
+    expect(ask.statusCode).toBe(202);
+    expect(seen).toHaveLength(0);
+    expect((await call(owner, 'POST', `/changes/${ask.json().id}/approve`, {})).statusCode).toBe(200);
+    expect(seen.length).toBeGreaterThan(0);
     expect((await call(owner, 'POST', '/dev/deploy', { environment: 'production', ref: 'main' })).json().error.code).toBe('confirm_required');
     seen.length = 0;
     expect((await call(owner, 'POST', '/dev/deploy', { environment: 'production', ref: 'release/1.0', confirm: 'production' })).statusCode).toBe(200);
@@ -101,6 +105,7 @@ describe('the Developer page', () => {
 
   it('re-runs a CI run', async () => {
     const eng = await adminLogin(t, 'engineer');
-    expect((await call(eng, 'POST', '/dev/runs/99/rerun')).statusCode).toBe(200);
+    expect((await call(owner, 'POST', '/dev/runs/99/rerun')).statusCode).toBe(200);
+    expect((await call(eng, 'POST', '/dev/runs/99/rerun')).statusCode).toBe(202);
   });
 });

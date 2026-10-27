@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import { takePending } from './api';
 
 // Small, dependency-free building blocks used by every page.
 
@@ -117,7 +118,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 export function useAction() {
   const toast = useToast();
   return async <T,>(fn: () => Promise<T>, ok?: string): Promise<T | undefined> => {
-    try { const r = await fn(); if (ok) toast(ok); return r; }
+    try { const r = await fn(); const queued = takePending(); if (queued) toast(queued); else if (ok) toast(ok); return r; }
     catch (e) { toast((e as Error).message, true); return undefined; }
   };
 }

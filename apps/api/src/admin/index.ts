@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import type { Ctx } from '../context.js';
 import { analyticsRoutes } from './routes/analytics.js';
 import { authRoutes } from './routes/auth.js';
+import { changeRoutes } from './routes/changes.js';
 import { configRoutes } from './routes/config.js';
 import { contentRoutes } from './routes/content.js';
 import { costRoutes } from './routes/cost.js';
@@ -19,6 +20,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: Ctx) {
     overviewRoutes(scope, ctx);
     userRoutes(scope, ctx);
     configRoutes(scope, ctx);
+    changeRoutes(scope, ctx);
     promptRoutes(scope, ctx);
     safetyRoutes(scope, ctx);
     contentRoutes(scope, ctx);

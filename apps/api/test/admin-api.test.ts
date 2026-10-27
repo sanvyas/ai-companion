@@ -25,8 +25,7 @@ describe('roles', () => {
     expect((await call(engineer, 'PUT', '/integrations/anthropic/api_key', { value: 'sk-ant-xxxxxxxxxxxxxxxxxxxxxx' })).statusCode).toBe(403);
     expect((await call(engineer, 'GET', '/audit')).statusCode).toBe(403);
     expect((await call(engineer, 'GET', '/admins')).statusCode).toBe(403);
-    expect((await call(engineer, 'PUT', '/settings/models.companion', { value: 'claude-haiku-5-5' })).statusCode).toBe(403);
-    expect((await call(engineer, 'PUT', '/settings/limits.voice_minutes_per_day', { value: 12 })).statusCode).toBe(200);
+    expect((await call(engineer, 'PUT', '/settings/limits.voice_minutes_per_day', { value: 12 })).statusCode).toBe(202); // waits for an owner
   });
 });
 
@@ -150,14 +149,14 @@ describe('settings change the live app', () => {
 
   it('uses the model chosen in the portal for the next reply', async () => {
     const u = await signIn(t);
-    await call(owner, 'PUT', '/settings/models.safety', { value: 'safety-model-x' });
+    await call(owner, 'PUT', '/settings/models.safety', { value: 'claude-opus-5-5' });
     const spy: string[] = [];
     const real = t.ctx.llm.json.bind(t.ctx.llm);
     (t.ctx.llm as unknown as { json: unknown }).json = (req: { model: string }) => { spy.push(req.model); return (real as (r: unknown) => unknown)(req); };
     const { classifyWithModel } = await import('../src/services/safety.js');
     await classifyWithModel(t.ctx, u.userId, 'hello there', []);
     (t.ctx.llm as unknown as { json: unknown }).json = real;
-    expect(spy).toEqual(['safety-model-x']);
+    expect(spy).toEqual(['claude-opus-5-5']);
     await call(owner, 'DELETE', '/settings/models.safety');
   });
 });
@@ -289,20 +288,23 @@ describe('prompts', () => {
     expect(prompt('summary')).toContain('one-line summary');
     const draft = await call(eng, 'POST', '/prompts/summary/drafts', { body: 'Write a very short friendly summary in one sentence.', note: 'shorter' });
     expect(draft.statusCode).toBe(200);
-    const pub = await call(eng, 'POST', `/prompts/versions/${draft.json().id}/publish`);
-    expect(pub.statusCode).toBe(200);
+    // An engineer's publish waits for an owner; nothing changes until it is approved.
+    const asked = await call(eng, 'POST', `/prompts/versions/${draft.json().id}/publish`);
+    expect(asked.statusCode).toBe(202);
+    expect(prompt('summary')).toContain('one-line summary');
+    expect((await call(owner, 'POST', `/changes/${asked.json().id}/approve`, {})).statusCode).toBe(200);
     expect(prompt('summary')).toBe('Write a very short friendly summary in one sentence.');
     const list = (await call(eng, 'GET', '/prompts')).json().items.find((p: { key: string }) => p.key === 'summary');
     expect(list.liveVersion).toBe(draft.json().version);
     const second = await call(eng, 'POST', '/prompts/summary/drafts', { body: 'Two short sentences, warm.' });
-    await call(eng, 'POST', `/prompts/versions/${second.json().id}/publish`);
+    await call(owner, 'POST', `/prompts/versions/${second.json().id}/publish`);
     expect(prompt('summary')).toBe('Two short sentences, warm.');
     const versions = (await call(eng, 'GET', '/prompts/summary')).json().versions;
     expect(versions.filter((v: { status: string }) => v.status === 'active')).toHaveLength(1);
     // Roll back to the first version, then to the built-in default.
-    await call(eng, 'POST', `/prompts/versions/${draft.json().id}/publish`);
+    await call(owner, 'POST', `/prompts/versions/${draft.json().id}/publish`);
     expect(prompt('summary')).toBe('Write a very short friendly summary in one sentence.');
-    await call(eng, 'POST', '/prompts/summary/revert');
+    await call(owner, 'POST', '/prompts/summary/revert');
     expect(prompt('summary')).toContain('one-line summary');
   });
 
@@ -313,7 +315,12 @@ describe('prompts', () => {
     const draft = await call(eng, 'POST', '/prompts/classifier/drafts', { body });
     expect(draft.statusCode).toBe(200);
     const id = draft.json().id;
-    expect((await call(eng, 'POST', `/prompts/versions/${id}/publish`)).statusCode).toBe(403);
+    // An engineer can only ask. Even if an owner approves, the evaluation rule still applies at that moment.
+    const asked = await call(eng, 'POST', `/prompts/versions/${id}/publish`);
+    expect(asked.statusCode).toBe(202);
+    const approved = await call(owner, 'POST', `/changes/${asked.json().id}/approve`, {});
+    expect(approved.statusCode).toBe(400);
+    expect(approved.json().error.message).toContain('evaluation');
     const noEval = await call(owner, 'POST', `/prompts/versions/${id}/publish`);
     expect(noEval.statusCode).toBe(400);
     expect(noEval.json().error.code).toBe('eval_required');
@@ -324,7 +331,8 @@ describe('prompts', () => {
     const ok = await call(owner, 'POST', `/prompts/versions/${id}/publish`);
     expect(ok.statusCode).toBe(200);
     expect(prompt('classifier')).toContain('Be especially careful with Hinglish.');
-    expect((await call(eng, 'POST', '/prompts/classifier/revert')).statusCode).toBe(403);
+    expect((await call(eng, 'POST', '/prompts/classifier/revert')).statusCode).toBe(202);
+    expect(prompt('classifier')).toContain('Be especially careful with Hinglish.');
     expect((await call(owner, 'POST', '/prompts/classifier/revert')).statusCode).toBe(200);
     expect(prompt('classifier')).not.toContain('Be especially careful with Hinglish.');
   });

@@ -6,7 +6,7 @@ import { badRequest, forbidden, notFound } from '../../errors.js';
 import { PROMPT_BY_KEY, validatePromptBody } from '../../runtime/promptDefs.js';
 import { SUITES, gatingRun, playground, runEval, suiteFor, type SuiteName } from '../evals.js';
 import { can } from '../rbac.js';
-import { body, guard, record } from './util.js';
+import { body, guard, params, record } from './util.js';
 
 export function promptRoutes(app: FastifyInstance, ctx: Ctx) {
   const store = ctx.rt.prompts;
@@ -36,7 +36,7 @@ export function promptRoutes(app: FastifyInstance, ctx: Ctx) {
   });
 
   /** Safety-critical prompts: owner only, and the matching evaluation must have passed on this exact version in the last day. */
-  app.post('/prompts/versions/:id/publish', guard(ctx, 'prompts.publish'), async req => {
+  app.post('/prompts/versions/:id/publish', guard(ctx, 'prompts.publish', async req => { const v = await store.getVersion(Number(params(req).id)); return v ? `Publish prompt “${PROMPT_BY_KEY.get(v.key)?.label ?? v.key}” version ${v.version}` : null; }), async req => {
     const id = Number((req.params as { id: string }).id);
     const v = await store.getVersion(id);
     if (!v) throw notFound('That version');
@@ -55,7 +55,7 @@ export function promptRoutes(app: FastifyInstance, ctx: Ctx) {
     return out;
   });
 
-  app.post('/prompts/:key/revert', guard(ctx, 'prompts.publish'), async req => {
+  app.post('/prompts/:key/revert', guard(ctx, 'prompts.publish', req => `Revert prompt “${PROMPT_BY_KEY.get(params(req).key)?.label ?? params(req).key}” to its built-in default`), async req => {
     const key = (req.params as { key: string }).key;
     const def = PROMPT_BY_KEY.get(key);
     if (!def) throw notFound('That prompt');

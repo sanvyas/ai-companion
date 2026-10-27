@@ -2,11 +2,12 @@ import { z } from 'zod';
 import type { Config } from '../config.js';
 import type { Db } from '../db/pool.js';
 import { withSystem } from '../db/pool.js';
+import { modelOptions } from './models.js';
 
 // Settings the founder can change without a deploy. Each one is typed and validated here; the portal renders its
 // editor from this list, and the live app reads the current value from memory (refreshed every few seconds).
 
-export type SettingKind = 'text' | 'long' | 'int' | 'number' | 'bool' | 'json';
+export type SettingKind = 'text' | 'long' | 'int' | 'number' | 'bool' | 'json' | 'select';
 export interface SettingDef {
   key: string;
   group: 'Models' | 'Limits' | 'Access' | 'Cost' | 'Analytics' | 'Developer';
@@ -15,18 +16,23 @@ export interface SettingDef {
   kind: SettingKind;
   schema: z.ZodTypeAny;
   default: unknown;
+  /** For kind 'select': the choices the portal offers. */
+  options?: { value: string; label: string }[];
   /** Only owners may change these (they affect safety, money or access). */
   ownerOnly?: boolean;
 }
 
-const model = z.string().trim().min(3).max(80).regex(/^[\w.:-]+$/, 'Letters, numbers and - . : _ only');
 const EnvList = z.array(z.object({ name: z.string().trim().min(1).max(30), url: z.string().url().max(200) })).max(6);
 
 export function settingDefs(cfg: Pick<Config, 'MODEL_COMPANION' | 'MODEL_SAFETY' | 'MODEL_ANALYSIS' | 'BASIC_VOICE_MINUTES_PER_DAY'>): SettingDef[] {
+  const choices = modelOptions(cfg.MODEL_COMPANION, cfg.MODEL_SAFETY, cfg.MODEL_ANALYSIS);
+  const model = z.enum(choices.map(c => c.value) as [string, ...string[]], { errorMap: () => ({ message: 'Choose one of the listed models.' }) });
   return [
-    { key: 'models.companion', group: 'Models', label: 'Companion model', description: 'Writes the live replies. Speed matters most here.', kind: 'text', schema: model, default: cfg.MODEL_COMPANION, ownerOnly: true },
-    { key: 'models.safety', group: 'Models', label: 'Safety model', description: 'Classifies every message and reviews risky drafts. Keep it fast and careful.', kind: 'text', schema: model, default: cfg.MODEL_SAFETY, ownerOnly: true },
-    { key: 'models.analysis', group: 'Models', label: 'Analysis model', description: 'Journal reading, summaries, memory proposals and the weekly letter.', kind: 'text', schema: model, default: cfg.MODEL_ANALYSIS, ownerOnly: true },
+    { key: 'models.companion', group: 'Models', label: 'Companion model', description: 'Writes the live replies. Speed matters most here.', kind: 'select', options: choices, schema: model, default: cfg.MODEL_COMPANION, ownerOnly: true },
+    { key: 'models.safety', group: 'Models', label: 'Safety model', description: 'Classifies every message and reviews risky drafts. Keep it fast and careful.', kind: 'select', options: choices, schema: model, default: cfg.MODEL_SAFETY, ownerOnly: true },
+    { key: 'models.analysis', group: 'Models', label: 'Analysis model', description: 'Journal reading, summaries, memory proposals and the weekly letter.', kind: 'select', options: choices, schema: model, default: cfg.MODEL_ANALYSIS, ownerOnly: true },
+
+    { key: 'governance.require_approval', group: 'Access', label: 'Changes need approval', description: 'When on, changes made by anyone below owner wait for someone more senior to approve them before they reach the app.', kind: 'bool', schema: z.boolean(), default: true, ownerOnly: true },
 
     { key: 'limits.voice_minutes_per_day', group: 'Limits', label: 'Voice minutes per day (Basic)', description: 'Per person. Never applied during a crisis. 0 means no voice.', kind: 'int', schema: z.number().int().min(0).max(240), default: cfg.BASIC_VOICE_MINUTES_PER_DAY },
 
