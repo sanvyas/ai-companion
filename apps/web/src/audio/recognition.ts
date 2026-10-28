@@ -45,7 +45,7 @@ export class Recognizer {
       if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { this.want = false; this.h.onFatal('denied'); }
     };
     // Browsers end recognition after silence; keep it going while the call is live.
-    r.onend = () => { if (this.rec === r) { this.rec = null; if (this.want) this.timer = setTimeout(() => this.want && this.open(), 250); } };
+    r.onend = () => { if (this.rec === r) { this.rec = null; if (this.want) this.timer = setTimeout(() => this.want && this.open(), 60); } };
     try { r.start(); } catch { /* already started */ }
   }
 

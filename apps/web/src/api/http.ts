@@ -115,6 +115,8 @@ export class HttpApi implements Api {
   putCompanion = (b: Parameters<Api['putCompanion']>[0]) => this.req<Awaited<ReturnType<Api['putCompanion']>>>('PUT', '/me/companion', b);
   voices = (language?: string) => this.req<Awaited<ReturnType<Api['voices']>>>('GET', `/voices${language ? `?language=${language}` : ''}`);
   previewVoice = (voice: string, language?: string) => this.req<Awaited<ReturnType<Api['previewVoice']>>>('POST', '/voices/preview', { voice, language });
+  calmNarration = (kind: 'sleep' | 'meditation') => this.req<Awaited<ReturnType<Api['calmNarration']>>>('GET', `/calm/narration?kind=${kind}`);
+  narrate = (text: string, kind: 'sleep' | 'meditation', language?: string) => this.req<Awaited<ReturnType<Api['narrate']>>>('POST', '/calm/narrate', { text, kind, language });
   declareMinor = async () => { try { await this.req('PUT', '/me/age', { confirmed18: false }); } catch (e) { if (!(e instanceof ApiError && e.code === 'under18')) throw e; } this.dropSession(); };
   deleteAccount = async () => { await this.req('DELETE', '/me'); this.dropSession(); };
   cancelDeletion = async () => { await this.req('POST', '/me/deletion/cancel'); };

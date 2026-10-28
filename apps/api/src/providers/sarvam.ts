@@ -23,7 +23,7 @@ export class SarvamTts implements TtsProvider {
     const started = Date.now();
     let ok = false;
     try {
-      const res = await this.post(key, { text, target_language_code: SARVAM_LANG[o.language], speaker, model: SARVAM_MODEL, pace: 1, speech_sample_rate: SAMPLE_RATE }, o.signal);
+      const res = await this.post(key, { text, target_language_code: SARVAM_LANG[o.language], speaker, model: SARVAM_MODEL, pace: Math.min(1.3, Math.max(0.6, o.pace ?? 1)), speech_sample_rate: SAMPLE_RATE }, o.signal);
       const j = (await res.json()) as { audios?: string[]; audio?: string };
       const b64 = j.audios?.[0] ?? j.audio;
       if (!b64) throw new TtsFailure('The voice service answered without any audio.');

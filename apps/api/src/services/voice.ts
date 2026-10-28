@@ -1,4 +1,5 @@
 import type WebSocket from 'ws';
+import { paceForStance } from './narration.js';
 import type { ServerMsg } from '@saathi/contracts';
 import type { Ctx } from '../context.js';
 import type { SttSession } from '../providers/voice.js';
@@ -79,7 +80,7 @@ export class VoiceBridge {
       if (signal.aborted) return;
       try {
         this.send({ type: 'audio_start', sampleRate: SAMPLE_RATE_OUT, index });
-        for await (const chunk of this.ctx.tts!.stream({ text, voice: this.session.companion.voice, language: this.session.language, signal, userId: this.session.userId })) {
+        for await (const chunk of this.ctx.tts!.stream({ text, voice: this.session.companion.voice, language: this.session.language, pace: paceForStance(this.session.lastStance), signal, userId: this.session.userId })) {
           if (signal.aborted) break;
           if (chunk.visemes?.length) this.send({ type: 'visemes', index, cues: chunk.visemes });
           if (this.socket.readyState === this.socket.OPEN) this.socket.send(chunk.audio, { binary: true });

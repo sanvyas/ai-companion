@@ -25,10 +25,16 @@ export async function getCalmItem(ctx: Ctx, userId: string, id: string) {
   });
 }
 
+/** The id the app gives a story written for tonight. */
+export const GENERATED_STORY = /^story-\d{10,16}$/;
+
 export async function startCalm(ctx: Ctx, userId: string, b: { itemId: string; bgSound?: string; timerMinutes?: number }) {
   return withUser(ctx.db, userId, async tx => {
-    const ok = await tx.query('SELECT 1 FROM calm_items WHERE id = $1 AND active', [b.itemId]);
-    if (!ok.rowCount) throw notFound('That session');
+    // A story written for tonight (id "story-<time>") is not in the catalogue and is not kept; its session still counts.
+    if (!GENERATED_STORY.test(b.itemId)) {
+      const ok = await tx.query('SELECT 1 FROM calm_items WHERE id = $1 AND active', [b.itemId]);
+      if (!ok.rowCount) throw notFound('That session');
+    }
     const r = await tx.query<{ id: string }>('INSERT INTO calm_sessions (user_id, item_id, bg_sound, timer_minutes) VALUES ($1,$2,$3,$4) RETURNING id', [userId, b.itemId, b.bgSound ?? null, b.timerMinutes ?? null]);
     return { id: r.rows[0].id };
   });
@@ -40,7 +46,7 @@ export async function progressCalm(ctx: Ctx, userId: string, id: string, pct: nu
     if (!r) throw notFound('That session');
     // Finishing a session is a win, once per session (PRD 8.6).
     if (pct >= 90) {
-      const title = (await tx.query<{ title: string }>('SELECT title FROM calm_items WHERE id = $1', [r.item_id])).rows[0]?.title ?? 'Calm session';
+      const title = (await tx.query<{ title: string }>('SELECT title FROM calm_items WHERE id = $1', [r.item_id])).rows[0]?.title ?? (GENERATED_STORY.test(r.item_id) ? 'A story written for you' : 'Calm session');
       await addWin(ctx, userId, 'calm', title, id, tx);
     }
     return { ok: true };

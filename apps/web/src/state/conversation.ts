@@ -28,7 +28,7 @@ export function bindConversationUi(h: { toast: (m: string) => void; crisis: () =
 
 export const hasConversation = () => !!getState().conv;
 const speaksAloud = () => { const s = getState(); return !!s.conv && s.voiceAudio && ['call', 'walk'].includes(s.screen) && s.conv.mode !== 'text'; };
-const recLang = () => (getState().me?.language === 'hi' ? 'hi-IN' : 'en-IN');
+const recLang = () => (getState().me?.language === 'hi' || getState().me?.language === 'hinglish' ? 'hi-IN' : 'en-IN');
 
 // ------------------------------------------------------------------------------------------------ lifecycle
 export async function beginConversation(mode: ConversationMode, opts: { continueFrom?: string; keepMessages?: boolean; first?: boolean } = {}): Promise<boolean> {

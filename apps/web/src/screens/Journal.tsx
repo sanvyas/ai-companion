@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { C, MOODS, serif, shadow } from '../theme';
 import { dayOf, set, useStore, type JournalResult } from '../state/store';
 import { finishJournal, go, keepPrivate, loadInsights, loadJournal, loadMoreJournal, openSheet, saveJournal, startCall, startJournal, toggleDictation } from '../state/actions';
-import { stopDictation } from '../audio/dictation';
+import { speechLocale, stopDictation } from '../audio/dictation';
 import { moodIndexFor } from '@saathi/domain';
 import { Orb, useReduceMotion } from '../components/figures';
 import { P, Svg } from '../components/icons';
@@ -104,6 +104,7 @@ function Edit() {
   const prompt = useStore(s => s.jPrompt);
   const share = useStore(s => s.jShare);
   const dictating = useStore(s => s.dictating);
+  useStore(s => s.dictLang);
   const compName = useStore(s => s.compName);
   const reduce = useReduceMotion();
   const speak = mode === 'speak';
@@ -128,6 +129,12 @@ function Edit() {
             <Svg d={dictating ? P.stop : P.mic} size={30} stroke="#FFFFFF" sw={1.9} style={{ position: 'relative' }} />
           </button>
           <span role="status" style={{ fontSize: 15, color: C.muted }}>{dictating ? 'Listening. Tap to stop.' : text ? 'Tap to keep talking' : 'Tap to start talking'}</span>
+          {!dictating && (
+            <div role="group" aria-label="Language you’re speaking" style={{ ...flex('row', 8) }}>
+              <Chip label="English" on={speechLocale() === 'en-IN'} onClick={() => set({ dictLang: 'en' })} />
+              <Chip label="हिन्दी" on={speechLocale() === 'hi-IN'} onClick={() => set({ dictLang: 'hi' })} />
+            </div>
+          )}
         </div>
       )}
       <div style={{ padding: '12px 24px calc(var(--sa-bottom) + 24px)', ...flex('column', 10) }}>

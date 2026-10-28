@@ -6,6 +6,7 @@ import type {
 
 export type { Companion, Consent, ConsentUpdate, ConversationItem, ConversationMode, EndConversationResponse, Helpline, Insights, JournalAnalysis, JournalCreateBody, JournalEntry, MemoryItem, Me, MeUpdate, NotificationPrefs, OtpStartResponse, OutsideEvent, PlanItem, Privacy, PrivacyUpdate, SafetyPlan, StoryResponse, StoryTheme, Theme, TrustedContact, Letter };
 
+export interface CalmNarration { server: boolean; voice: { id: string; label: string } | null; pace: number; mood: string; reason: string }
 export interface VoiceItem { id: string; label: string; gender: 'female' | 'male' | null; provider: 'device' | 'sarvam' }
 export interface VoiceList { language: string; serverVoices: boolean; items: VoiceItem[] }
 export interface PublicConfig { otp: boolean; google: boolean; googleClientId: string | null; llm: boolean; stt: boolean; tts: boolean; push: boolean; signupsOpen?: boolean; voicePaused?: boolean; analytics?: boolean }
@@ -57,6 +58,10 @@ export interface Api {
   voices(language?: string): Promise<VoiceList>;
   /** A short spoken sample of a server voice, as a WAV file. Throws voice_unavailable when none is connected. */
   previewVoice(voice: string, language?: string): Promise<{ audio: string; mime: string; sampleRate: number }>;
+  /** Who will read a calm session aloud, and how fast, from how the person has been feeling. */
+  calmNarration(kind: 'sleep' | 'meditation'): Promise<CalmNarration>;
+  /** One line of a calm session in a server voice (a WAV file). Throws voice_unavailable when none is connected. */
+  narrate(text: string, kind: 'sleep' | 'meditation', language?: string): Promise<{ audio: string; mime: string; sampleRate: number; voice: { id: string; label: string }; pace: number }>;
   declareMinor(): Promise<void>;
   deleteAccount(): Promise<void>;
   cancelDeletion(): Promise<void>;

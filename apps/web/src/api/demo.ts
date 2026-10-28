@@ -143,6 +143,8 @@ export class DemoApi implements Api {
   async safetyAck() { /* recorded server-side in the real app */ }
 
   async startCalm() { return { id: uuid() }; }
+  async calmNarration() { return { server: false, voice: null, pace: 0.85, mood: 'unknown', reason: 'the phone’s own voice' }; }
+  async narrate(): Promise<never> { await wait(); throw new ApiError(503, 'voice_unavailable', 'The voices aren’t connected in this preview.'); }
   async story(theme: string) {
     return { title: `Evening story: ${theme}`, generated: false, lines: ['Tonight you sit somewhere quiet, as the light turns soft and golden.', 'There is nothing you need to do. Just listen, and let your body get heavy and warm.', 'A cup of tea waits beside you, exactly warm enough.', 'Your breath slows, in and out, in and out.', 'Everything that needed doing has been done enough.', 'Rest here as long as you like. Sleep well.'] };
   }

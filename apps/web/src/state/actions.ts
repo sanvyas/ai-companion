@@ -2,6 +2,7 @@ import type { StoryTheme } from '@saathi/contracts';
 import { api, isDemo } from '../api';
 import { addGeneratedStory, findCalm } from '../data/calm';
 import { stopDictation, startDictation } from '../audio/dictation';
+import { playClip } from '../audio/clip';
 import { isSpeaking, pauseNarration, say, stopSpeech, ttsSupported } from '../audio/speech';
 import { stopAllSounds, toggleSound } from '../audio/sounds';
 import { nextRisk, userSafeAcknowledged } from '@saathi/domain';
@@ -142,7 +143,34 @@ function reportProgress(done: boolean) {
   void api.progressCalm(s.pSession, pct).catch(() => undefined);
 }
 
-function playLine() {
+// Who reads this session aloud. A server voice, chosen on the server from the person's mood, reads when one is connected;
+// otherwise the phone's own voice does, at the pace the server worked out for that mood. Lines are fetched a few ahead
+// so the reading does not stall between them.
+interface Narrator { server: boolean; pace: number; label: string | null }
+let narrator: Promise<Narrator> | null = null;
+let lineAudio = new Map<number, Promise<{ audio: string; mime: string } | null>>();
+let playToken = 0;
+
+const narrationKind = (it: { kind: string }) => (it.kind === 'sleep' ? 'sleep' as const : 'meditation' as const);
+
+function loadNarrator(it: NonNullable<ReturnType<typeof findCalm>>): Promise<Narrator> {
+  const fallback: Narrator = { server: false, pace: it.kind === 'sleep' ? 0.8 : 0.88, label: null };
+  const timeout = new Promise<Narrator>(res => setTimeout(() => res(fallback), 3000));
+  const ask = api.calmNarration(narrationKind(it)).then(n => ({ server: n.server, pace: n.pace, label: n.voice?.label ?? null })).catch(() => fallback);
+  return Promise.race([ask, timeout]);
+}
+
+function fetchLine(it: NonNullable<ReturnType<typeof findCalm>>, i: number) {
+  if (!it.lines || i >= it.lines.length) return;
+  if (lineAudio.has(i)) return;
+  const text = it.lines[i];
+  lineAudio.set(i, api.narrate(text, narrationKind(it), it.lang).then(r => ({ audio: r.audio, mime: r.mime })).catch(() => {
+    // One failed line must not silence the rest of the session: that line falls back to the phone's voice.
+    return null;
+  }));
+}
+
+async function playLine() {
   const st = getState();
   if (!st.player || !st.pPlaying) return;
   const it = findCalm(st.player);
@@ -153,11 +181,29 @@ function playLine() {
     if (st.pTimer === 'End of story') setTimeout(stopAllSounds, 1500);
     return;
   }
-  const text = it.lines[pLine];
-  set({ pLineText: text, pLineIdx: pLine });
-  const next = () => { if (!getState().pPlaying) return; pLine++; pNext = setTimeout(playLine, it.kind === 'sleep' ? 3200 : 2600); };
-  if (!st.voiceAudio || !ttsSupported()) { pNext = setTimeout(next, 4200); return; }
-  say(text, { rateMul: it.kind === 'sleep' ? 0.8 : 0.88 }, next);
+  const token = ++playToken;
+  const index = pLine;
+  const text = it.lines[index];
+  set({ pLineText: text, pLineIdx: index });
+  const pause = it.kind === 'sleep' ? 3200 : 2600;
+  const next = () => { if (token !== playToken || !getState().pPlaying) return; pLine++; pNext = setTimeout(() => void playLine(), pause); };
+  if (!st.voiceAudio) { pNext = setTimeout(next, 4200); return; }
+
+  const n = await (narrator ??= loadNarrator(it));
+  if (token !== playToken || !getState().pPlaying) return;
+  const deviceVoice = () => {
+    if (!ttsSupported()) { pNext = setTimeout(next, 4200); return; }
+    say(text, { pace: n.pace, lang: it.lang === 'hi' ? 'हिन्दी' : 'English' }, next);
+  };
+  if (!n.server) { deviceVoice(); return; }
+
+  fetchLine(it, index);
+  fetchLine(it, index + 1);
+  fetchLine(it, index + 2);
+  const clip = await lineAudio.get(index)!;
+  if (token !== playToken || !getState().pPlaying) return;
+  if (!clip) { deviceVoice(); return; }
+  playClip(clip.audio, clip.mime, next, deviceVoice);
 }
 
 export function openPlayer(id: string) {
@@ -168,12 +214,16 @@ export function openPlayer(id: string) {
   clearTimeout(pNext);
   pauseNarration();
   pLine = 0;
+  narrator = null;
+  lineAudio = new Map();
+  playToken++;
   const bg = it.bg || getState().pBg;
   const timerMin = parseInt(getState().pTimer, 10) || undefined;
-  set({ player: id, pPlaying: true, pElapsed: 0, pEnded: false, pLineText: '', pLineIdx: 0, pBg: bg || null, pSession: null });
+  set({ player: id, pPlaying: true, pElapsed: 0, pEnded: false, pLineText: '', pLineIdx: 0, pBg: bg || null, pSession: null, pNarrator: '' });
   void api.startCalm(id, bg ?? undefined, timerMin).then(r => set({ pSession: r.id })).catch(() => undefined);
   if (bg) toggleSound(bg, true, () => toast('This browser can’t play sounds.'));
-  playLine();
+  void (narrator = loadNarrator(it)).then(n => { if (getState().player === id) set({ pNarrator: n.server && n.label ? n.label : '' }); });
+  void playLine();
   clearInterval(pIv);
   pIv = setInterval(() => {
     const st = getState();
@@ -197,7 +247,7 @@ export async function playStory(theme: StoryTheme) {
   set({ storyBusy: true });
   try {
     const r = await api.story(theme);
-    const it = addGeneratedStory(r.title, r.lines);
+    const it = addGeneratedStory(r.title, r.lines, (getState().me?.language as 'en' | 'hinglish' | 'hi' | undefined) ?? 'en');
     openPlayer(it.id);
   } catch {
     toast('I couldn’t write a story just now. One of the ones below is ready whenever you are.');
@@ -217,7 +267,7 @@ export function closePlayer() {
 
 export function togglePlay() {
   if (getState().pPlaying) { clearTimeout(pNext); pauseNarration(); set({ pPlaying: false }); }
-  else { set({ pPlaying: true }); playLine(); }
+  else { set({ pPlaying: true }); void playLine(); }
 }
 
 export function stepPlayer(delta: -1 | 1) {
@@ -227,7 +277,7 @@ export function stepPlayer(delta: -1 | 1) {
   pauseNarration();
   pLine = Math.min(it.lines.length - 1, Math.max(0, pLine + delta));
   set({ pPlaying: true });
-  playLine();
+  void playLine();
 }
 
 export function setPlayerBg(k: Parameters<typeof toggleSound>[0] | null) {

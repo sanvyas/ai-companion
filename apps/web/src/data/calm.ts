@@ -11,6 +11,8 @@ export interface CalmItem {
   desc: string;
   tint: string;
   bg?: SoundId;
+  /** The language the lines are written in. The catalogue is English. */
+  lang?: 'en' | 'hinglish' | 'hi';
   /** No lines means the item opens the Breathe overlay instead of the player. */
   lines?: string[];
 }
@@ -30,8 +32,8 @@ export const CALM_ITEMS: CalmItem[] = [
 /** Stories written for the person this evening. Held for the session only; the server keeps nothing but the calm-session record. */
 const generated: CalmItem[] = [];
 export const findCalm = (id: string | null | undefined) => CALM_ITEMS.find(x => x.id === id) ?? generated.find(x => x.id === id);
-export function addGeneratedStory(title: string, lines: string[]): CalmItem {
-  const item: CalmItem = { id: `story-${Date.now()}`, kind: 'sleep', cat: 'Sleep story', title, mins: Math.max(3, Math.round(lines.length * 0.6)), desc: 'Written for you tonight.', tint: '#B7B1E6', lines };
+export function addGeneratedStory(title: string, lines: string[], lang: 'en' | 'hinglish' | 'hi' = 'en'): CalmItem {
+  const item: CalmItem = { id: `story-${Date.now()}`, kind: 'sleep', cat: 'Sleep story', title, mins: Math.max(3, Math.round(lines.length * 0.6)), desc: 'Written for you tonight.', tint: '#B7B1E6', lang, lines };
   generated.push(item);
   if (generated.length > 5) generated.shift();
   return item;

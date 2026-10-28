@@ -12,6 +12,18 @@ import { withIdempotency } from '../services/idempotency.js';
 
 const TURNS_PER_MINUTE = 20;
 
+/**
+ * A WebSocket's Origin must be one of the configured app origins, or the API's own address: when the API serves the app
+ * itself (the single-service deploy), the app and the socket share a host and the browser sends exactly that as Origin.
+ */
+export function originAllowed(origin: string | undefined, host: string | string[] | undefined, allowed: string[]): boolean {
+  if (!origin) return true;
+  if (allowed.includes(origin)) return true;
+  const h = (Array.isArray(host) ? host[0] : host)?.split(',')[0]?.trim().toLowerCase();
+  if (!h) return false;
+  try { return new URL(origin).host.toLowerCase() === h; } catch { return false; }
+}
+
 export function conversationRoutes(app: FastifyInstance, ctx: Ctx) {
   const auth = { preHandler: app.auth };
 
@@ -46,8 +58,7 @@ export function conversationRoutes(app: FastifyInstance, ctx: Ctx) {
     config: { rateLimit: false },
     preValidation: async (req) => {
       // Browsers do not apply CORS to WebSockets, so the Origin is checked here.
-      const origin = req.headers.origin;
-      if (origin && !ctx.cfg.webOrigins.includes(origin)) throw new AppError(403, 'bad_origin', 'That origin isn’t allowed.');
+      if (!originAllowed(req.headers.origin, req.headers['x-forwarded-host'] ?? req.headers.host, ctx.cfg.webOrigins)) throw new AppError(403, 'bad_origin', 'That origin isn’t allowed.');
     },
   }, (socket: WebSocket, req) => {
     const { id } = req.params as { id: string };

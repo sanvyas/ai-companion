@@ -3,6 +3,7 @@ import type { StoryResponse, StoryTheme } from '@saathi/contracts';
 import type { Ctx } from '../context.js';
 import { withUser } from '../db/pool.js';
 import { generateSafe } from './guard.js';
+import { recentMood } from './moodSummary.js';
 import { storySystem } from './prompts.js';
 
 // A short story to listen to, written for this person's evening. The theme comes from a fixed list (never free text, so
@@ -125,14 +126,10 @@ export async function makeStory(ctx: Ctx, userId: string, theme: StoryTheme): Pr
   const fallback = () => ({ ...FALLBACK_STORIES[theme], generated: false });
   if (!ctx.llm.configured) return fallback();
 
-  const ctxRow = await withUser(ctx.db, userId, async tx => {
-    const u = (await tx.query<{ language: keyof typeof LANG }>('SELECT language FROM users WHERE id = $1', [userId])).rows[0];
-    const m = (await tx.query<{ avg: string | null; n: number }>('SELECT avg(value)::numeric(3,1) AS avg, count(*)::int AS n FROM mood_logs WHERE day >= current_date - 3')).rows[0];
-    const mood = !m.n || m.avg === null ? 'unknown' : Number(m.avg) < 1.5 ? 'heavier' : Number(m.avg) < 2.7 ? 'in between' : 'lighter';
-    return { language: u?.language ?? 'en', mood };
-  });
+  const language = (await withUser(ctx.db, userId, tx => tx.query<{ language: keyof typeof LANG }>('SELECT language FROM users WHERE id = $1', [userId]))).rows[0]?.language ?? 'en';
+  const mood = (await recentMood(ctx, userId)).label;
 
-  const system = storySystem({ language: LANG[ctxRow.language], theme: THEME_WORDS[theme], mood: ctxRow.mood });
+  const system = storySystem({ language: LANG[language], theme: THEME_WORDS[theme], mood });
   try {
     const safe = await generateSafe(ctx, {
       label: 'story',

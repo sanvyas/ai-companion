@@ -19,7 +19,7 @@ export interface TtsChunk {
   /** Mouth-shape cues for the avatar, if the vendor returns visemes. Otherwise the client derives them from amplitude. */
   visemes?: { t: number; v: string }[];
 }
-export interface TtsOptions { text: string; voice: string; language: 'en' | 'hinglish' | 'hi'; signal?: AbortSignal; userId?: string }
+export interface TtsOptions { text: string; voice: string; language: 'en' | 'hinglish' | 'hi'; /** Speaking speed, 1 is normal. The vendor may clamp it. */ pace?: number; signal?: AbortSignal; userId?: string }
 export interface Synthesis { wav: Buffer; pcm: Buffer; sampleRate: number }
 export interface TtsProvider {
   readonly name: string;

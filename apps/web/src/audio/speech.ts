@@ -25,7 +25,7 @@ function pickVoice(persona: Persona, lang: string): SpeechSynthesisVoice | null 
   const norm = (l: string) => (l || '').replace('_', '-').toLowerCase();
   const hindi = lang === 'हिन्दी';
   const prefs = hindi ? ['hi-in'] : ['en-in', 'en-gb', 'en-us', 'en-au'];
-  const score = (v: SpeechSynthesisVoice) => (/(natural|neural|premium|enhanced|google)/i.test(v.name) ? 0 : 1);
+  const score = (v: SpeechSynthesisVoice) => (/(natural|neural|premium|enhanced|online)/i.test(v.name) ? 0 : /google/i.test(v.name) ? 1 : /espeak|compact/i.test(v.name) ? 3 : 2);
   let c: SpeechSynthesisVoice[] = [];
   prefs.forEach(p => c.push(...all.filter(v => norm(v.lang) === p).sort((a, b) => score(a) - score(b))));
   if (!c.length) c = all.filter(v => norm(v.lang).startsWith(hindi ? 'hi' : 'en'));
@@ -56,13 +56,14 @@ export function stopSpeech() {
 
 /** Stops audio without touching `previewing` (used between player lines). */
 export function pauseNarration() {
+  stopClip();
   utt = null;
   speaking = false;
   if (ttsSupported()) speechSynthesis.cancel();
   if (mouthTimer) stopMouth();
 }
 
-export function say(text: string, opts: { persona?: Persona; lang?: string; rateMul?: number } = {}, onEnd?: () => void, onUnsupported?: () => void) {
+export function say(text: string, opts: { persona?: Persona; lang?: string; rateMul?: number; pace?: number } = {}, onEnd?: () => void, onUnsupported?: () => void) {
   if (!ttsSupported()) { onUnsupported?.(); onEnd?.(); return; }
   speechSynthesis.cancel();
   const persona = opts.persona || personaOf(getState().voice);
@@ -71,8 +72,9 @@ export function say(text: string, opts: { persona?: Persona; lang?: string; rate
   const v = pickVoice(persona, lang);
   if (v) { u.voice = v; u.lang = v.lang; } else u.lang = lang === 'हिन्दी' ? 'hi-IN' : 'en-IN';
   const P = { warm: [0.95, 0.9], steady: [0.82, 0.93], bright: [1.12, 1.0] }[persona] || [1, 1];
-  u.pitch = P[0];
-  u.rate = P[1] * (opts.rateMul || 1);
+  // A reading pace from the server (calm sessions) replaces the persona's: natural pitch, and the rate the mood called for.
+  u.pitch = opts.pace ? 1 : P[0];
+  u.rate = opts.pace ? Math.min(1.1, Math.max(0.6, opts.pace)) : P[1] * (opts.rateMul || 1);
   const done = () => {
     if (utt !== u) return;
     utt = null;

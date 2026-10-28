@@ -45,6 +45,7 @@ export function Player() {
   const timer = useStore(s => s.pTimer);
   const sounds = useStore(s => s.sounds);
   const comp = useStore(s => s.compName);
+  const narrator = useStore(s => s.pNarrator);
   const voice = useStore(s => s.voice);
   const nick = useStore(s => s.nick);
   const ref = useDialog<HTMLDivElement>(closePlayer);
@@ -74,7 +75,7 @@ export function Player() {
           </div>
           <div style={flex('column', 4)}>
             <span style={{ fontFamily: serif, fontSize: 28, lineHeight: 1.15 }}>{it.title}</span>
-            <span style={{ fontSize: 15, color: C.moonMuted }}>{it.mins} min · Narrated by {comp}, {voice} voice</span>
+            <span style={{ fontSize: 15, color: C.moonMuted }}>{it.mins} min · Narrated by {narrator ? narrator : `${comp}, ${voice} voice`}</span>
           </div>
           <div role="progressbar" aria-label="Progress" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} style={{ marginTop: 16, height: 4, borderRadius: 2, background: 'rgba(255,255,255,.15)', overflow: 'hidden' }}><div style={{ height: '100%', width: `${pct}%`, background: C.moonText, borderRadius: 2, transition: 'width 800ms' }} /></div>
           <div style={{ ...flex('row'), justifyContent: 'space-between', fontSize: 13, color: C.moonMuted, marginTop: 8 }}><span>{mm(elapsed)}</span><span>Part {Math.min(idx + 1, total)} of {total}</span></div>

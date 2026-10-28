@@ -345,3 +345,36 @@ describe('the companion speaks first when it should', () => {
     chat.close();
   });
 });
+
+describe('WebSocket origin', () => {
+  const open = (id: string, headers: Record<string, string>) => new Promise<'open' | number>(res => {
+    const ws = new WebSocket(`ws://127.0.0.1:${port}/conversations/${id}/stream`, { headers });
+    ws.on('open', () => { ws.close(); res('open'); });
+    ws.on('unexpected-response', (_req, r) => res(r.statusCode ?? 0));
+    ws.on('error', () => undefined);
+  });
+
+  it('accepts the API’s own address as the app origin (the app is served from the same host), and no origin at all', async () => {
+    const a = await signIn(t);
+    const id = await create(a);
+    expect(await open(id, { origin: `http://127.0.0.1:${port}` })).toBe('open');
+    expect(await open(id, {})).toBe('open');
+  });
+
+  it('refuses a different site, even one that sends a look-alike host', async () => {
+    const a = await signIn(t);
+    const id = await create(a);
+    expect(await open(id, { origin: 'https://evil.example' })).toBe(403);
+    expect(await open(id, { origin: `http://127.0.0.1:${port}.evil.example` })).toBe(403);
+  });
+
+  it('originAllowed: configured origins, same host, forwarded host', async () => {
+    const { originAllowed } = await import('../src/routes/conversations.js');
+    expect(originAllowed('https://app.example', 'api.example', ['https://app.example'])).toBe(true);
+    expect(originAllowed('https://api.example', 'api.example', ['https://app.example'])).toBe(true);
+    expect(originAllowed('https://api.example', 'API.example, proxy', [])).toBe(true);
+    expect(originAllowed('https://api.example', undefined, [])).toBe(false);
+    expect(originAllowed('not a url', 'api.example', [])).toBe(false);
+    expect(originAllowed(undefined, 'api.example', [])).toBe(true);
+  });
+});

@@ -216,3 +216,17 @@ describe('calm stories', () => {
     expect((await t.app.inject({ method: 'POST', url: '/calm/story', payload: { theme: 'rain' } })).statusCode).toBe(401);
   });
 });
+
+describe('a story written for tonight counts as a calm session', () => {
+  it('records the session and the win, though the story is not in the catalogue', async () => {
+    const a = await signIn(t);
+    const id = `story-${Date.now()}`;
+    const s = await j(a, 'POST', '/calm/sessions', { itemId: id });
+    expect(s.statusCode).toBe(201);
+    expect((await j(a, 'PATCH', `/calm/sessions/${s.json().id}`, { completedPct: 100 })).statusCode).toBe(200);
+    const wins = (await j(a, 'GET', '/insights')).json().wins;
+    expect(wins.find((w: { kind: string; label: string }) => w.kind === 'calm')).toMatchObject({ label: 'A story written for you' });
+    expect((await j(a, 'POST', '/calm/sessions', { itemId: 'story-abc' })).statusCode).toBe(404);
+    expect((await j(a, 'POST', '/calm/sessions', { itemId: 'nonsense' })).statusCode).toBe(404);
+  });
+});
