@@ -50,7 +50,7 @@ describe('OpenRouter chat adapter', () => {
   it('turns failures into the errors the app already understands', async () => {
     const mk = (res: Response) => new OpenRouterLlm(KEY, () => undefined, (async () => res) as unknown as typeof fetch);
     await expect(mk(json({ error: { message: 'bad key' } }, 401)).text(base)).rejects.toBeInstanceOf(LlmUnavailable);
-    await expect(mk(json({ error: { message: 'no credit' } }, 402)).text(base)).rejects.toThrow(/no credit left/);
+    await expect(mk(json({ error: { message: 'no credit' } }, 402)).text(base)).rejects.toThrow(/can’t pay for that model \(no credit\)/);
     await expect(mk(json({ choices: [{ message: { content: '' }, finish_reason: 'content_filter' }] })).text(base)).rejects.toBeInstanceOf(LlmRefusal);
     await expect(mk(json({ error: { message: 'boom' } }, 400)).text(base)).rejects.toBeInstanceOf(LlmFailure);
   });
@@ -89,6 +89,40 @@ describe('choosing the vendor from the portal', () => {
     expect(test).toMatchObject({ ok: true });
     expect(test.note).toContain('saathi beta');
     expect(test.note).toContain('$8.77 left');
+    expect(test.note).toContain('answered'); // it also asked the companion model one thing
+  });
+
+  it('says so when the key is accepted but the companion model cannot be paid for', async () => {
+    const was = t.ctx.fetchImpl;
+    t.ctx.fetchImpl = (async (url: string, init?: RequestInit) => {
+      if (url.endsWith('/chat/completions')) return json({ error: { message: 'Insufficient credits. Add more using https://openrouter.ai/settings/credits' } }, 402);
+      return (was as typeof fetch)(url, init);
+    }) as unknown as typeof fetch;
+    const test = (await call(owner, 'POST', '/integrations/openrouter/test')).json();
+    t.ctx.fetchImpl = was;
+    expect(test.ok).toBe(false);
+    expect(test.note).toContain('Key accepted');
+    expect(test.note).toMatch(/failed: Insufficient credits/);
+    expect(test.note).toContain('Conversations will not work');
+  });
+
+  it('never offers or uses a :batch model', async () => {
+    const items = normaliseModels([
+      { id: 'anthropic/claude-haiku-4.5', architecture: { output_modalities: ['text'] } },
+      { id: 'anthropic/claude-haiku-4.5:batch', architecture: { output_modalities: ['text'] } },
+      { id: 'google/gemini-3.1-flash-lite:batch', architecture: { output_modalities: ['text'] } },
+    ] as never);
+    expect(items.map(i => i.id)).toEqual(['anthropic/claude-haiku-4.5']);
+    expect((await call(owner, 'PUT', '/settings/openrouter.models.companion', { value: 'anthropic/claude-haiku-4.5:batch' })).statusCode).toBe(400);
+    // A value saved before this rule is not trusted: the model falls back to the default instead of failing every conversation.
+    try {
+      await withSystem(t.ctx.db, tx => tx.query(`INSERT INTO app_settings (key, value, updated_by) VALUES ('openrouter.models.companion', '"anthropic/claude-haiku-4.5:batch"', 'test'), ('llm.provider', '"openrouter"', 'test') ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`));
+      await t.ctx.rt.settings.refresh();
+      expect(t.ctx.rt.model('companion')).not.toMatch(/:batch/);
+    } finally {
+      await withSystem(t.ctx.db, tx => tx.query(`DELETE FROM app_settings WHERE key IN ('openrouter.models.companion', 'llm.provider')`));
+      await t.ctx.rt.settings.refresh();
+    }
   });
 
   it('lists only text models, with prices per million tokens', async () => {

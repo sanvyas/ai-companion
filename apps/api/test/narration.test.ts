@@ -114,3 +114,71 @@ describe('calm narration over the API', () => {
     expect((await post({ text: 'hello', kind: 'sleep' }, {})).statusCode).toBe(401);
   });
 });
+
+describe('reading a line the way a person would', () => {
+  it('joins phrases with silence and fades, into one recording of the right length', async () => {
+    const { stitch } = await import('../src/services/narration.js');
+    const rate = 24_000;
+    const tone = Buffer.alloc(rate * 2); for (let i = 0; i < rate; i++) tone.writeInt16LE(8000, i * 2); // one second
+    const w = stitch([{ pcm: tone, pauseMs: 1000 }, { pcm: tone, pauseMs: 0 }], rate);
+    expect(w.toString('ascii', 0, 4)).toBe('RIFF');
+    expect((w.length - 44) / 2 / rate).toBeCloseTo(3, 2); // 1 s + 1 s of silence + 1 s
+    expect(w.readInt16LE(44)).toBe(0);                      // faded in from silence
+    expect(w.readInt16LE(44 + (rate - 1) * 2)).toBeLessThan(200);   // faded out before the pause
+    expect(w.readInt16LE(44 + (rate + rate / 2) * 2)).toBe(0);      // the middle of the pause is silent
+    expect(w.readInt16LE(44 + (2 * rate + rate / 2) * 2)).toBeGreaterThan(7000); // the second phrase is at full volume
+  });
+});
+
+describe('calm narration with pauses, over the API', () => {
+  let t: TestApp;
+  const calls: { body: any }[] = [];
+  let a: Auth;
+  beforeAll(async () => {
+    t = await makeApp();
+    t.ctx.tts = new SarvamTts(() => t.ctx.rt.secrets.get('sarvam', 'api_key'), recordTtsUsage(t.ctx.db, t.ctx.log, t.ctx.rt), (async (_u: string, init: RequestInit) => {
+      const body = JSON.parse(init.body as string); calls.push({ body });
+      return json({ audios: [wav(0.4).toString('base64')] });
+    }) as unknown as typeof fetch);
+    const admin = await adminLogin(t, 'owner');
+    await t.app.inject({ method: 'PUT', url: '/admin/api/integrations/sarvam/api_key', headers: admin.headers, payload: { value: 'sarvam-key-1234567890' } });
+    a = await signIn(t);
+  });
+  afterAll(async () => { await t.app.close(); });
+  const say = (text: string, kind = 'sleep') => t.app.inject({ method: 'POST', url: '/calm/narrate', headers: a.headers, payload: { text, kind } });
+
+  it('speaks each phrase separately, steadily, and leaves the pauses in the recording', async () => {
+    calls.length = 0;
+    const r = (await say('Breathe in for four… hold for two… and out for six. You are doing well.')).json();
+    expect(calls.map(c => c.body.text)).toEqual(['Breathe in for four', 'hold for two', 'and out for six.', 'You are doing well.']);
+    for (const c of calls) expect(c.body.temperature).toBe(0.35); // steady and calm for sleep
+    expect(calls.at(-1)!.body.pace).toBeLessThan(calls[0].body.pace); // trails off at the end
+    // four phrases of 0.4 s plus three pauses of a second or more
+    expect(r.durationMs).toBeGreaterThan(1600 + 3 * 1000);
+    expect(r.durationMs).toBeLessThan(1600 + 3 * 3500);
+    const bytes = Buffer.from(r.audio, 'base64');
+    expect(bytes.toString('ascii', 0, 4)).toBe('RIFF');
+    expect(((bytes.length - 44) / 2 / r.sampleRate) * 1000).toBeCloseTo(r.durationMs, -1);
+  });
+
+  it('a meditation is a little brisker than a sleep story, and phrases are reused', async () => {
+    calls.length = 0;
+    const sleepMs = (await say('Rest here for a while. Nothing else to do.', 'sleep')).json().durationMs;
+    const medMs = (await say('Rest here for a while. Nothing else to do.', 'meditation')).json().durationMs;
+    expect(sleepMs).toBeGreaterThan(medMs);
+    calls.length = 0;
+    await say('Rest here for a while. Nothing else to do.', 'sleep');
+    expect(calls).toHaveLength(0); // the whole line came from memory
+  });
+
+  it('if the voice service does not know the steadiness setting, it asks again without it', async () => {
+    let first = true;
+    const f = (async (_u: string, init: RequestInit) => {
+      const b = JSON.parse(init.body as string);
+      if (b.temperature !== undefined && first) { first = false; return json({ message: 'Extra inputs are not permitted' }, 422); }
+      return json({ audios: [wav(0.2).toString('base64')] });
+    }) as unknown as typeof fetch;
+    const r = await new SarvamTts(() => 'k', () => undefined, f).synthesize({ text: 'Hello', voice: 'sarvam:priya', language: 'en', temperature: 0.3 });
+    expect(r.pcm.length).toBeGreaterThan(0);
+  });
+});

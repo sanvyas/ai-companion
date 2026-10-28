@@ -117,7 +117,8 @@ function onServer(m: ServerMsg) {
       set({ typing: false, callPhase: 'listening' });
       // The server voice couldn't speak this sentence; its text comes back so the phone can say it instead.
       if (m.code === 'tts_failed') { if (speaksAloud()) { browserQueue.push(m.message); drain(); } return; }
-      if (m.code === 'rate_limited' || m.code === 'llm_failed' || m.code === 'llm_unavailable') appendAi(m.message);
+      // A failed turn is spoken as well as shown: on a call, silence looks like a dead line.
+      if (m.code === 'rate_limited' || m.code === 'llm_failed' || m.code === 'llm_unavailable') aiSays(m.message, false);
       else toastFn(m.message);
       return;
     }
@@ -125,7 +126,6 @@ function onServer(m: ServerMsg) {
   }
 }
 
-function appendAi(text: string) { set(s => ({ msgs: [...s.msgs, { who: 'ai', text }], callLine: { who: 'ai', text } })); }
 
 /** A sentence from the companion: shown in the thread and captions, and spoken when this is a voice screen. */
 function aiSays(text: string, live: boolean, emotion?: string) {

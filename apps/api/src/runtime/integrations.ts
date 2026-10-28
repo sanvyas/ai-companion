@@ -30,13 +30,25 @@ export interface IntegrationDef {
   fields: IntegrationField[];
   /** Hosts to allow in a locked-down environment. */
   hosts: string[];
-  test?: (v: Record<string, string>, fetchImpl: typeof fetch) => Promise<TestResult>;
+  /** `ctx.companionModel` lets a test try the model people actually talk to, not only whether the key is accepted. */
+  test?: (v: Record<string, string>, fetchImpl: typeof fetch, ctx?: { companionModel?: string; anthropicModel?: string }) => Promise<TestResult>;
 }
 
-async function testAnthropic(v: Record<string, string>): Promise<TestResult> {
+async function testAnthropic(v: Record<string, string>, _f?: typeof fetch, ctx?: { anthropicModel?: string }): Promise<TestResult> {
   try {
-    const page = await new Anthropic({ apiKey: v.api_key, maxRetries: 0, timeout: 15_000 }).models.list({ limit: 1 });
-    return { ok: true, note: `Key accepted (${page.data.length ? 'models listed' : 'no models listed'}).` };
+    const client = new Anthropic({ apiKey: v.api_key, maxRetries: 0, timeout: 20_000 });
+    const page = await client.models.list({ limit: 1 });
+    const note = `Key accepted (${page.data.length ? 'models listed' : 'no models listed'}).`;
+    // An accepted key does not prove the account can run the model people talk to; ask it one short thing.
+    if (ctx?.anthropicModel) {
+      try {
+        await client.messages.create({ model: ctx.anthropicModel, max_tokens: 16, messages: [{ role: 'user', content: 'Say hello.' }] });
+        return { ok: true, note: `${note} The companion model ${ctx.anthropicModel} answered.` };
+      } catch (e) {
+        return { ok: false, note: `${note} But the companion model ${ctx.anthropicModel} failed: ${(e as Error).message.slice(0, 160)}. Conversations will not work until this is fixed.` };
+      }
+    }
+    return { ok: true, note };
   } catch (e) {
     if (e instanceof Anthropic.AuthenticationError) return { ok: false, note: 'Anthropic rejected this key.' };
     return { ok: false, note: `Couldn’t reach Anthropic: ${(e as Error).message}` };
@@ -66,7 +78,7 @@ export const INTEGRATIONS: IntegrationDef[] = [
   {
     id: 'openrouter', label: 'OpenRouter', category: 'AI', purpose: 'One key for many vendors’ models. Use it instead of Anthropic by setting “AI provider” to OpenRouter and choosing the models below.',
     status: 'live', statusNote: 'Used when “AI provider” is OpenRouter (Settings). Change the key and the next message uses it.', docsUrl: 'https://openrouter.ai/settings/keys', hosts: ['openrouter.ai'],
-    fields: [key('api_key', 'OPENROUTER_API_KEY', { pattern: /^sk-or-[\w-]{20,}$/, hint: 'Starts with sk-or-' })], test: testOpenRouter,
+    fields: [key('api_key', 'OPENROUTER_API_KEY', { pattern: /^sk-or-[\w-]{20,}$/, hint: 'Starts with sk-or-' })], test: (v, f, c) => testOpenRouter(v, f, c?.companionModel),
   },
   {
     id: 'sarvam', label: 'Sarvam', category: 'Voice', purpose: 'Natural Indian voices for the companion (Hindi, Hinglish, English). People pick one in the app by language.',

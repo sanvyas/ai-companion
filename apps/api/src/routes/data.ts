@@ -1,9 +1,10 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { CalmSessionBody, CalmSessionPatch, StoryBody, JournalCommitBody, JournalCreateBody, JournalPatchBody, MemoryBulkBody, MemoryPatch, MoodBody, PlanCreateBody, PlanPatchBody, SafetyAckBody, SafetyPlan, Plan } from '@saathi/contracts';
+import { Language, CalmSessionBody, CalmSessionPatch, StoryBody, JournalCommitBody, JournalCreateBody, JournalPatchBody, MemoryBulkBody, MemoryPatch, MoodBody, PlanCreateBody, PlanPatchBody, SafetyAckBody, SafetyPlan, Plan } from '@saathi/contracts';
 import type { Ctx } from '../context.js';
 import { withUser } from '../db/pool.js';
 import { AppError } from '../errors.js';
+import { TtsFailure, TtsUnavailable, parseWav } from '../providers/voice.js';
 import { parse, uid } from '../http.js';
 import { assertAdult } from '../services/users.js';
 import { addMemories, deleteMemory, forgetEverything, listMemories, patchMemory } from '../services/memory.js';
@@ -49,6 +50,26 @@ export function dataRoutes(app: FastifyInstance, ctx: Ctx) {
   app.delete('/journal/:id', adult, async (req, reply) => { await deleteEntry(ctx, uid(req), idOf(req)); return reply.code(204).send(); });
   // Short-lived streaming dictation token needs a server STT vendor; until then dictation runs in the browser.
   app.post('/stt/token', adult, async () => { throw new AppError(503, 'stt_unavailable', 'Server dictation isn’t connected. The app uses your browser’s dictation instead.'); });
+
+  // “Talk it out” sends a continuous recording in pieces of up to about 30 s (16 kHz mono WAV). Nothing is stored: the
+  // audio goes to the speech vendor and the text comes back. Without a vendor key the app uses the browser's recogniser.
+  app.addContentTypeParser(['audio/wav', 'audio/x-wav'], { parseAs: 'buffer', bodyLimit: 3 * 1024 * 1024 }, (_req, body, done) => done(null, body));
+  app.post('/stt/transcribe', { ...adult, config: { rateLimit: { max: 40 * ctx.cfg.RATE_LIMIT_SCALE, timeWindow: '1 minute' } } }, async req => {
+    if (!ctx.transcriber?.configured) throw new AppError(503, 'stt_unavailable', 'Server dictation isn’t connected. The app uses your browser’s dictation instead.');
+    const q = parse(z.object({ language: Language.optional() }), req.query);
+    const body = req.body as Buffer;
+    if (!Buffer.isBuffer(body) || body.length < 1000) throw new AppError(400, 'bad_audio', 'That recording was empty.');
+    let seconds: number;
+    try { const w = parseWav(body); seconds = w.pcm.length / 2 / w.sampleRate; } catch { throw new AppError(400, 'bad_audio', 'That recording isn’t in a format I can read.'); }
+    if (seconds > 35) throw new AppError(400, 'audio_too_long', 'That recording is too long to send at once.');
+    const language = q.language ?? (await withUser(ctx.db, uid(req), tx => tx.query<{ language: 'en' | 'hinglish' | 'hi' }>('SELECT language FROM users WHERE id = $1', [uid(req)]))).rows[0]?.language ?? 'en';
+    try { return await ctx.transcriber.transcribe({ wav: body, language, userId: uid(req) }); }
+    catch (e) {
+      if (e instanceof TtsUnavailable) throw new AppError(503, 'stt_unavailable', e.message);
+      if (e instanceof TtsFailure) throw new AppError(502, 'stt_failed', 'I couldn’t turn that into words just now.');
+      throw e;
+    }
+  });
 
   // ---- mood, plan, insights, letters --------------------------------------------------------------------
   app.post('/mood', adult, async (req, reply) => { const b = parse(MoodBody, req.body); await logMood(ctx, uid(req), b.value, b.source); return reply.code(204).send(); });

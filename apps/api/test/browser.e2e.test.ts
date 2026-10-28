@@ -5,12 +5,14 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { chromium, type Browser, type Page } from 'playwright';
-import { SarvamTts } from '../src/providers/sarvam.js';
-import { recordTtsUsage } from '../src/providers/index.js';
+import { SarvamStt, SarvamTts } from '../src/providers/sarvam.js';
+import { recordSttUsage, recordTtsUsage } from '../src/providers/index.js';
 import { makeApp, signIn, type Auth, type TestApp } from './app-helpers.js';
 import { adminLogin } from './admin-helpers.js';
 import { listen } from './ws-helpers.js';
 import { addInboxCard } from '../src/services/notifier.js';
+import { LlmUnavailable } from '../src/providers/llm.js';
+import { withSystem } from '../src/db/pool.js';
 
 // The real app, built the way production builds it, served by the real API, driven in a real browser. These catch what
 // unit tests cannot: the wiring between the screens, the socket, the origin rules, the audio and the speech engines.
@@ -20,6 +22,8 @@ let t: TestApp;
 let browser: Browser | null = null;
 let base = '';
 const calls: { speaker: string; pace: number; text: string; lang: string }[] = [];
+const heard: { bytes: number; fields: Record<string, string> }[] = [];
+let sttReply: () => Response = () => new Response(JSON.stringify({ transcript: 'Work was a lot today and I did not say anything.' }), { headers: { 'content-type': 'application/json' } });
 
 function wav(seconds = 0.25, rate = 24_000) {
   const n = Math.floor(seconds * rate);
@@ -77,6 +81,15 @@ async function person(over: { mood?: number } = {}) {
   return a;
 }
 
+let connected = false;
+/** Adds the speech vendor's key through the portal, once. Tests that need natural voices or server dictation call this first. */
+async function connectSarvam() {
+  if (connected) return;
+  const admin = await adminLogin(t, 'owner');
+  expect((await t.app.inject({ method: 'PUT', url: '/admin/api/integrations/sarvam/api_key', headers: admin.headers, payload: { value: 'sarvam-key-1234567890' } })).statusCode).toBe(200);
+  connected = true;
+}
+
 let skip = false;
 beforeAll(async () => {
   const web = mkdtempSync(join(tmpdir(), 'saathi-web-'));
@@ -89,6 +102,12 @@ beforeAll(async () => {
     const b = JSON.parse(init.body as string);
     calls.push({ speaker: b.speaker, pace: b.pace, text: b.text, lang: b.target_language_code });
     return new Response(JSON.stringify({ audios: [wav().toString('base64')] }), { headers: { 'content-type': 'application/json' } });
+  }) as unknown as typeof fetch);
+  t.ctx.transcriber = new SarvamStt(() => t.ctx.rt.secrets.get('sarvam', 'api_key'), recordSttUsage(t.ctx.db, t.ctx.log, t.ctx.rt), (async (_u: string, init: RequestInit) => {
+    const form = init.body as FormData; const fields: Record<string, string> = {}; let bytes = 0;
+    for (const [k, v] of (form as unknown as { entries(): Iterable<[string, string | Blob]> }).entries()) { if (typeof v === 'string') fields[k] = v; else bytes = v.size; }
+    heard.push({ bytes, fields });
+    return sttReply();
   }) as unknown as typeof fetch);
   try { browser = await chromium.launch({ args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream', '--autoplay-policy=no-user-gesture-required'] }); } catch { skip = true; }
 }, 120_000);
@@ -117,6 +136,23 @@ describe('voice call', () => {
     await box.fill('work was heavy today');
     await box.press('Enter');
     await page.getByText(/That sounds like a lot to carry/).first().waitFor({ timeout: 10_000 });
+    await close();
+  });
+});
+
+describe('when the model is down', () => {
+  run('the call says so out loud instead of going silent, and the portal’s error log records the vendor’s reason', async () => {
+    const { page, close } = await visit(await person());
+    await page.getByText('Voice call').first().click();
+    await page.getByRole('button', { name: /Allow|Use microphone|Yes/i }).first().click();
+    await page.getByText('Listening', { exact: true }).waitFor();
+    t.llm.reply = () => { throw new LlmUnavailable('OpenRouter says this key can’t pay for that model (Insufficient credits).'); };
+    await page.waitForFunction(() => (window as any).__active);
+    await page.evaluate(() => (window as any).__phrase('hello, can you hear me'));
+    await page.getByText(/Something on my side isn.t connected/).first().waitFor({ timeout: 10_000 });
+    await page.waitForFunction(() => (window as any).__spoken.some((x: any) => /isn.t connected/.test(x.text)), null, { timeout: 10_000 });
+    t.llm.reply = null;
+    await expect.poll(async () => (await withSystem(t.ctx.db, tx => tx.query(`SELECT message FROM error_log WHERE code = 'llm_unavailable' AND route = 'llm/companion'`))).rows[0]?.message ?? '', { timeout: 5000 }).toContain('Insufficient credits');
     await close();
   });
 });
@@ -174,10 +210,7 @@ describe('calm narration', () => {
     await close();
   });
 
-  it('connects the voice service for the next tests', async () => {
-    const admin = await adminLogin(t, 'owner');
-    expect((await t.app.inject({ method: 'PUT', url: '/admin/api/integrations/sarvam/api_key', headers: admin.headers, payload: { value: 'sarvam-key-1234567890' } })).statusCode).toBe(200);
-  });
+  it('connects the voice service for the next tests', async () => { await connectSarvam(); });
 
   run('reads a session in a natural server voice, and the voice and pace follow the person’s mood', async () => {
     const heavy = await visit(await person({ mood: 0 }));
@@ -214,6 +247,64 @@ describe('calm narration', () => {
     await page.getByRole('dialog').waitFor({ timeout: 10_000 });
     await expect.poll(() => calls.length, { timeout: 10_000 }).toBeGreaterThan(0);
     expect(calls[0].pace).toBeLessThan(0.8);
+    await close();
+  });
+});
+
+describe('journal dictation through the speech service', () => {
+  it('connects the speech service', async () => { await connectSarvam(); });
+
+  run('records without gaps and writes down what the speech service hears, including the last piece after tapping stop', async () => {
+    const { page, close } = await visit(await person());
+    heard.length = 0;
+    await page.getByText('Talk it out').first().click();
+    await page.getByRole('button', { name: /Tap to start talking/ }).click();
+    await page.getByRole('button', { name: /Listening/ }).waitFor();
+    await page.waitForTimeout(3500);                  // the fake microphone plays a tone
+    await page.getByRole('button', { name: /Listening/ }).click(); // stop: the piece in progress is still sent
+    await expect.poll(async () => page.getByRole('textbox', { name: 'Journal entry' }).inputValue(), { timeout: 10_000 }).toContain('Work was a lot today and I did not say anything.');
+    expect(heard.length).toBeGreaterThanOrEqual(1);
+    expect(heard[0].bytes).toBeGreaterThan(80_000);   // about three seconds of 16 kHz audio
+    expect(heard[0].fields).toMatchObject({ language_code: 'en-IN' });
+    expect(await page.evaluate(() => (window as any).__active)).toBeNull(); // the browser recogniser was not used
+    await close();
+  });
+
+  run('saving right after stop waits for the last words', async () => {
+    const me = await person();
+    const { page, close } = await visit(me);
+    let release!: () => void;
+    const gate = new Promise<void>(r => { release = r; });
+    const was = t.ctx.transcriber!;
+    t.ctx.transcriber = { name: 'slow', configured: true, transcribe: async o => { await gate; return was.transcribe(o); } };
+    try {
+      await page.getByText('Talk it out').first().click();
+      await page.getByRole('button', { name: /Tap to start talking/ }).click();
+      await page.getByRole('button', { name: /Listening/ }).waitFor();
+      await page.waitForTimeout(3000);
+      await page.getByRole('button', { name: /Listening/ }).click();
+      await page.getByText('Writing down the last bit…').waitFor();
+      const save = page.getByRole('button', { name: /Save|Done|Keep/ }).first().click();
+      await page.waitForTimeout(300);
+      release();
+      await save;
+      await expect.poll(async () => (await t.app.inject({ method: 'GET', url: '/journal', headers: me.headers })).json().items[0]?.text ?? '', { timeout: 10_000 }).toContain('Work was a lot today and I did not say anything.');
+    } finally { t.ctx.transcriber = was; release(); }
+    await close();
+  });
+
+  run('if the speech service refuses, the browser’s recogniser takes over and the person is told', async () => {
+    const was = sttReply;
+    sttReply = () => new Response(JSON.stringify({ error: { message: 'bad key' } }), { status: 403, headers: { 'content-type': 'application/json' } });
+    const { page, close } = await visit(await person());
+    try {
+      await page.getByText('Talk it out').first().click();
+      await page.getByRole('button', { name: /Tap to start talking/ }).click();
+      await page.getByText(/Switched to your browser.s dictation/).first().waitFor({ timeout: 15_000 });
+      await page.waitForFunction(() => (window as any).__active, null, { timeout: 5000 });
+      await page.evaluate(() => (window as any).__phrase('and then I kept talking'));
+      await expect.poll(async () => page.getByRole('textbox', { name: 'Journal entry' }).inputValue(), { timeout: 5000 }).toContain('and then I kept talking');
+    } finally { sttReply = was; }
     await close();
   });
 });

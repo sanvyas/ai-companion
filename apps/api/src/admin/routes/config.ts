@@ -114,7 +114,7 @@ export function configRoutes(app: FastifyInstance, ctx: Ctx) {
     const values = rt.secrets.values(id);
     const missing = def.fields.filter(f => !values[f.name]);
     if (missing.length) return { ok: false, note: `Add ${missing.map(m => m.label).join(', ')} first.` };
-    const r = await def.test(values, f());
+    const r = await def.test(values, f(), { companionModel: rt.settings.str('openrouter.models.companion'), anthropicModel: rt.settings.str('models.companion') });
     await rt.secrets.recordTest(id, r.ok, r.note);
     await record(ctx, req, 'integration.tested', id, undefined, { ok: r.ok });
     return r;

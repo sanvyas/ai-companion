@@ -23,7 +23,7 @@ export interface SettingDef {
 }
 
 /** An OpenRouter model id such as vendor/model-name. Whether it exists is checked against OpenRouter's list when it is saved. */
-const orModel = z.string().trim().min(3).max(100).regex(/^[\w.-]+\/[\w.:+-]+$/, 'Use the form vendor/model-name');
+const orModel = z.string().trim().min(3).max(100).regex(/^[\w.-]+\/[\w.:+-]+$/, 'Use the form vendor/model-name').refine(v => !/:batch\b/i.test(v), 'Batch models can’t hold a conversation. Choose the same model without “:batch”.');
 const EnvList = z.array(z.object({ name: z.string().trim().min(1).max(30), url: z.string().url().max(200) })).max(6);
 
 export function settingDefs(cfg: Pick<Config, 'MODEL_COMPANION' | 'MODEL_SAFETY' | 'MODEL_ANALYSIS' | 'BASIC_VOICE_MINUTES_PER_DAY'>): SettingDef[] {

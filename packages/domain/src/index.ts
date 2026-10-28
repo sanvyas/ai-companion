@@ -6,3 +6,5 @@ export * from './insights';
 export * from './notifications';
 export * from './lexicon';
 export * from './tone';
+export * from './mood';
+export * from './narrate';

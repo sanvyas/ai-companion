@@ -117,6 +117,18 @@ export class HttpApi implements Api {
   previewVoice = (voice: string, language?: string) => this.req<Awaited<ReturnType<Api['previewVoice']>>>('POST', '/voices/preview', { voice, language });
   calmNarration = (kind: 'sleep' | 'meditation') => this.req<Awaited<ReturnType<Api['calmNarration']>>>('GET', `/calm/narration?kind=${kind}`);
   narrate = (text: string, kind: 'sleep' | 'meditation', language?: string) => this.req<Awaited<ReturnType<Api['narrate']>>>('POST', '/calm/narrate', { text, kind, language });
+  transcribe = async (wav: ArrayBuffer, language: 'en' | 'hinglish' | 'hi') => {
+    const send = async () => {
+      await this.ensureAccess();
+      return fetch(`${BASE}/stt/transcribe?language=${language}`, { method: 'POST', headers: { 'Content-Type': 'audio/wav', ...(this.access ? { Authorization: `Bearer ${this.access}` } : {}) }, body: wav });
+    };
+    let res = await send();
+    if (res.status === 401 && (await this.refresh())) res = await send();
+    const text = await res.text();
+    const json = text ? JSON.parse(text) : undefined;
+    if (!res.ok) throw new ApiError(res.status, json?.error?.code ?? 'error', json?.error?.message ?? 'I couldn’t turn that into words just now.');
+    return json as { text: string };
+  };
   declareMinor = async () => { try { await this.req('PUT', '/me/age', { confirmed18: false }); } catch (e) { if (!(e instanceof ApiError && e.code === 'under18')) throw e; } this.dropSession(); };
   deleteAccount = async () => { await this.req('DELETE', '/me'); this.dropSession(); };
   cancelDeletion = async () => { await this.req('POST', '/me/deletion/cancel'); };

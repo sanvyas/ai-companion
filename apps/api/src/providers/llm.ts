@@ -1,11 +1,11 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { Config } from '../config.js';
-import { analyzeJournalLocally, classify } from '@saathi/domain';
+import { analyzeJournalLocally, classify, detectMood } from '@saathi/domain';
 
 // Adapter boundary for the language model (PRD section 4/6). Every call is tagged with a task so usage can be
 // recorded per purpose and so the mock can answer deterministically in tests.
 
-export type LlmTask = 'companion' | 'sit' | 'classify' | 'output_check' | 'summary' | 'memories' | 'checkin' | 'journal' | 'plan' | 'letter' | 'story' | 'admin_playground' | 'admin_eval';
+export type LlmTask = 'companion' | 'sit' | 'classify' | 'output_check' | 'summary' | 'memories' | 'checkin' | 'journal' | 'plan' | 'letter' | 'story' | 'affect' | 'admin_playground' | 'admin_eval';
 export interface LlmMessage { role: 'user' | 'assistant'; content: string }
 
 export interface LlmBase {
@@ -176,7 +176,7 @@ export class OpenRouterLlm implements LlmProvider {
     let msg = `OpenRouter answered ${res.status}.`;
     try { const j = (await res.json()) as OrBody; if (j.error?.message) msg = j.error.message; } catch { /* keep the status message */ }
     if (res.status === 401 || res.status === 403) return new LlmUnavailable('The OpenRouter API key was rejected.');
-    if (res.status === 402) return new LlmUnavailable('OpenRouter has no credit left for this key.');
+    if (res.status === 402) return new LlmUnavailable(`OpenRouter says this key can’t pay for that model (${msg}). Add credit at openrouter.ai/settings/credits, or choose a free or cheaper model.`);
     if (res.status === 429) return new LlmFailure('The model is busy right now.');
     return new LlmFailure(msg);
   }
@@ -345,6 +345,7 @@ export class MockLlm implements LlmProvider {
       case 'checkin': v = { sleep: 'About six hours', food: 'Lunch', people: 'A call with a friend', okayThing: 'Chai on the balcony', mood: 2, intentions: ['Balcony chai, 8 a.m.', 'Short walk after lunch'] }; break;
       case 'plan': v = { items: ['A glass of water', 'Two minutes at the window', 'Message someone you like'] }; break;
       case 'letter': v = { body: 'This week you stepped out and you rested. One small invitation for next week: a short walk.' }; break;
+      case 'affect': { const m = detectMood(user.replace(/^[\s\S]*Latest message:\n/, '').replace(/<\/?user_message>/g, '')); v = { valence: m.valence, emotion: m.emotions[0] ?? 'neutral', arousal: m.arousal }; break; }
       case 'story': v = { title: 'Rain on the veranda', lines: ['You sit on a quiet veranda as the first soft rain begins.', 'The air smells of wet earth, and a cup of warm tea waits beside you.', 'The rain taps slowly on the roof, again and again.', 'Your breath slows to match it.', 'Everything that needed doing has been done enough.', 'Rest here as long as you like. Sleep well.'] }; break;
       default: throw new LlmFailure(`mock has no answer for ${req.schemaName}`);
     }

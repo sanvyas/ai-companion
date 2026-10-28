@@ -5,7 +5,7 @@ import { stopDictation, startDictation } from '../audio/dictation';
 import { playClip } from '../audio/clip';
 import { isSpeaking, pauseNarration, say, stopSpeech, ttsSupported } from '../audio/speech';
 import { stopAllSounds, toggleSound } from '../audio/sounds';
-import { nextRisk, userSafeAcknowledged } from '@saathi/domain';
+import { nextRisk, phrasesOf, rhythmFor, userSafeAcknowledged } from '@saathi/domain';
 import { askForMic, beginConversation, bindConversationUi, closeConversation, finishCall, hasConversation, sendTurn, startListening } from './conversation';
 import { bindDataUi, loadTalk } from './data';
 import { bindSessionUi, handleMinor } from './session';
@@ -146,7 +146,7 @@ function reportProgress(done: boolean) {
 // Who reads this session aloud. A server voice, chosen on the server from the person's mood, reads when one is connected;
 // otherwise the phone's own voice does, at the pace the server worked out for that mood. Lines are fetched a few ahead
 // so the reading does not stall between them.
-interface Narrator { server: boolean; pace: number; label: string | null }
+interface Narrator { server: boolean; pace: number; label: string | null; heavier: boolean }
 let narrator: Promise<Narrator> | null = null;
 let lineAudio = new Map<number, Promise<{ audio: string; mime: string } | null>>();
 let playToken = 0;
@@ -154,9 +154,9 @@ let playToken = 0;
 const narrationKind = (it: { kind: string }) => (it.kind === 'sleep' ? 'sleep' as const : 'meditation' as const);
 
 function loadNarrator(it: NonNullable<ReturnType<typeof findCalm>>): Promise<Narrator> {
-  const fallback: Narrator = { server: false, pace: it.kind === 'sleep' ? 0.8 : 0.88, label: null };
+  const fallback: Narrator = { server: false, pace: it.kind === 'sleep' ? 0.8 : 0.88, label: null, heavier: false };
   const timeout = new Promise<Narrator>(res => setTimeout(() => res(fallback), 3000));
-  const ask = api.calmNarration(narrationKind(it)).then(n => ({ server: n.server, pace: n.pace, label: n.voice?.label ?? null })).catch(() => fallback);
+  const ask = api.calmNarration(narrationKind(it)).then(n => ({ server: n.server, pace: n.pace, label: n.voice?.label ?? null, heavier: n.mood === 'heavier' })).catch(() => fallback);
   return Promise.race([ask, timeout]);
 }
 
@@ -191,9 +191,17 @@ async function playLine() {
 
   const n = await (narrator ??= loadNarrator(it));
   if (token !== playToken || !getState().pPlaying) return;
+  // The phone's own voice reads the same way the server voice does: a phrase at a time, with the same breaths between.
   const deviceVoice = () => {
     if (!ttsSupported()) { pNext = setTimeout(next, 4200); return; }
-    say(text, { pace: n.pace, lang: it.lang === 'hi' ? 'हिन्दी' : 'English' }, next);
+    const plan = phrasesOf(text, rhythmFor(narrationKind(it), n.heavier));
+    const speak = (i: number) => {
+      if (token !== playToken || !getState().pPlaying) return;
+      if (i >= plan.length) { next(); return; }
+      const p = plan[i];
+      say(p.text, { pace: n.pace - (p.slow ? 0.04 : 0), lang: it.lang === 'hi' ? 'हिन्दी' : 'English' }, () => { pNext = setTimeout(() => speak(i + 1), p.pauseMs); });
+    };
+    speak(0);
   };
   if (!n.server) { deviceVoice(); return; }
 

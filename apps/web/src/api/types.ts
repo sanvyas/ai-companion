@@ -9,7 +9,7 @@ export type { Companion, Consent, ConsentUpdate, ConversationItem, ConversationM
 export interface CalmNarration { server: boolean; voice: { id: string; label: string } | null; pace: number; mood: string; reason: string }
 export interface VoiceItem { id: string; label: string; gender: 'female' | 'male' | null; provider: 'device' | 'sarvam' }
 export interface VoiceList { language: string; serverVoices: boolean; items: VoiceItem[] }
-export interface PublicConfig { otp: boolean; google: boolean; googleClientId: string | null; llm: boolean; stt: boolean; tts: boolean; push: boolean; signupsOpen?: boolean; voicePaused?: boolean; analytics?: boolean }
+export interface PublicConfig { otp: boolean; google: boolean; googleClientId: string | null; llm: boolean; stt: boolean; tts: boolean; push: boolean; /** Server speech-to-text for the journal is connected. */ dictation?: boolean; signupsOpen?: boolean; voicePaused?: boolean; analytics?: boolean }
 
 export interface AnalyticsEvent { name: 'screen_view' | 'click' | 'step' | 'error'; screen?: string; el?: string; durationMs?: number; step?: string; result?: string; at?: number }
 
@@ -62,6 +62,8 @@ export interface Api {
   calmNarration(kind: 'sleep' | 'meditation'): Promise<CalmNarration>;
   /** One line of a calm session in a server voice (a WAV file). Throws voice_unavailable when none is connected. */
   narrate(text: string, kind: 'sleep' | 'meditation', language?: string): Promise<{ audio: string; mime: string; sampleRate: number; voice: { id: string; label: string }; pace: number }>;
+  /** A recording (16 kHz mono WAV) turned into text by the server. Throws stt_unavailable when no speech service is connected. */
+  transcribe(wav: ArrayBuffer, language: 'en' | 'hinglish' | 'hi'): Promise<{ text: string }>;
   declareMinor(): Promise<void>;
   deleteAccount(): Promise<void>;
   cancelDeletion(): Promise<void>;

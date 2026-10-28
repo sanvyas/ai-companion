@@ -40,6 +40,19 @@ describe('overview', () => {
     const groups = new Set(j.systems.map((s: { group: string }) => s.group));
     expect([...groups].sort()).toEqual(['AI', 'Backend', 'Infrastructure', 'UI']);
   });
+
+  it('shows the language model as down, with the vendor’s reason, when every recent call failed', async () => {
+    const card = async () => (await call(owner, 'GET', '/overview')).json().systems.find((s: { name: string }) => s.name === 'Language model');
+    expect((await card()).status).toBe('ok');
+    await sql(`INSERT INTO usage_events (provider, kind, units, latency_ms, ok, model) SELECT 'openrouter:x/y', 'companion', 0, 10, false, 'x/y' FROM generate_series(1,3)`);
+    await sql(`INSERT INTO error_log (fingerprint, source, route, code, message) VALUES ('t-llm', 'api', 'llm/companion', 'llm_unavailable', 'OpenRouter says this key can’t pay for that model (Insufficient credits).') ON CONFLICT (fingerprint) DO NOTHING`);
+    const c = await card();
+    expect(c.status).toBe('down');
+    expect(c.detail).toContain('Every call in the last hour failed');
+    expect(c.detail).toContain('Insufficient credits');
+    await sql(`DELETE FROM usage_events WHERE provider = 'openrouter:x/y'`);
+    await sql(`DELETE FROM error_log WHERE fingerprint = 't-llm'`);
+  });
 });
 
 describe('users (metadata only)', () => {

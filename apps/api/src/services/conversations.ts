@@ -6,8 +6,11 @@ import { withUser, type Tx } from '../db/pool.js';
 import { AppError, forbidden, notFound } from '../errors.js';
 import { LlmFailure, LlmRefusal, LlmUnavailable, type LlmMessage } from '../providers/llm.js';
 import { checkinExtractSystem, dynamicSystem, memoryProposalSystem, stableSystem, summarySystem } from './prompts.js';
-import { assessTone, openingTone, SOFT_FALLBACK_LINE, type Stance, type Tone } from '@saathi/domain';
+import { assessTone, blendMood, openingTone, SOFT_FALLBACK_LINE, type MoodReading, type Stance, type Tone } from '@saathi/domain';
 import { allClean, keepClean } from './guard.js';
+import { reportLlmFailure } from './llmHealth.js';
+import { readAffect, wordReading } from './affect.js';
+import { recentMood } from './moodSummary.js';
 import { SAFE_FALLBACK_LINE, classifyWithModel, logSafetyEvent, prefilter, reviewDraft, wrapUser } from './safety.js';
 import { retrieveMemories } from './memory.js';
 import { getCompanion, getTrusted } from './profile.js';
@@ -26,6 +29,8 @@ export interface LiveSession {
   companion: { name: string; look: string; voice: string };
   /** The stance used on the previous turn, so a short "hmm" doesn't flip the tone. */
   lastStance?: Stance | null;
+  /** How this conversation's recent user turns read, oldest first (the word list at once, the model's reading when it arrives). */
+  moods?: MoodReading[];
   remember: boolean;
   persist: boolean;
   hasSafetyPlan: boolean;
@@ -166,13 +171,11 @@ async function turnContext(ctx: Ctx, s: LiveSession, text: string) {
       const dek = await getDek(ctx, s.userId, tx);
       return (await tx.query<{ label_enc: Buffer }>('SELECT label_enc FROM plan_items WHERE day = (now() AT TIME ZONE $1)::date ORDER BY created_at LIMIT 5', [s.timezone])).rows.map(r => ctx.crypto.decrypt(dek, s.userId, 'plan', r.label_enc));
     }),
-    withUser(ctx.db, s.userId, async tx => {
-      const r = (await tx.query<{ avg: string | null; n: number }>(`SELECT avg(value)::numeric(3,1) AS avg, count(*)::int AS n FROM mood_logs WHERE day >= current_date - 7`)).rows[0];
-      const today = (await tx.query<{ value: number }>(`SELECT value FROM mood_logs WHERE day = (now() AT TIME ZONE $1)::date`, [s.timezone])).rows[0]?.value ?? null;
-      if (!r.n || r.avg === null) return { text: 'unknown', trend: 'unknown' as const, today };
-      const a = Number(r.avg);
-      return a < 1.5 ? { text: 'heavier lately', trend: 'heavier' as const, today } : a < 2.7 ? { text: 'somewhere in between', trend: 'between' as const, today } : { text: 'lighter lately', trend: 'lighter' as const, today };
-    }),
+    recentMood(ctx, s.userId).then(m => ({
+      text: m.label === 'heavier' ? 'heavier lately' : m.label === 'lighter' ? 'lighter lately' : m.label === 'in between' ? 'somewhere in between' : 'unknown',
+      trend: (m.label === 'in between' ? 'between' : m.label) as 'heavier' | 'between' | 'lighter' | 'unknown',
+      today: m.today,
+    })),
   ]);
   return { memories, plan, mood: mood.text, moodTrend: mood.trend, moodToday: mood.today };
 }
@@ -180,7 +183,24 @@ async function turnContext(ctx: Ctx, s: LiveSession, text: string) {
 /** How to sound on this turn: from their words, the turns before, and how today has felt. */
 function toneFor(s: LiveSession, c: Awaited<ReturnType<typeof turnContext>>, userText: string, level: number): Tone {
   const recentUser = s.history.filter(m => m.role === 'user').slice(-4).map(m => m.content);
-  return assessTone({ text: userText, recentUser, moodToday: c.moodToday, moodTrend: c.moodTrend, riskLevel: Math.max(level, s.risk.level) as 0 | 1 | 2 | 3, previous: s.lastStance ?? null });
+  return assessTone({ text: userText, recentUser, moodToday: c.moodToday, moodTrend: c.moodTrend, riskLevel: Math.max(level, s.risk.level) as 0 | 1 | 2 | 3, previous: s.lastStance ?? null, recentMood: s.moods?.length ? blendMood(s.moods.slice(-6)) : null });
+}
+
+/**
+ * After the reply is under way: ask a small model how the message felt, swap it in for the word-list reading of this
+ * turn, and keep the number beside the saved message. Nothing here can delay or break a reply.
+ */
+async function noteAffect(ctx: Ctx, s: LiveSession, text: string, mine: MoodReading, saved: Promise<string | null | void>) {
+  try {
+    const words = text.trim().split(/\s+/).length;
+    const theirs = words >= 4 ? await readAffect(ctx, s.userId, text, s.history.filter(m => m.role === 'user').slice(-3).map(m => m.content)) : null;
+    const reading = theirs ?? mine;
+    const at = s.moods?.lastIndexOf(mine) ?? -1;
+    if (theirs && at >= 0) s.moods![at] = theirs;
+    const id = await saved;
+    if (!id || reading.confidence < 0.3 && reading.valence === 0 && !theirs) return;
+    await withUser(ctx.db, s.userId, tx => tx.query('UPDATE messages SET valence = $2 WHERE id = $1', [id, reading.valence]));
+  } catch (e) { ctx.log.debug({ err: (e as Error).message }, 'mood not kept'); }
 }
 
 const localTime = (tz: string) => new Intl.DateTimeFormat('en-IN', { weekday: 'long', hour: 'numeric', minute: '2-digit', hour12: true, timeZone: tz }).format(new Date());
@@ -230,6 +250,11 @@ export async function handleTurn(ctx: Ctx, s: LiveSession, text: string, emit: E
   const c = await turnContext(ctx, s, text);
   const tone = toneFor(s, c, text, pre.level);
   s.lastStance = tone.stance;
+  // This turn joins the conversation's mood after its tone is chosen. The model's reading replaces the word list's when it arrives.
+  const mine = wordReading(text);
+  (s.moods ??= []).push(mine);
+  if (s.moods.length > 8) s.moods.shift();
+  void noteAffect(ctx, s, text, mine, userMsgP);
   const classifier = classifyWithModel(ctx, s.userId, text, s.history).then(m => (m === null ? pre.level : (Math.max(pre.level, m) as RiskLevel)));
   const strictFromStart = pre.level >= 2 || s.risk.level >= 2;
 
@@ -318,6 +343,7 @@ export async function handleTurn(ctx: Ctx, s: LiveSession, text: string, emit: E
     const failed = e instanceof LlmUnavailable || e instanceof LlmFailure || e instanceof LlmRefusal;
     if (!failed) throw e;
     ctx.log.warn({ err: (e as Error).message }, 'companion generation failed');
+    reportLlmFailure(ctx, 'companion', e);
     // At elevated risk the user must never be left with silence: the fixed line goes out. Otherwise report the outage.
     if (strictFromStart) {
       await bumpRisk(ctx, s, pre.level);
@@ -326,7 +352,7 @@ export async function handleTurn(ctx: Ctx, s: LiveSession, text: string, emit: E
       emit({ type: 'done', messageId: null, riskLevel: pre.level, text: SAFE_FALLBACK_LINE });
       return;
     }
-    emit({ type: 'error', code: e instanceof LlmUnavailable ? 'llm_unavailable' : 'llm_failed', message: 'I couldn’t find my words just then. Try again in a moment.' });
+    emit({ type: 'error', code: e instanceof LlmUnavailable ? 'llm_unavailable' : 'llm_failed', message: e instanceof LlmUnavailable ? 'Something on my side isn’t connected right now, so I can’t answer. Please try again a little later.' : 'I couldn’t find my words just then. Try again in a moment.' });
     return;
   }
 
@@ -411,6 +437,7 @@ export async function handleOpening(ctx: Ctx, s: LiveSession, emit: Emit): Promi
   } catch (e) {
     if (ac.signal.aborted) return;
     ctx.log.warn({ err: (e as Error).message }, 'opening failed');
+    reportLlmFailure(ctx, 'opening', e);
     if (!out.length) { out.push(fixed); emit({ type: 'sentence', text: fixed, index: s.sentenceIndex++ }); }
   }
   const reply = out.join(' ');

@@ -7,6 +7,7 @@ import { notFound } from '../errors.js';
 import { planSystem } from './prompts.js';
 import { audit } from './audit.js';
 import { generateSafe } from './guard.js';
+import { recentMood } from './moodSummary.js';
 import { retrieveMemories } from './memory.js';
 import { localDay } from './time.js';
 import { getDek } from './users.js';
@@ -45,11 +46,7 @@ export async function getPlanToday(ctx: Ctx, userId: string): Promise<PlanItem[]
   if (ctx.llm.configured) {
     try {
       const mem = await retrieveMemories(ctx, userId, 'plan for today small steps', 3);
-      const mood = await withUser(ctx.db, userId, async tx => {
-        const r = (await tx.query<{ avg: string | null; n: number }>(`SELECT avg(value)::numeric(3,1) AS avg, count(*)::int AS n FROM mood_logs WHERE day >= current_date - 3`)).rows[0];
-        if (!r.n || r.avg === null) return 'unknown';
-        return Number(r.avg) < 1.5 ? 'heavier' : Number(r.avg) < 2.7 ? 'in between' : 'lighter';
-      });
+      const mood = (await recentMood(ctx, userId)).label;
       const safe = await generateSafe(ctx, {
         label: 'plan',
         run: hint => ctx.llm.json({

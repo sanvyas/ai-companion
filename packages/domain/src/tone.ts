@@ -11,6 +11,8 @@
 //
 // Safety always wins: at elevated risk the stance is "listen" and the safety instructions lead.
 
+import { detectMood, type MoodReading } from './mood';
+
 export type Stance = 'listen' | 'energise' | 'ground' | 'celebrate' | 'steady' | 'play';
 export const STANCES: Stance[] = ['listen', 'energise', 'ground', 'celebrate', 'steady', 'play'];
 
@@ -23,6 +25,8 @@ export interface ToneInput {
   moodTrend?: 'heavier' | 'between' | 'lighter' | 'unknown';
   riskLevel?: 0 | 1 | 2 | 3;
   previous?: Stance | null;
+  /** How the earlier turns of this conversation read (a blend of readings, from the words and, when available, the model). */
+  recentMood?: MoodReading | null;
 }
 export interface Tone { stance: Stance; reason: string }
 
@@ -64,6 +68,24 @@ export function assessTone(i: ToneInput): Tone {
 
   if (has(t, LOW_FLAT)) return { stance: 'energise', reason: 'low or flat, not pouring out' };
   if (has(t, PLAYFUL)) return { stance: 'play', reason: 'light chat' };
+
+  // The fixed phrases above did not decide it: read the feeling in the words, then in the turns before, then the day.
+  const now = detectMood(i.text);
+  const feel = now.confidence >= 0.45 ? now : i.recentMood && i.recentMood.confidence >= 0.4 && now.confidence < 0.3 ? i.recentMood : null;
+  if (feel) {
+    const e = feel.emotions;
+    const withTheWords = feel === now ? 'in what they said' : 'in how the conversation has been going';
+    if (feel.valence <= -1) {
+      if (e.includes('anxious') && feel.arousal === 'high') return { stance: 'ground', reason: `anxious ${withTheWords}` };
+      const flatOnly = e.length > 0 && e.every(x => x === 'numb') ;
+      if (flatOnly) return { stance: 'energise', reason: `flat ${withTheWords}` };
+      return { stance: 'listen', reason: `something heavy ${withTheWords}` };
+    }
+    if (feel.valence >= 1) {
+      if (e.includes('excited') || e.includes('happy') || e.includes('grateful')) return { stance: 'celebrate', reason: `good feeling ${withTheWords}` };
+      return { stance: 'steady', reason: `calm or hopeful ${withTheWords}` };
+    }
+  }
 
   // Nothing in the words decides it: let the day so far lean the tone gently.
   const low = (i.moodToday !== null && i.moodToday !== undefined && i.moodToday <= 1) || (i.moodTrend === 'heavier' && (i.moodToday ?? 2) <= 2);

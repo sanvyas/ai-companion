@@ -1,4 +1,6 @@
+import { phrasesOf, rhythmFor, type Phrase } from '@saathi/domain';
 import type { Ctx } from '../context.js';
+import { wavOf, TtsFailure } from '../providers/voice.js';
 import { withUser } from '../db/pool.js';
 import { SARVAM_VOICES, voiceById, type Lang } from './voices.js';
 import { recentMood, type MoodLabel } from './moodSummary.js';
@@ -48,3 +50,63 @@ export async function narrationFor(ctx: Ctx, userId: string, kind: NarrationKind
 /** How fast the companion speaks in a live conversation, from the stance of the turn: slower to listen or ground, a little livelier to lift or celebrate. */
 export const paceForStance = (stance: string | null | undefined): number =>
   ({ listen: 0.92, ground: 0.88, energise: 1.05, celebrate: 1.05, play: 1.03, steady: 1 } as Record<string, number>)[stance ?? ''] ?? 1;
+
+
+// ---------------------------------------------------------------------------------------------- reading a line aloud
+// A line is read as a person would say it: in short phrases, with breaths and pauses between them (see domain/narrate.ts),
+// in a steady, low-variation delivery. Each phrase is spoken separately and the pieces are joined with silence into one
+// recording, so the rhythm is the same on every phone. Phrases are kept in memory (capped by size) because the same
+// phrase in the same voice and pace is the same audio for everyone.
+
+const TEMPERATURE: Record<NarrationKind, number> = { sleep: 0.35, meditation: 0.45 };
+const MAX_HELD_BYTES = 64 * 1024 * 1024;
+const held = new Map<string, { pcm: Buffer; rate: number }>();
+let heldBytes = 0;
+const keep = (k: string, v: { pcm: Buffer; rate: number }) => {
+  held.set(k, v); heldBytes += v.pcm.length;
+  while (heldBytes > MAX_HELD_BYTES && held.size > 1) { const first = held.keys().next().value as string; heldBytes -= held.get(first)!.pcm.length; held.delete(first); }
+};
+
+/** Short fades at each end of a phrase so the joins never click. */
+function faded(pcm: Buffer, rate: number): Buffer {
+  const out = Buffer.from(pcm);
+  const n = out.length / 2;
+  const inN = Math.min(n, Math.round(rate * 0.02)), outN = Math.min(n, Math.round(rate * 0.06));
+  for (let i = 0; i < inN; i++) out.writeInt16LE(Math.round(out.readInt16LE(i * 2) * (i / inN)), i * 2);
+  for (let i = 0; i < outN; i++) { const at = (n - 1 - i) * 2; out.writeInt16LE(Math.round(out.readInt16LE(at) * (i / outN)), at); }
+  return out;
+}
+
+export interface Reading { wav: Buffer; sampleRate: number; phrases: number; durationMs: number }
+
+/** Joins phrase audio and silences into one recording. Exported for tests. */
+export function stitch(parts: { pcm: Buffer; pauseMs: number }[], rate: number): Buffer {
+  const chunks: Buffer[] = [];
+  for (const p of parts) {
+    chunks.push(faded(p.pcm, rate));
+    if (p.pauseMs > 0) chunks.push(Buffer.alloc(Math.round(rate * p.pauseMs / 1000) * 2));
+  }
+  return wavOf(Buffer.concat(chunks), rate);
+}
+
+export async function readAloud(ctx: Ctx, o: { userId: string; text: string; kind: NarrationKind; language: Lang; narration: Narration }): Promise<Reading> {
+  if (!ctx.tts?.configured) throw new TtsFailure('No voice is connected.');
+  const plan: Phrase[] = phrasesOf(o.text, rhythmFor(o.kind, o.narration.mood === 'heavier'));
+  if (!plan.length) throw new TtsFailure('There is nothing to say.');
+  const temperature = TEMPERATURE[o.kind];
+  const spoken = await Promise.all(plan.map(async p => {
+    const pace = Math.round(Math.max(0.6, o.narration.pace - (p.slow ? 0.04 : 0)) * 100) / 100;
+    const key = `${o.narration.voice}|${o.language}|${pace}|${temperature}|${p.text}`;
+    let hit = held.get(key);
+    if (!hit) {
+      const r = await ctx.tts!.synthesize({ text: p.text, voice: o.narration.voice, language: o.language, pace, temperature, userId: o.userId });
+      hit = { pcm: r.pcm, rate: r.sampleRate };
+      keep(key, hit);
+    }
+    return { ...hit, pauseMs: p.pauseMs };
+  }));
+  const rate = spoken[0].rate;
+  if (spoken.some(s => s.rate !== rate)) throw new TtsFailure('The voice answered at different sample rates.');
+  const wav = stitch(spoken, rate);
+  return { wav, sampleRate: rate, phrases: plan.length, durationMs: Math.round(((wav.length - 44) / 2 / rate) * 1000) };
+}

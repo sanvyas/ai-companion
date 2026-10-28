@@ -38,7 +38,13 @@ export async function systemCards(ctx: Ctx): Promise<SystemCard[]> {
   const llm = ctx.llm;
   const custom = dbOk ? (await q<{ n: number }>(`SELECT count(*)::int AS n FROM prompt_versions WHERE status = 'active'`))[0].n : 0;
   const lastEval = dbOk ? (await q<{ suite: string; failed: number; total: number; created_at: Date }>(`SELECT suite, failed, total, created_at FROM eval_runs ORDER BY id DESC LIMIT 1`))[0] : undefined;
-  cards.push({ group: 'AI', name: 'Language model', status: llm.configured ? 'ok' : 'down', detail: llm.configured ? `${ctx.rt.llmProvider() === 'openrouter' ? 'OpenRouter' : 'Anthropic'} · ${ctx.rt.model('companion')} · safety ${ctx.rt.model('safety')}` : 'No API key. Conversations are unavailable.', link: 'integrations' });
+  // A key being saved says nothing about whether answers are coming back, so the card also looks at the last hour of real calls.
+  const calls = dbOk ? (await q<{ ok: number; bad: number }>(`SELECT count(*) FILTER (WHERE ok)::int AS ok, count(*) FILTER (WHERE NOT ok)::int AS bad FROM usage_events WHERE kind IN ('companion','classify') AND created_at > now() - interval '1 hour'`))[0] : { ok: 0, bad: 0 };
+  const why = dbOk && calls.bad ? (await q<{ message: string }>(`SELECT message FROM error_log WHERE route LIKE 'llm/%' AND last_seen > now() - interval '1 hour' ORDER BY last_seen DESC LIMIT 1`))[0]?.message : undefined;
+  const failing = calls.bad > 0 && calls.ok === 0;
+  const who = `${ctx.rt.llmProvider() === 'openrouter' ? 'OpenRouter' : 'Anthropic'} · ${ctx.rt.model('companion')} · safety ${ctx.rt.model('safety')}`;
+  cards.push({ group: 'AI', name: 'Language model', status: !llm.configured || failing ? 'down' : calls.bad > calls.ok ? 'warn' : 'ok',
+    detail: !llm.configured ? 'No API key. Conversations are unavailable.' : failing ? `Every call in the last hour failed (${calls.bad}). ${why ?? 'See Errors for the reason.'}` : `${who}${calls.bad ? ` · ${calls.bad} of ${calls.ok + calls.bad} calls failed in the last hour${why ? `: ${why}` : ''}` : ''}`, link: failing ? 'infra' : 'integrations' });
   cards.push({ group: 'AI', name: 'Prompts', status: 'ok', detail: `${PROMPT_DEFS.length} prompts · ${custom} customised`, link: 'prompts' });
   cards.push({ group: 'AI', name: 'Safety evaluation', status: !lastEval ? 'warn' : lastEval.failed ? 'warn' : 'ok', detail: lastEval ? `${lastEval.suite}: ${lastEval.total - lastEval.failed}/${lastEval.total} passed, ${new Date(lastEval.created_at).toISOString().slice(0, 10)}` : 'Never run. Run the safety suites before inviting people.', link: 'evals' });
   const open2 = dbOk ? (await q<{ n: number }>(`SELECT count(*)::int AS n FROM safety_events e WHERE e.level >= 2 AND e.created_at > now() - interval '7 days' AND NOT EXISTS (SELECT 1 FROM safety_reviews r WHERE r.event_id = e.id)`))[0].n : 0;

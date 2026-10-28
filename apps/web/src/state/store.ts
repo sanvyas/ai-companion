@@ -134,6 +134,8 @@ export interface AppState {
   dictating: boolean;
   /** Which language the microphone listens for in the journal. 'auto' follows the profile. */
   dictLang: 'auto' | 'en' | 'hi';
+  /** Pieces of speech still being turned into text. */
+  dictBusy: number;
   jReadId: string | null;
 
   // today, outside, insights, memory, safety
@@ -184,7 +186,7 @@ export function initialState(): AppState {
     msgs: [], draft: '', typing: false, careCard: false, risk: initialRisk,
     notif: null, cards: [], prefs: null, pushState: 'unknown',
     calmTab: 'meditate', calmCat: 'All', player: null, pPlaying: false, pElapsed: 0, pEnded: false, pLineText: '', pLineIdx: 0, pBg: null, pTimer: 'End of story', pSession: null, pNarrator: '', storyBusy: false, sounds: {},
-    jEntries: [], jNext: null, jMode: 'write', jText: '', jPrompt: null, jShare: false, jStage: 'edit', jResult: null, jError: null, dictating: false, dictLang: 'auto', jReadId: null,
+    jEntries: [], jNext: null, jMode: 'write', jText: '', jPrompt: null, jShare: false, jStage: 'edit', jResult: null, jError: null, dictating: false, dictLang: 'auto', dictBusy: 0, jReadId: null,
     plan: [], mood: null, small: 0, smallReply: null, events: [], eventsCity: null, eventId: null, eventStage: 'detail', day: null, insights: null, letter: null,
     memories: [], editingId: null, editText: '', recent: [], safetyPlan: null, retention: 90,
     reduceMotion: ui.reduceMotion ?? false, voiceAudio: true, todOverride: null, demo: isDemo,

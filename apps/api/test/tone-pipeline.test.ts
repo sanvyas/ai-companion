@@ -230,3 +230,51 @@ describe('a story written for tonight counts as a calm session', () => {
     expect((await j(a, 'POST', '/calm/sessions', { itemId: 'nonsense' })).statusCode).toBe(404);
   });
 });
+
+describe('how the last few days have felt, from taps and from messages', () => {
+  it('combines the person’s taps with how their messages read, counting taps for more', async () => {
+    const { combineMood, moodLabelOfScore } = await import('../src/services/moodSummary.js');
+    expect(combineMood({ avg: null, n: 0 }, { avg: null, n: 0 })).toBeNull();
+    expect(combineMood({ avg: 0, n: 2 }, { avg: null, n: 0 })).toBe(-2);
+    expect(combineMood({ avg: null, n: 0 }, { avg: -1.2, n: 5 })).toBe(-1.2);
+    expect(combineMood({ avg: null, n: 0 }, { avg: -1.2, n: 2 })).toBeNull(); // two messages are not enough to go on
+    const mixed = combineMood({ avg: 4, n: 1 }, { avg: -2, n: 6 })!; // a happy tap, but a week of heavy messages
+    expect(mixed).toBeGreaterThan(0.3);
+    expect(mixed).toBeLessThan(1.5);
+    expect(moodLabelOfScore(-1)).toBe('heavier');
+    expect(moodLabelOfScore(0)).toBe('in between');
+    expect(moodLabelOfScore(1)).toBe('lighter');
+    expect(moodLabelOfScore(null)).toBe('unknown');
+  });
+
+  it('a person who tells the companion about a heavy few days gets heavier-week plans and narration, with no mood tap at all', async () => {
+    const a = await signIn(t);
+    const { chat } = await connect(port, await create(a), a.accessToken);
+    for (const m of ['I feel so low and alone today, nothing is going right', 'I am exhausted and honestly really sad about everything', 'I cried again tonight, I feel so empty and lonely']) await chat.turn(m);
+    chat.close();
+    await expect.poll(async () => (await withSystem(t.ctx.db, tx => tx.query(`SELECT count(*)::int AS n FROM messages WHERE user_id = $1 AND role = 'user' AND valence <= -1`, [a.userId]))).rows[0].n, { timeout: 5000 }).toBe(3);
+    expect((await j(a, 'GET', '/calm/narration?kind=sleep')).json().mood).toBe('heavier');
+    t.llm.calls.length = 0;
+    await j(a, 'GET', '/plan/today');
+    expect(t.llm.calls.find(c => c.task === 'plan')!.messages.at(-1)!.content).toContain('Mood: heavier');
+  });
+
+  it('what the model reads is kept beside the message, and the turn’s tone does not wait for it', async () => {
+    const a = await signIn(t);
+    const { chat } = await connect(port, await create(a), a.accessToken);
+    t.llm.jsonReply = s => (s === 'affect' ? { valence: -2, emotion: 'overwhelmed', arousal: 'high' } : undefined);
+    await chat.turn('well, that was a day, you know how it goes');
+    t.llm.jsonReply = null;
+    chat.close();
+    await expect.poll(async () => (await withSystem(t.ctx.db, tx => tx.query(`SELECT valence FROM messages WHERE user_id = $1 AND role = 'user'`, [a.userId]))).rows[0]?.valence, { timeout: 5000 }).toBe(-2);
+  });
+
+  it('the earlier turns’ mood shapes a later turn that says nothing about feelings', async () => {
+    const a = await signIn(t);
+    const { chat } = await connect(port, await create(a), a.accessToken);
+    await chat.turn('I feel so low and alone tonight');
+    await chat.turn('okay');
+    expect(companionSystem()).toContain(toneBlock('listen'));
+    chat.close();
+  });
+});

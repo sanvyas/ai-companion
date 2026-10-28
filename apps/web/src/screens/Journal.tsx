@@ -104,6 +104,7 @@ function Edit() {
   const prompt = useStore(s => s.jPrompt);
   const share = useStore(s => s.jShare);
   const dictating = useStore(s => s.dictating);
+  const busy = useStore(s => s.dictBusy);
   useStore(s => s.dictLang);
   const compName = useStore(s => s.compName);
   const reduce = useReduceMotion();
@@ -128,7 +129,7 @@ function Edit() {
             {dictating && <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid #7FC4B5', animation: reduce ? 'sFade 2s infinite' : 'sRing 2s cubic-bezier(.22,.61,.36,1) infinite' }} />}
             <Svg d={dictating ? P.stop : P.mic} size={30} stroke="#FFFFFF" sw={1.9} style={{ position: 'relative' }} />
           </button>
-          <span role="status" style={{ fontSize: 15, color: C.muted }}>{dictating ? 'Listening. Tap to stop.' : text ? 'Tap to keep talking' : 'Tap to start talking'}</span>
+          <span role="status" style={{ fontSize: 15, color: C.muted }}>{dictating ? 'Listening. Tap to stop.' : busy ? 'Writing down the last bit…' : text ? 'Tap to keep talking' : 'Tap to start talking'}</span>
           {!dictating && (
             <div role="group" aria-label="Language you’re speaking" style={{ ...flex('row', 8) }}>
               <Chip label="English" on={speechLocale() === 'en-IN'} onClick={() => set({ dictLang: 'en' })} />

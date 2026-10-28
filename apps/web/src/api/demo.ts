@@ -143,6 +143,7 @@ export class DemoApi implements Api {
   async safetyAck() { /* recorded server-side in the real app */ }
 
   async startCalm() { return { id: uuid() }; }
+  async transcribe(): Promise<never> { throw new ApiError(503, 'stt_unavailable', 'Server dictation isn’t connected in this preview.'); }
   async calmNarration() { return { server: false, voice: null, pace: 0.85, mood: 'unknown', reason: 'the phone’s own voice' }; }
   async narrate(): Promise<never> { await wait(); throw new ApiError(503, 'voice_unavailable', 'The voices aren’t connected in this preview.'); }
   async story(theme: string) {

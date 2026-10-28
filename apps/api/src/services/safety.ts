@@ -4,6 +4,7 @@ import type { Ctx } from '../context.js';
 import { withUser } from '../db/pool.js';
 import type { LlmMessage } from '../providers/llm.js';
 import { classifierSystem, outputCheckSystem } from './prompts.js';
+import { reportLlmFailure } from './llmHealth.js';
 
 // Server safety pipeline (PRD 6.4): keyword pre-filter, then a separate model on every user turn, then an
 // output check on every AI draft. The classifier errs high: unsure means the higher level, and a classifier
@@ -38,6 +39,7 @@ export async function classifyWithModel(ctx: Ctx, userId: string, text: string, 
     return out.level as RiskLevel;
   } catch (e) {
     ctx.log.warn({ err: (e as Error).message }, 'safety classifier unavailable, using pre-filter only');
+    reportLlmFailure(ctx, 'safety', e);
     return null;
   } finally {
     clearTimeout(timer);

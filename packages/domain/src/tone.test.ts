@@ -47,8 +47,27 @@ const cases: [string, string, Stance, Partial<ToneInput>?][] = [
   ['lighter day, nothing else', 'hi', 'play', { moodToday: 4 }],
   // default
   ['no signal, no mood', 'hi', 'steady'],
+  // read from the feeling in the words, beyond the fixed phrases
+  ['unseen at work', 'I feel invisible at work', 'listen'],
+  ['praised', 'I finished the project early and my manager praised me', 'celebrate'],
+  ['dreading', 'I am dreading Monday', 'listen'],
+  ['flat only', 'meh, it is all just blah and dull', 'energise'],
+  ['nervous', 'my mind is racing and I am panicking about tomorrow', 'ground'],
+  ['a lovely day', 'we had such a lovely time, I feel so grateful', 'celebrate'],
+  ['calm', 'I feel calm and peaceful tonight', 'steady'],
   ['a plain statement', 'I have a meeting at three', 'steady'],
 ];
+
+describe('tone: the conversation so far counts when the words say nothing', () => {
+  const heavy = { valence: -1 as const, score: -1.2, arousal: 'steady' as const, emotions: ['sad' as const], confidence: 0.8 };
+  it('leans on how the earlier turns read when this message has no feeling in it', () => {
+    expect(assessTone({ text: 'okay', recentMood: heavy }).stance).toBe('listen');
+    expect(assessTone({ text: 'okay' }).stance).toBe('steady');
+  });
+  it('but what is said now wins over what was said before', () => {
+    expect(assessTone({ text: 'actually I feel so happy right now!', recentMood: heavy }).stance).toBe('celebrate');
+  });
+});
 
 describe('tone: which stance fits the moment', () => {
   it.each(cases)('%s', (_n, text, stance, extra) => {

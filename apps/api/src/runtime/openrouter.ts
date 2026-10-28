@@ -5,6 +5,9 @@ import type { TestResult } from './integrations.js';
 const BASE = 'https://openrouter.ai/api/v1';
 const HEADERS = (key?: string) => ({ ...(key ? { Authorization: `Bearer ${key}` } : {}), 'Content-Type': 'application/json', 'HTTP-Referer': 'https://saathi.app', 'X-Title': 'Saathi' });
 
+/** Model ids that cannot answer a chat request. */
+export const isBatchModel = (id: string) => /:batch\b/i.test(id);
+
 export interface OrModel { id: string; name: string; contextLength: number; promptPerM: number; completionPerM: number; structured: boolean; vendor: string }
 
 interface RawModel { id: string; name?: string; context_length?: number; pricing?: { prompt?: string; completion?: string }; architecture?: { output_modalities?: string[]; modality?: string }; supported_parameters?: string[] }
@@ -14,6 +17,8 @@ const usd = (v: string | undefined) => { const n = Number(v); return Number.isFi
 export function normaliseModels(raw: RawModel[]): OrModel[] {
   return raw
     .filter(m => typeof m.id === 'string' && /^[\w.-]+\/[\w.:+-]+$/.test(m.id))
+    // `:batch` models only work through OpenRouter's batch interface; a chat request to one always fails.
+    .filter(m => !isBatchModel(m.id))
     // Only models that answer in text. Image and audio generators can't run a conversation.
     .filter(m => (m.architecture?.output_modalities ? m.architecture.output_modalities.includes('text') : (m.architecture?.modality ?? 'text->text').endsWith('->text')))
     .map(m => ({
@@ -39,7 +44,7 @@ export async function listModels(f: typeof fetch, key: string | undefined, fresh
 }
 
 /** “Test connection”: is the key accepted, and what does it have left? */
-export async function testOpenRouter(v: Record<string, string>, f: typeof fetch): Promise<TestResult> {
+export async function testOpenRouter(v: Record<string, string>, f: typeof fetch, companionModel?: string): Promise<TestResult> {
   try {
     const r = await f(`${BASE}/auth/key`, { headers: HEADERS(v.api_key), signal: AbortSignal.timeout(15_000) });
     if (r.status === 401 || r.status === 403) return { ok: false, note: 'OpenRouter rejected this key.' };
@@ -47,7 +52,14 @@ export async function testOpenRouter(v: Record<string, string>, f: typeof fetch)
     const d = ((await r.json()) as { data?: { label?: string; usage?: number; limit?: number | null; limit_remaining?: number | null; is_free_tier?: boolean } }).data ?? {};
     const spent = typeof d.usage === 'number' ? `$${d.usage.toFixed(2)} used` : null;
     const left = typeof d.limit_remaining === 'number' ? `$${d.limit_remaining.toFixed(2)} left of the key’s limit` : d.limit === null ? 'no spending limit on this key' : null;
-    return { ok: true, note: ['Key accepted', d.label ? `(${d.label})` : '', [spent, left, d.is_free_tier ? 'free tier' : null].filter(Boolean).join(', ')].filter(Boolean).join(' ') + '.' };
+    const note = ['Key accepted', d.label ? `(${d.label})` : '', [spent, left, d.is_free_tier ? 'free tier' : null].filter(Boolean).join(', ')].filter(Boolean).join(' ') + '.';
+    // An accepted key says nothing about whether the account can pay for the model people talk to. Ask that model one thing.
+    if (companionModel) {
+      const t = await tryModel(f, v.api_key, companionModel);
+      if (!t.ok) return { ok: false, note: `${note} But the companion model ${companionModel} failed: ${t.error ?? 'no answer'}${/credit|afford|payment/i.test(t.error ?? '') ? ' (add credit at openrouter.ai/settings/credits)' : ''}. Conversations will not work until this is fixed.` };
+      return { ok: true, note: `${note} The companion model ${companionModel} answered in ${(t.latencyMs / 1000).toFixed(1)} s.` };
+    }
+    return { ok: true, note };
   } catch (e) {
     return { ok: false, note: `Couldn’t reach OpenRouter: ${(e as Error).message}` };
   }

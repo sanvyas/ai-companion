@@ -6,8 +6,8 @@ import type { Runtime } from '../runtime/index.js';
 import { createLlm, type LlmUsage } from './llm.js';
 import { createOtp } from './otp.js';
 import { createPush } from './push.js';
-import { SarvamTts } from './sarvam.js';
-import type { TtsUsage } from './voice.js';
+import { SarvamStt, SarvamTts } from './sarvam.js';
+import type { SttUsage, TtsUsage } from './voice.js';
 
 /** Records every provider call with its token counts and, when a rate is set, its cost in rupees. */
 export function recordUsage(db: Db, log: FastifyBaseLogger, rt: Runtime) {
@@ -31,6 +31,15 @@ export function recordTtsUsage(db: Db, log: FastifyBaseLogger, rt: Runtime) {
   };
 }
 
+/** Dictation is billed per second of audio; the rate lives in the pricing table under the vendor's name. */
+export function recordSttUsage(db: Db, log: FastifyBaseLogger, rt: Runtime) {
+  return (u: SttUsage) => {
+    const cost = u.ok ? rt.pricing.costInr({ provider: u.provider, seconds: u.seconds }) : null;
+    withSystem(db, tx => tx.query('INSERT INTO usage_events (user_id, provider, kind, units, latency_ms, ok, seconds, cost_inr) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)', [u.userId ?? null, u.provider, u.kind, Math.round(u.seconds), u.latencyMs, u.ok, u.seconds, cost]))
+      .catch(e => log.warn({ err: (e as Error).message }, 'usage_event write failed'));
+  };
+}
+
 export function createProviders(cfg: Config, db: Db, log: FastifyBaseLogger, rt: Runtime) {
   return {
     llm: createLlm(cfg, { provider: () => rt.llmProvider(), key: p => rt.secrets.get(p, 'api_key') }, recordUsage(db, log, rt)),
@@ -40,6 +49,8 @@ export function createProviders(cfg: Config, db: Db, log: FastifyBaseLogger, rt:
     stt: null,
     // Server speech through Sarvam; it speaks only once its key is added in the portal.
     tts: new SarvamTts(() => rt.secrets.get('sarvam', 'api_key'), recordTtsUsage(db, log, rt)),
+    // Dictation for the journal: a continuous recording sent in short pieces.
+    transcriber: new SarvamStt(() => rt.secrets.get('sarvam', 'api_key'), recordSttUsage(db, log, rt)),
     telephony: null,
   };
 }

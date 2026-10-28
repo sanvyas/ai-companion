@@ -1,5 +1,8 @@
 import { isDemo } from '../api';
 import { getState, set } from '../state/store';
+import { api, ApiError } from '../api';
+import { Chunker, wavOf } from './chunker';
+import { startMic, type Mic } from './mic';
 import { appendSpeech, mergeTranscripts } from './transcript';
 
 // Dictation into the journal (PRD 8.5.2): live transcript into the text area, editable afterwards, audio never kept.
@@ -11,6 +14,37 @@ import { appendSpeech, mergeTranscripts } from './transcript';
 // it heard so far is kept. Every result of a listening session is rebuilt into the text each time (not only the newest),
 // so a final result is never dropped, and words still in flight are kept when the person stops.
 // TODO(stt-adapter): stream through the server STT vendor via POST /stt/token once one is connected.
+let on = false;
+let rec: SpeechRecognition | null = null;
+let sim: ReturnType<typeof setInterval> | null = null;
+let restart: ReturnType<typeof setTimeout> | undefined;
+let mic: Mic | null = null;
+let chunker: Chunker | null = null;
+let queue: Promise<void> = Promise.resolve();
+let pending = 0;
+let settled: (() => void)[] = [];
+/** Set once the server's speech service has refused a piece, so the rest of the session (and the next) use the browser. */
+let serverRefused = false;
+
+const DEMO = 'Work was a lot today. My manager moved the deadline again and I didn’t say anything. I keep thinking I should have. Priya texted, that helped a bit. I want to sleep before one tonight.'.split(' ');
+
+/** Resolves when every piece of speech already heard has been written into the text. Save waits for this. */
+export const dictationSettled = (): Promise<void> => (pending === 0 ? Promise.resolve() : new Promise(res => { settled.push(res); }));
+const done = () => { set({ dictBusy: pending }); if (pending === 0) { const w = settled; settled = []; w.forEach(r => r()); } };
+
+export function stopDictation() {
+  on = false;
+  clearTimeout(restart);
+  if (sim) clearInterval(sim);
+  sim = null;
+  // The recording ends, but the last piece is still sent: what was said just before tapping stop is not thrown away.
+  if (mic) { mic.stop(); mic = null; }
+  if (chunker) { chunker.flush(); chunker = null; }
+  // stop() (not abort()) lets the browser engine deliver the words it is still working on; the handlers stay attached until it ends.
+  if (rec) { try { rec.stop(); } catch { /* not started */ } rec = null; }
+  if (getState().dictating) set({ dictating: false });
+}
+
 /** The locale to listen for. Hinglish speakers talk mostly in Hindi with English words, which the Hindi model hears best. */
 export function speechLocale(): 'en-IN' | 'hi-IN' {
   const s = getState();
@@ -19,27 +53,60 @@ export function speechLocale(): 'en-IN' | 'hi-IN' {
   return s.me?.language === 'hi' || s.me?.language === 'hinglish' ? 'hi-IN' : 'en-IN';
 }
 
-let on = false;
-let rec: SpeechRecognition | null = null;
-let sim: ReturnType<typeof setInterval> | null = null;
-let restart: ReturnType<typeof setTimeout> | undefined;
-
-const DEMO = 'Work was a lot today. My manager moved the deadline again and I didn’t say anything. I keep thinking I should have. Priya texted, that helped a bit. I want to sleep before one tonight.'.split(' ');
-
-export function stopDictation() {
-  on = false;
-  clearTimeout(restart);
-  if (sim) clearInterval(sim);
-  sim = null;
-  // stop() (not abort()) lets the engine deliver the words it is still working on; the handlers stay attached until it ends.
-  if (rec) { try { rec.stop(); } catch { /* not started */ } rec = null; }
-  if (getState().dictating) set({ dictating: false });
-}
+/** The language the server is asked to write in. Hinglish is written in Latin script, Hindi in Devanagari. */
+const serverLanguage = (): 'en' | 'hinglish' | 'hi' => (speechLocale() === 'en-IN' ? 'en' : getState().me?.language === 'hinglish' ? 'hinglish' : 'hi');
 
 export function startDictation(notify: (msg: string) => void) {
   on = true;
   set({ dictating: true });
+  if (!isDemo && getState().cfg?.dictation && !serverRefused) void listenToServer(notify); else listenInBrowser(notify);
+}
 
+// ------------------------------------------------------------------------------------------------ server speech-to-text
+/**
+ * One unbroken recording, cut into pieces at the pauses between phrases and written down as each piece comes back.
+ * Nothing is lost to a recogniser restarting, and Hindi, English and a mix of the two are all heard by the same model.
+ */
+async function listenToServer(notify: (msg: string) => void) {
+  const language = serverLanguage();
+  const c = new Chunker((pcm, seconds) => {
+    pending++; set({ dictBusy: pending });
+    queue = queue.then(async () => {
+      try {
+        let text = '';
+        for (let attempt = 0; ; attempt++) {
+          try { text = (await api.transcribe(wavOf(pcm), language)).text; break; }
+          catch (e) { if (attempt >= 1 || (e instanceof ApiError && e.code === 'stt_unavailable')) throw e; await new Promise(r => setTimeout(r, 500)); }
+        }
+        if (text) set(st => ({ jText: appendSpeech(st.jText, text) }));
+      } catch (e) {
+        if (e instanceof ApiError && e.code === 'stt_unavailable') {
+          // The speech service refused: carry on with the browser's recogniser from here, and say what was missed.
+          serverRefused = true;
+          if (on) { stopServerCapture(); listenInBrowser(notify); }
+          notify('Switched to your browser’s dictation. If the last few seconds are missing, please say them again.');
+        } else notify(`I couldn’t write down about ${Math.round(seconds)} seconds just now. Please say it again.`);
+      } finally { pending--; done(); }
+    });
+  });
+  chunker = c;
+  try {
+    mic = await startMic(buf => chunker?.push(new Int16Array(buf)));
+    if (!on) { stopServerCapture(); return; }
+  } catch {
+    chunker = null; on = false; set({ dictating: false });
+    notify('I can’t reach the microphone. Check the browser’s permission, or type instead.');
+  }
+}
+
+function stopServerCapture() {
+  if (mic) { mic.stop(); mic = null; }
+  chunker?.flush();
+  chunker = null;
+}
+
+// ------------------------------------------------------------------------------------------------ browser speech recognition
+function listenInBrowser(notify: (msg: string) => void) {
   const fallback = (why: string) => {
     if (!isDemo) { stopDictation(); notify(why); return; }
     const base = getState().jText ? getState().jText.replace(/\s*$/, ' ') : '';

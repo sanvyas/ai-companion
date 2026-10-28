@@ -7,7 +7,7 @@ import { AppError } from '../errors.js';
 import { parse, uid } from '../http.js';
 import { TtsFailure, TtsUnavailable } from '../providers/voice.js';
 import { SAMPLE, isServerVoice, voiceById, voicesFor } from '../services/voices.js';
-import { narrationFor } from '../services/narration.js';
+import { narrationFor, readAloud } from '../services/narration.js';
 
 const Query = z.object({ language: Language.optional() });
 const NarrationKind = z.enum(['sleep', 'meditation']);
@@ -64,10 +64,10 @@ export function voiceRoutes(app: FastifyInstance, ctx: Ctx) {
   // Calm sessions are read aloud by a server voice chosen from how the person has been feeling (services/narration.ts).
   // The same line in the same voice and pace is the same audio for everyone, so lines are kept in memory (capped by size)
   // and a session's lines are paid for once.
-  const lines = new Map<string, { wav: string; sampleRate: number }>();
+  const lines = new Map<string, { wav: string; sampleRate: number; durationMs: number }>();
   let held = 0;
   const MAX_HELD = 48 * 1024 * 1024;
-  const remember = (key: string, v: { wav: string; sampleRate: number }) => {
+  const remember = (key: string, v: { wav: string; sampleRate: number; durationMs: number }) => {
     lines.set(key, v);
     held += v.wav.length;
     while (held > MAX_HELD && lines.size > 1) { const k = lines.keys().next().value as string; held -= lines.get(k)!.wav.length; lines.delete(k); }
@@ -85,12 +85,12 @@ export function voiceRoutes(app: FastifyInstance, ctx: Ctx) {
     if (!ctx.tts?.configured) throw new AppError(503, 'voice_unavailable', 'The voices aren’t connected yet. The phone’s own voice will read this.');
     const { narration } = await narrationFor(ctx, uid(req), b.kind);
     const language = b.language ?? 'en';
-    const key = `${narration.voice}|${language}|${narration.pace}|${b.text}`;
+    const key = `${narration.voice}|${language}|${narration.pace}|${narration.mood === 'heavier'}|${b.kind}|${b.text}`;
     let hit = lines.get(key);
     if (!hit) {
       try {
-        const r = await ctx.tts.synthesize({ text: b.text, voice: narration.voice, language, pace: narration.pace, userId: uid(req) });
-        hit = { wav: r.wav.toString('base64'), sampleRate: r.sampleRate };
+        const r = await readAloud(ctx, { userId: uid(req), text: b.text, kind: b.kind, language, narration });
+        hit = { wav: r.wav.toString('base64'), sampleRate: r.sampleRate, durationMs: r.durationMs };
         remember(key, hit);
       } catch (e) {
         if (e instanceof TtsUnavailable) throw new AppError(503, 'voice_unavailable', e.message);
@@ -98,6 +98,6 @@ export function voiceRoutes(app: FastifyInstance, ctx: Ctx) {
         throw e;
       }
     }
-    return { mime: 'audio/wav', audio: hit.wav, sampleRate: hit.sampleRate, voice: { id: narration.voice, label: narration.label }, pace: narration.pace };
+    return { mime: 'audio/wav', audio: hit.wav, sampleRate: hit.sampleRate, durationMs: hit.durationMs, voice: { id: narration.voice, label: narration.label }, pace: narration.pace };
   });
 }

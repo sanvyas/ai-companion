@@ -14,12 +14,21 @@ export interface SttProvider {
   open(opts: { language: 'en-IN' | 'hi-IN'; signal?: AbortSignal }): Promise<SttSession>;
 }
 
+/** Speech-to-text for a short recording (up to about 30 s), used for the journal's “Talk it out”. */
+export interface TranscribeOptions { wav: Buffer; language: 'en' | 'hinglish' | 'hi'; userId?: string }
+export interface Transcriber {
+  readonly name: string;
+  readonly configured: boolean;
+  transcribe(o: TranscribeOptions): Promise<{ text: string }>;
+}
+export interface SttUsage { provider: string; kind: 'stt'; seconds: number; latencyMs: number; ok: boolean; userId?: string }
+
 export interface TtsChunk {
   audio: Buffer; // PCM16 mono 24 kHz
   /** Mouth-shape cues for the avatar, if the vendor returns visemes. Otherwise the client derives them from amplitude. */
   visemes?: { t: number; v: string }[];
 }
-export interface TtsOptions { text: string; voice: string; language: 'en' | 'hinglish' | 'hi'; /** Speaking speed, 1 is normal. The vendor may clamp it. */ pace?: number; signal?: AbortSignal; userId?: string }
+export interface TtsOptions { text: string; voice: string; language: 'en' | 'hinglish' | 'hi'; /** Speaking speed, 1 is normal. The vendor may clamp it. */ pace?: number; /** How much the delivery varies; lower is steadier and calmer. Ignored by vendors that have no such setting. */ temperature?: number; signal?: AbortSignal; userId?: string }
 export interface Synthesis { wav: Buffer; pcm: Buffer; sampleRate: number }
 export interface TtsProvider {
   readonly name: string;
@@ -49,4 +58,12 @@ export function parseWav(buf: Buffer): { pcm: Buffer; sampleRate: number } {
     off += 8 + size + (size % 2);
   }
   throw new TtsFailure('The voice service returned audio with no sound in it.');
+}
+
+/** A mono 16-bit WAV file around raw samples. */
+export function wavOf(pcm: Buffer, sampleRate: number): Buffer {
+  const h = Buffer.alloc(44);
+  h.write('RIFF', 0); h.writeUInt32LE(36 + pcm.length, 4); h.write('WAVE', 8); h.write('fmt ', 12); h.writeUInt32LE(16, 16); h.writeUInt16LE(1, 20); h.writeUInt16LE(1, 22);
+  h.writeUInt32LE(sampleRate, 24); h.writeUInt32LE(sampleRate * 2, 28); h.writeUInt16LE(2, 32); h.writeUInt16LE(16, 34); h.write('data', 36); h.writeUInt32LE(pcm.length, 40);
+  return Buffer.concat([h, pcm]);
 }

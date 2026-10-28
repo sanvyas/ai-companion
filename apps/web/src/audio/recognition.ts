@@ -16,6 +16,8 @@ export class Recognizer {
   private rec: SpeechRecognition | null = null;
   private want = false;
   private timer: ReturnType<typeof setTimeout> | undefined;
+  /** What was heard but not yet marked final. If the browser ends the session first, it is still said, not dropped. */
+  private tail = '';
 
   constructor(private lang: string, private readonly h: RecognitionHandlers) {}
 
@@ -38,14 +40,19 @@ export class Recognizer {
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const t = e.results[i][0].transcript.trim();
         if (!t) continue;
-        if (e.results[i].isFinal) this.h.onFinal(t); else this.h.onInterim(t);
+        if (e.results[i].isFinal) { this.tail = ''; this.h.onFinal(t); } else { this.tail = t; this.h.onInterim(t); }
       }
     };
     r.onerror = e => {
       if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { this.want = false; this.h.onFatal('denied'); }
     };
     // Browsers end recognition after silence; keep it going while the call is live.
-    r.onend = () => { if (this.rec === r) { this.rec = null; if (this.want) this.timer = setTimeout(() => this.want && this.open(), 60); } };
+    r.onend = () => {
+      if (this.rec !== r) return;
+      this.rec = null;
+      if (this.tail) { const t = this.tail; this.tail = ''; this.h.onFinal(t); }
+      if (this.want) this.timer = setTimeout(() => this.want && this.open(), 60);
+    };
     try { r.start(); } catch { /* already started */ }
   }
 

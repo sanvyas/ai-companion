@@ -1,5 +1,5 @@
 import { api, isDemo, type NotificationPrefs, type SafetyPlan, type TrustedContact } from '../api';
-import { stopDictation } from '../audio/dictation';
+import { dictationSettled, stopDictation } from '../audio/dictation';
 import { applyMe, errMsg } from './session';
 import { getState, set } from './store';
 
@@ -85,9 +85,11 @@ export function startJournal(mode: 'write' | 'speak') {
 
 /** Save. Private entries are stored and left alone; shared ones are then read for review (nothing saved to Memory yet). */
 export async function saveJournal() {
+  // Stop listening, then wait for the last pieces of speech to be written down before reading the text.
+  stopDictation();
+  await dictationSettled();
   const s = getState();
   if (!s.jText.trim()) { toastFn('Nothing to save yet. Take your time.'); return; }
-  stopDictation();
   set({ jStage: 'saving', jError: null });
   let created;
   try {
