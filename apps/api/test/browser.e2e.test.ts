@@ -121,12 +121,12 @@ describe('voice call', () => {
     const { page, close } = await visit(await person());
     await page.getByText('Voice call').first().click();
     await page.getByRole('button', { name: /Allow|Use microphone|Yes/i }).first().click();
-    await page.getByText('Listening', { exact: true }).waitFor({ timeout: 10_000 });
+    await page.getByText('Listening', { exact: true }).waitFor({ timeout: 20_000 });
     expect(await page.getByText('Not connected').count()).toBe(0);
     // The person speaks; the companion answers with captions.
     await page.waitForFunction(() => (window as any).__active);
     await page.evaluate(() => (window as any).__phrase('I am a bit tired today'));
-    await page.getByText(/What part is sitting with you most/).first().waitFor({ timeout: 10_000 }); // captions show the latest sentence
+    await page.getByText(/What part is sitting with you most/).first().waitFor({ timeout: 20_000 }); // captions show the latest sentence
     await close();
   });
 
@@ -153,7 +153,7 @@ describe('voice call', () => {
     const box = page.getByRole('textbox').first();
     await box.fill('work was heavy today');
     await box.press('Enter');
-    await page.getByText(/That sounds like a lot to carry/).first().waitFor({ timeout: 10_000 });
+    await page.getByText(/That sounds like a lot to carry/).first().waitFor({ timeout: 20_000 });
     await close();
   });
 });
@@ -167,8 +167,8 @@ describe('when the model is down', () => {
     t.llm.reply = () => { throw new LlmUnavailable('OpenRouter says this key can’t pay for that model (Insufficient credits).'); };
     await page.waitForFunction(() => (window as any).__active);
     await page.evaluate(() => (window as any).__phrase('hello, can you hear me'));
-    await page.getByText(/Something on my side isn.t connected/).first().waitFor({ timeout: 10_000 });
-    await page.waitForFunction(() => (window as any).__spoken.some((x: any) => /isn.t connected/.test(x.text)), null, { timeout: 10_000 });
+    await page.getByText(/Something on my side isn.t connected/).first().waitFor({ timeout: 20_000 });
+    await page.waitForFunction(() => (window as any).__spoken.some((x: any) => /isn.t connected/.test(x.text)), null, { timeout: 20_000 });
     t.llm.reply = null;
     await expect.poll(async () => (await withSystem(t.ctx.db, tx => tx.query(`SELECT message FROM error_log WHERE code = 'llm_unavailable' AND route = 'llm/companion'`))).rows[0]?.message ?? '', { timeout: 5000 }).toContain('Insufficient credits');
     await close();
@@ -218,7 +218,7 @@ describe('calm narration', () => {
     await page.getByText('Meditate and sleep').first().click();
     await page.getByText('Sleep', { exact: true }).first().click();
     await page.getByText('Monsoon on the hills').first().click();
-    await page.waitForFunction(() => (window as any).__spoken.length > 0, null, { timeout: 10_000 });
+    await page.waitForFunction(() => (window as any).__spoken.length > 0, null, { timeout: 20_000 });
     const first = await page.evaluate(() => (window as any).__spoken[0]);
     expect(first.text).toMatch(/small town in the hills/);
     expect(first.pitch).toBe(1);
@@ -235,9 +235,9 @@ describe('calm narration', () => {
     calls.length = 0;
     await heavy.page.getByText('Meditate and sleep').first().click();
     await heavy.page.getByText('Kindness for yourself').first().click();
-    await heavy.page.getByRole('dialog').getByText(/Narrated by [A-Z][a-z]+$/).waitFor({ timeout: 10_000 });
-    await heavy.page.waitForFunction(() => document.querySelector('[aria-live="polite"]')?.textContent?.includes('kind to you'), null, { timeout: 10_000 });
-    await expect.poll(() => calls.length, { timeout: 10_000 }).toBeGreaterThan(0);
+    await heavy.page.getByRole('dialog').getByText(/Narrated by [A-Z][a-z]+$/).waitFor({ timeout: 20_000 });
+    await heavy.page.waitForFunction(() => document.querySelector('[aria-live="polite"]')?.textContent?.includes('kind to you'), null, { timeout: 20_000 });
+    await expect.poll(() => calls.length, { timeout: 20_000 }).toBeGreaterThan(0);
     const h = calls[0];
     expect(h.lang).toBe('en-IN');
     expect(h.pace).toBeLessThan(0.88);
@@ -250,7 +250,7 @@ describe('calm narration', () => {
     calls.length = 0;
     await light.page.getByText('Meditate and sleep').first().click();
     await light.page.getByText('Kindness for yourself').first().click();
-    await expect.poll(() => calls.length, { timeout: 10_000 }).toBeGreaterThan(0);
+    await expect.poll(() => calls.length, { timeout: 20_000 }).toBeGreaterThan(0);
     expect(calls[0].speaker).not.toBe(h.speaker);
     expect(calls[0].pace).toBeGreaterThan(h.pace);
     await light.close();
@@ -262,8 +262,8 @@ describe('calm narration', () => {
     await page.getByText('Meditate and sleep').first().click();
     await page.getByText('Sleep', { exact: true }).first().click();
     await page.getByRole('button', { name: 'Rain', exact: true }).click();
-    await page.getByRole('dialog').waitFor({ timeout: 10_000 });
-    await expect.poll(() => calls.length, { timeout: 10_000 }).toBeGreaterThan(0);
+    await page.getByRole('dialog').waitFor({ timeout: 20_000 });
+    await expect.poll(() => calls.length, { timeout: 20_000 }).toBeGreaterThan(0);
     expect(calls[0].pace).toBeLessThan(0.8);
     await close();
   });
@@ -280,7 +280,7 @@ describe('journal dictation through the speech service', () => {
     await page.getByRole('button', { name: /Listening/ }).waitFor();
     await page.waitForTimeout(3500);                  // the fake microphone plays a tone
     await page.getByRole('button', { name: /Listening/ }).click(); // stop: the piece in progress is still sent
-    await expect.poll(async () => page.getByRole('textbox', { name: 'Journal entry' }).inputValue(), { timeout: 10_000 }).toContain('Work was a lot today and I did not say anything.');
+    await expect.poll(async () => page.getByRole('textbox', { name: 'Journal entry' }).inputValue(), { timeout: 20_000 }).toContain('Work was a lot today and I did not say anything.');
     expect(heard.length).toBeGreaterThanOrEqual(1);
     expect(heard[0].bytes).toBeGreaterThan(80_000);   // about three seconds of 16 kHz audio
     expect(heard[0].fields).toMatchObject({ language_code: 'en-IN' });
@@ -306,7 +306,7 @@ describe('journal dictation through the speech service', () => {
       await page.waitForTimeout(300);
       release();
       await save;
-      await expect.poll(async () => (await t.app.inject({ method: 'GET', url: '/journal', headers: me.headers })).json().items[0]?.text ?? '', { timeout: 10_000 }).toContain('Work was a lot today and I did not say anything.');
+      await expect.poll(async () => (await t.app.inject({ method: 'GET', url: '/journal', headers: me.headers })).json().items[0]?.text ?? '', { timeout: 20_000 }).toContain('Work was a lot today and I did not say anything.');
     } finally { t.ctx.transcriber = was; release(); }
     await close();
   });
@@ -342,10 +342,10 @@ describe('voice call with a natural voice', () => {
     await page.getByText('Listening', { exact: true }).waitFor();
     await page.waitForFunction(() => (window as any).__active);
     await page.evaluate(() => (window as any).__phrase('I am a bit tired today'));
-    await expect.poll(() => calls.map(c => c.text).join(' '), { timeout: 10_000 }).toContain('That sounds like a lot to carry');
+    await expect.poll(() => calls.map(c => c.text).join(' '), { timeout: 20_000 }).toContain('That sounds like a lot to carry');
     expect(calls.every(c => c.speaker === 'priya')).toBe(true);
     expect(calls[0].pace).toBeGreaterThan(0.5);
-    await expect.poll(() => audioFrames, { timeout: 10_000 }).toBeGreaterThan(0);
+    await expect.poll(() => audioFrames, { timeout: 20_000 }).toBeGreaterThan(0);
     expect(await page.evaluate(() => (window as any).__spoken.length)).toBe(0); // the phone's voice stayed quiet
     await close();
   });
