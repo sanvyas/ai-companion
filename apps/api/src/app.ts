@@ -47,7 +47,11 @@ export async function buildApp(cfg: Config, opts: BuildOpts = {}): Promise<{ app
   const providers = createProviders(cfg, db, app.log, rt);
   const ctx: Ctx = { cfg, db, crypto, rt, log: app.log, ...providers, ...opts.overrides };
 
-  await app.register(helmet, { contentSecurityPolicy: false });
+  // Google's sign-in opens a popup and hands the result back to this page. helmet's default
+  // (Cross-Origin-Opener-Policy: same-origin) cuts that link, so the popup is left on a blank white page and the app never
+  // hears back. "same-origin-allow-popups" keeps the protection against other sites while letting our own popups talk to us.
+  // The referrer policy is also relaxed from "no-referrer": Google's sign-in needs to see where it was opened from.
+  await app.register(helmet, { contentSecurityPolicy: false, crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' }, referrerPolicy: { policy: 'strict-origin-when-cross-origin' } });
   await app.register(cookie);
   // The app and the admin portal are different origins with different rules: the portal may send its session
   // cookie, the app never does.

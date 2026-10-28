@@ -10,6 +10,7 @@ import { recordSttUsage, recordTtsUsage } from '../src/providers/index.js';
 import { makeApp, signIn, type Auth, type TestApp } from './app-helpers.js';
 import { adminLogin } from './admin-helpers.js';
 import { listen } from './ws-helpers.js';
+import { createServer } from 'node:http';
 import { addInboxCard } from '../src/services/notifier.js';
 import { LlmUnavailable } from '../src/providers/llm.js';
 import { withSystem } from '../src/db/pool.js';
@@ -416,5 +417,32 @@ describe('every screen and flow, with no errors on the way', () => {
     await page.getByRole('radiogroup', { name: 'Voice' }).waitFor();
     await close();
     expect(errors).toEqual([]);
+  });
+});
+
+
+describe('signing in with Google', () => {
+  // Google's sign-in opens a popup and hands the result back to the page that opened it. A page served with
+  // `Cross-Origin-Opener-Policy: same-origin` cuts that link, and the popup is left on a blank white page.
+  run('the app can hear back from a popup on another site, which is how Google hands over the sign-in', async () => {
+    const idp = createServer((_req, res) => {
+      res.setHeader('content-type', 'text/html');
+      res.end('<!doctype html><title>idp</title><script>if (window.opener) { window.opener.postMessage({ credential: "token-123" }, "*"); window.close(); } else { document.title = "NO OPENER"; }</script>');
+    });
+    await new Promise<void>(r => idp.listen(0, 'localhost', r));
+    const idpUrl = `http://localhost:${(idp.address() as import('node:net').AddressInfo).port}/`;
+    const { page, close } = await visit(await person());
+    try {
+      await page.evaluate(url => {
+        (window as any).__heard = null;
+        window.addEventListener('message', e => { (window as any).__heard = e.data; });
+        const b = document.createElement('button'); b.id = 'open-idp'; b.textContent = 'open'; b.onclick = () => { window.open(url, 'idp', 'width=400,height=500'); };
+        document.body.append(b);
+      }, idpUrl);
+      await page.click('#open-idp');
+      await page.waitForFunction(() => (window as any).__heard, null, { timeout: 8000 });
+      expect(await page.evaluate(() => (window as any).__heard)).toEqual({ credential: 'token-123' });
+      expect((await t.app.inject({ url: '/' })).headers['cross-origin-opener-policy']).toBe('same-origin-allow-popups');
+    } finally { idp.close(); await close(); }
   });
 });

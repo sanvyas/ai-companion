@@ -274,6 +274,7 @@ describe('ending a conversation', () => {
     const a = await signIn(t);
     const id = await create(a, 'checkin');
     const { chat } = await connect(port, id, a.accessToken);
+    await chat.next('done'); // the companion opens a check-in; wait for that before answering, or the answer's reply is mistaken for it
     await chat.turn('yes now is fine');
     chat.close();
     const r = (await t.app.inject({ method: 'POST', url: `/conversations/${id}/end`, headers: a.headers, payload: {} })).json();
