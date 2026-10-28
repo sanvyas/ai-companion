@@ -30,6 +30,8 @@ export interface ConvTransport {
   silence(seconds: number): void;
   voiceStart(language: 'en-IN' | 'hi-IN'): void;
   voiceStop(): void;
+  /** How a spoken turn felt: the wait before the phone decided they had finished, and the time from sending to the first sound. */
+  latency(endpointMs: number, replyMs: number): void;
   sendAudio(pcm16: ArrayBuffer): void;
   close(): void;
 }

@@ -6,6 +6,7 @@ import type { Ctx } from '../context.js';
 import { verifyAccess } from '../auth/tokens.js';
 import { AppError } from '../errors.js';
 import { parse, uid } from '../http.js';
+import { recordClientLatency } from '../services/llmHealth.js';
 import { handleTurn, createConversation, endConversation, handleOpening, handleSilence, listConversations, listMessages, needsOpening, openSession, type LiveSession } from '../services/conversations.js';
 import { VoiceBridge, speaksFromServer } from '../services/voice.js';
 import { withIdempotency } from '../services/idempotency.js';
@@ -110,6 +111,7 @@ export function conversationRoutes(app: FastifyInstance, ctx: Ctx) {
       if (m.type === 'interrupt') { voice?.interrupt(); s.abort?.abort(); return; }
       if (m.type === 'voice_start') { chain = chain.then(() => voice!.start(m.language)).catch(e => ctx.log.warn({ err: (e as Error).message }, 'voice_start failed')); return; }
       if (m.type === 'voice_stop') { voice?.stop(); return; }
+      if (m.type === 'latency') { recordClientLatency(ctx, s.userId, s.mode, m.endpointMs, m.replyMs); return; }
       if (m.type === 'end') {
         chain = chain.then(async () => {
           try {

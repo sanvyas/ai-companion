@@ -50,6 +50,8 @@ export const ClientMsg = z.discriminatedUnion('type', [
   /** Server STT: begin streaming PCM16 mono 16 kHz as binary frames. */
   z.object({ type: z.literal('voice_start'), language: z.enum(['en-IN', 'hi-IN']).default('en-IN') }),
   z.object({ type: z.literal('voice_stop') }),
+  /** What a spoken turn felt like to the person: how long the browser took to decide they had finished, and how long after that the first sound came. */
+  z.object({ type: z.literal('latency'), endpointMs: z.number().int().min(0).max(120_000), replyMs: z.number().int().min(0).max(300_000) }),
   z.object({ type: z.literal('end') }),
   z.object({ type: z.literal('ping') }),
 ]);
@@ -59,7 +61,7 @@ export const ServerMsg = z.discriminatedUnion('type', [
   z.object({ type: z.literal('ack'), clientId: z.string().optional(), riskLevel: RiskLevel }),
   z.object({ type: z.literal('thinking') }),
   z.object({ type: z.literal('sentence'), text: z.string(), emotion: Emotion.optional(), index: z.number().int() }),
-  z.object({ type: z.literal('done'), messageId: Uuid.nullable(), riskLevel: RiskLevel, text: z.string() }),
+  z.object({ type: z.literal('done'), messageId: Uuid.nullable(), riskLevel: RiskLevel, text: z.string(), timing: z.object({ contextMs: z.number().optional(), classifierMs: z.number().optional(), firstTokenMs: z.number().optional(), firstSentenceMs: z.number().optional(), totalMs: z.number().optional() }).optional() }),
   /** Level 2: show the inline care card. */
   z.object({ type: z.literal('care_card') }),
   /** Level 3: the crisis screen takes over. `script` is fixed and reviewed, never model output. */

@@ -25,10 +25,13 @@ class FakeTts implements TtsProvider {
   configured = true;
   spoken: string[] = [];
   fail = false;
+  /** Time one sentence takes to make, before its first sound. */
+  makeMs = 0;
   async synthesize(): Promise<{ wav: Buffer; pcm: Buffer; sampleRate: number }> { return { wav: Buffer.alloc(0), pcm: Buffer.alloc(0), sampleRate: 24000 }; }
   async *stream(o: { text: string; signal?: AbortSignal }): AsyncIterable<TtsChunk> {
     this.spoken.push(o.text);
     if (this.fail) throw new Error('vendor down');
+    if (this.makeMs) await new Promise(r => setTimeout(r, this.makeMs));
     for (let i = 0; i < 3; i++) {
       if (o.signal?.aborted) return;
       await new Promise(r => setTimeout(r, 15));
@@ -167,5 +170,50 @@ describe('server voice pipeline', () => {
     expect(got.find(m => m.type === 'error')).toMatchObject({ code: 'stt_unavailable' });
     ws.close();
     await off.app.close();
+  });
+});
+
+describe('how fast a spoken reply starts', () => {
+  it('makes later sentences while the earlier ones are still being sent, so a three-sentence reply is not three waits', async () => {
+    const { ws, events, until } = await open();
+    tts.makeMs = 300;
+    t.llm.reply = () => 'I hear you. That sounds heavy. Tell me more when you are ready.';
+    try {
+      const t0 = Date.now();
+      ws.send(JSON.stringify({ type: 'turn', text: 'hello there' }));
+      await until(() => events.filter(e => e.json?.type === 'audio_end').length >= 3);
+      const took = Date.now() - t0;
+      // One after the other it would be 3 x 300 ms of making plus the model and the checks; in parallel it is about one.
+      expect(took).toBeLessThan(900);
+      const order = events.filter(e => e.json?.type === 'audio_start').map(e => e.json!.index);
+      expect([...order].sort()).toEqual(order); // and still strictly in order
+    } finally { tts.makeMs = 0; t.llm.reply = null; ws.close(); }
+  });
+
+  it('reports where the time went with every reply, and keeps the numbers for the portal', async () => {
+    const { ws, events, until, a } = await open();
+    ws.send(JSON.stringify({ type: 'turn', text: 'I had a long day' }));
+    await until(() => events.some(e => e.json?.type === 'done'));
+    const timing = events.find(e => e.json?.type === 'done')!.json!.timing as Record<string, number>;
+    expect(timing.firstSentenceMs).toBeGreaterThanOrEqual(0);
+    expect(timing.totalMs).toBeGreaterThanOrEqual(timing.firstSentenceMs);
+    expect(timing.classifierMs).toBeGreaterThanOrEqual(0);
+    expect(timing.contextMs).toBeGreaterThanOrEqual(0);
+    // what the phone saw, sent back
+    ws.send(JSON.stringify({ type: 'latency', endpointMs: 1400, replyMs: 2100 }));
+    const { withSystem } = await import('../src/db/pool.js');
+    for (let i = 0; i < 40; i++) {
+      const r = (await withSystem(t.ctx.db, tx => tx.query(`SELECT kind, latency_ms, units FROM usage_events WHERE user_id = $1 AND kind IN ('turn','client_turn')`, [a.userId]))).rows;
+      if (r.some(x => x.kind === 'turn') && r.some(x => x.kind === 'client_turn')) {
+        expect(r.find(x => x.kind === 'client_turn')).toMatchObject({ latency_ms: 2100, units: 1400 });
+        ws.close();
+        const card = (await (await import('../src/admin/routes/overview.js')).systemCards(t.ctx)).find(c => c.name === 'Reply speed')!;
+        expect(card.detail).toContain('First words after');
+        expect(card.detail).toContain('the phone waited');
+        return;
+      }
+      await new Promise(r => setTimeout(r, 50));
+    }
+    throw new Error('timings were not recorded');
   });
 });

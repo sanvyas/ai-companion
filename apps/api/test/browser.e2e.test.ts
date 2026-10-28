@@ -129,6 +129,23 @@ describe('voice call', () => {
     await close();
   });
 
+  run('a browser that never marks the phrase final does not stall the call: the reply starts about a second after the words stop', async () => {
+    const me = await person();
+    const { page, close } = await visit(me);
+    await page.getByText('Voice call').first().click();
+    await page.getByRole('button', { name: /Allow|Use microphone|Yes/i }).first().click();
+    await page.getByText('Listening', { exact: true }).waitFor();
+    await page.waitForFunction(() => (window as any).__active);
+    const t0 = Date.now();
+    await page.evaluate(() => (window as any).__phrase('I have had a really long day', false)); // interim only, no final ever comes
+    await page.getByText(/What part is sitting with you most/).first().waitFor({ timeout: 8000 });
+    const waited = Date.now() - t0;
+    expect(waited).toBeGreaterThan(1200);  // it did wait for the words to stop changing...
+    expect(waited).toBeLessThan(4000);     // ...and no longer
+    await expect.poll(async () => (await withSystem(t.ctx.db, tx => tx.query(`SELECT units, latency_ms FROM usage_events WHERE user_id = $1 AND kind = 'client_turn'`, [me.userId]))).rows[0]?.units ?? -1, { timeout: 5000 }).toBeGreaterThanOrEqual(1200);
+    await close();
+  });
+
   run('text chat works over the same socket', async () => {
     const { page, close } = await visit(await person());
     await page.getByText('Text', { exact: true }).first().click();

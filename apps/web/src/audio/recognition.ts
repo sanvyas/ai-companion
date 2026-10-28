@@ -19,7 +19,14 @@ export class Recognizer {
   /** What was heard but not yet marked final. If the browser ends the session first, it is still said, not dropped. */
   private tail = '';
 
-  constructor(private lang: string, private readonly h: RecognitionHandlers) {}
+  private endTimer: ReturnType<typeof setTimeout> | undefined;
+
+  /**
+   * `endpointMs`: how long the words may stay unchanged before the person is taken to have finished. Browsers decide this
+   * themselves, and some (Chrome on Android in continuous mode especially) wait many seconds, or until the session ends,
+   * before calling a phrase final. That wait is the first part of every reply's delay, so it is cut short here.
+   */
+  constructor(private lang: string, private readonly h: RecognitionHandlers, private readonly endpointMs = 1300) {}
 
   start() {
     if (this.want) return;
@@ -40,7 +47,8 @@ export class Recognizer {
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const t = e.results[i][0].transcript.trim();
         if (!t) continue;
-        if (e.results[i].isFinal) { this.tail = ''; this.h.onFinal(t); } else { this.tail = t; this.h.onInterim(t); }
+        if (e.results[i].isFinal) { this.tail = ''; clearTimeout(this.endTimer); this.h.onFinal(t); }
+        else if (t !== this.tail) { this.tail = t; this.h.onInterim(t); clearTimeout(this.endTimer); this.endTimer = setTimeout(() => this.endpoint(r), this.endpointMs); }
       }
     };
     r.onerror = e => {
@@ -49,6 +57,7 @@ export class Recognizer {
     // Browsers end recognition after silence; keep it going while the call is live.
     r.onend = () => {
       if (this.rec !== r) return;
+      clearTimeout(this.endTimer);
       this.rec = null;
       if (this.tail) { const t = this.tail; this.tail = ''; this.h.onFinal(t); }
       if (this.want) this.timer = setTimeout(() => this.want && this.open(), 60);
@@ -56,9 +65,22 @@ export class Recognizer {
     try { r.start(); } catch { /* already started */ }
   }
 
+  /** The words stopped changing: the turn is over. Send it now and start a clean listening session so it cannot arrive again. */
+  private endpoint(r: SpeechRecognition) {
+    if (this.rec !== r || !this.tail) return;
+    const t = this.tail;
+    this.tail = '';
+    this.rec = null;
+    r.onend = null;
+    try { r.abort(); } catch { /* already ended */ }
+    this.h.onFinal(t);
+    if (this.want) this.timer = setTimeout(() => this.want && this.open(), 40);
+  }
+
   stop() {
     this.want = false;
     clearTimeout(this.timer);
+    clearTimeout(this.endTimer);
     const r = this.rec;
     this.rec = null;
     if (r) { r.onend = null; try { r.stop(); } catch { /* not started */ } }

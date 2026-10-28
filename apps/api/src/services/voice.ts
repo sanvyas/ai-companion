@@ -76,14 +76,22 @@ export class VoiceBridge {
   private enqueueSpeech(text: string, index: number) {
     this.ttsAbort ??= new AbortController();
     const signal = this.ttsAbort.signal;
+    // Synthesis starts the moment the sentence exists, not when the one before it has finished being sent: while the
+    // person hears sentence one, sentences two and three are already being made. Audio is still sent strictly in order.
+    const chunks = this.ctx.tts!.stream({ text, voice: this.session.companion.voice, language: this.session.language, pace: paceForStance(this.session.lastStance), signal, userId: this.session.userId })[Symbol.asyncIterator]();
+    const head = chunks.next();
+    head.catch(() => undefined); // surfaced below, in order
     this.speakQueue = this.speakQueue.then(async () => {
       if (signal.aborted) return;
       try {
         this.send({ type: 'audio_start', sampleRate: SAMPLE_RATE_OUT, index });
-        for await (const chunk of this.ctx.tts!.stream({ text, voice: this.session.companion.voice, language: this.session.language, pace: paceForStance(this.session.lastStance), signal, userId: this.session.userId })) {
+        let step = await head;
+        while (!step.done) {
+          const chunk = step.value;
           if (signal.aborted) break;
           if (chunk.visemes?.length) this.send({ type: 'visemes', index, cues: chunk.visemes });
           if (this.socket.readyState === this.socket.OPEN) this.socket.send(chunk.audio, { binary: true });
+          step = await chunks.next();
         }
       } catch (e) {
         if (!signal.aborted) {

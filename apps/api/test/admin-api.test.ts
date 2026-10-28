@@ -41,6 +41,20 @@ describe('overview', () => {
     expect([...groups].sort()).toEqual(['AI', 'Backend', 'Infrastructure', 'UI']);
   });
 
+  it('warns when a free model is in use, because free models queue and fail and the safety check then falls back to keywords', async () => {
+    await sql(`INSERT INTO app_settings (key, value, updated_by) VALUES ('llm.provider', '"openrouter"', 't'), ('openrouter.models.safety', '"google/gemma-4-26b-a4b-it:free"', 't') ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`);
+    await t.ctx.rt.settings.refresh();
+    try {
+      const card = (await call(owner, 'GET', '/overview')).json().systems.find((s: { name: string }) => s.name === 'Language model');
+      expect(card.status).toBe('warn');
+      expect(card.detail).toContain('Free model for safety');
+      expect(card.detail).toContain('keywords only');
+    } finally {
+      await sql(`DELETE FROM app_settings WHERE key IN ('llm.provider', 'openrouter.models.safety')`);
+      await t.ctx.rt.settings.refresh();
+    }
+  });
+
   it('shows the language model as down, with the vendor’s reason, when every recent call failed', async () => {
     const card = async () => (await call(owner, 'GET', '/overview')).json().systems.find((s: { name: string }) => s.name === 'Language model');
     expect((await card()).status).toBe('ok');

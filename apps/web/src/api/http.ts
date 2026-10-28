@@ -217,6 +217,7 @@ export class HttpApi implements Api {
       silence: seconds => send({ type: 'silence', seconds }),
       voiceStart: language => send({ type: 'voice_start', language }),
       voiceStop: () => send({ type: 'voice_stop' }),
+      latency: (endpointMs, replyMs) => send({ type: 'latency', endpointMs: Math.round(endpointMs), replyMs: Math.round(replyMs) }),
       sendAudio: pcm => { if (ws.readyState === WebSocket.OPEN) ws.send(pcm); },
       close: () => { clearInterval(ping); ws.close(1000); },
     };

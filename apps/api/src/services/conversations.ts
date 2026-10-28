@@ -8,7 +8,7 @@ import { LlmFailure, LlmRefusal, LlmUnavailable, type LlmMessage } from '../prov
 import { checkinExtractSystem, dynamicSystem, memoryProposalSystem, stableSystem, summarySystem } from './prompts.js';
 import { assessTone, blendMood, openingTone, SOFT_FALLBACK_LINE, type MoodReading, type Stance, type Tone } from '@saathi/domain';
 import { allClean, keepClean } from './guard.js';
-import { reportLlmFailure } from './llmHealth.js';
+import { recordTurnTiming, reportLlmFailure, type TurnTiming } from './llmHealth.js';
 import { readAffect, wordReading } from './affect.js';
 import { recentMood } from './moodSummary.js';
 import { SAFE_FALLBACK_LINE, classifyWithModel, logSafetyEvent, prefilter, reviewDraft, wrapUser } from './safety.js';
@@ -214,7 +214,7 @@ function buildRequest(ctx: Ctx, s: LiveSession, c: Awaited<ReturnType<typeof tur
       dynamic: dynamicSystem({ mode: s.mode, localTime: localTime(s.timezone), planItems: c.plan, moodTrend: c.mood, memories: c.memories, hasSafetyPlan: s.hasSafetyPlan, trustedFirstName: s.trustedFirst, riskLevel: level, priorSummary: s.priorSummary, openingHookSpoken: s.opening, strict, firstRun: s.firstRun && s.history.length === 0, tone: tone ?? toneFor(s, c, userText, level) }),
     },
     messages,
-    maxTokens: s.mode === 'text' ? 400 : 260,
+    maxTokens: s.mode === 'text' ? 400 : 180,
     userId: s.userId,
     effort: 'low' as const,
   };
@@ -223,8 +223,16 @@ function buildRequest(ctx: Ctx, s: LiveSession, c: Awaited<ReturnType<typeof tur
 // ------------------------------------------------------------------------------------------ the turn
 const VALID_EMOTIONS = new Set(['idle', 'listening', 'thinking', 'concerned', 'smiling']);
 
-export async function handleTurn(ctx: Ctx, s: LiveSession, text: string, emit: Emit, clientId?: string): Promise<void> {
+export async function handleTurn(ctx: Ctx, s: LiveSession, text: string, rawEmit: Emit, clientId?: string): Promise<void> {
   s.lastSeen = Date.now();
+  // Where the time goes in a turn, so a slow one can be explained instead of guessed at.
+  const t0 = Date.now();
+  const marks: TurnTiming = {};
+  const emit: Emit = m => {
+    if (m.type === 'sentence' && marks.firstSentenceMs === undefined) marks.firstSentenceMs = Date.now() - t0;
+    if (m.type === 'done') { marks.totalMs = Date.now() - t0; rawEmit({ ...m, timing: marks }); recordTurnTiming(ctx, s.userId, s.mode, marks); return; }
+    rawEmit(m);
+  };
   s.abort?.abort();
   const ac = (s.abort = new AbortController());
   const { signal } = ac;
@@ -247,7 +255,10 @@ export async function handleTurn(ctx: Ctx, s: LiveSession, text: string, emit: E
   // The request builder adds this user turn itself; it joins s.history after the reply.
   const userMsgP = persistMessage(ctx, s, 'user', text, pre.level).catch(e => ctx.log.error({ err: (e as Error).message }, 'persist user message failed'));
 
+  // The safety read starts at once: it needs only the words, so it runs while the memories and plan are fetched.
+  const classifier = classifyWithModel(ctx, s.userId, text, s.history).then(m => { marks.classifierMs = Date.now() - t0; return m === null ? pre.level : (Math.max(pre.level, m) as RiskLevel); });
   const c = await turnContext(ctx, s, text);
+  marks.contextMs = Date.now() - t0;
   const tone = toneFor(s, c, text, pre.level);
   s.lastStance = tone.stance;
   // This turn joins the conversation's mood after its tone is chosen. The model's reading replaces the word list's when it arrives.
@@ -255,7 +266,6 @@ export async function handleTurn(ctx: Ctx, s: LiveSession, text: string, emit: E
   (s.moods ??= []).push(mine);
   if (s.moods.length > 8) s.moods.shift();
   void noteAffect(ctx, s, text, mine, userMsgP);
-  const classifier = classifyWithModel(ctx, s.userId, text, s.history).then(m => (m === null ? pre.level : (Math.max(pre.level, m) as RiskLevel)));
   const strictFromStart = pre.level >= 2 || s.risk.level >= 2;
 
   let finalLevel: RiskLevel = pre.level;
@@ -307,6 +317,7 @@ export async function handleTurn(ctx: Ctx, s: LiveSession, text: string, emit: E
       const gen = ctx.llm.stream({ task: 'companion', ...buildRequest(ctx, s, c, text, Math.min(pre.level, 1) as 0 | 1, false, tone), signal });
       let pendingTag = s.mode === 'video' ? '' : null;
       outer: for await (const delta of gen) {
+        if (marks.firstTokenMs === undefined) marks.firstTokenMs = Date.now() - t0;
         let d = delta;
         if (pendingTag !== null) {
           pendingTag += d;

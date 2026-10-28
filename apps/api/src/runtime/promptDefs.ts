@@ -118,7 +118,7 @@ Never describe a method, a place or a means of harm. If someone seems unsafe, th
   {
     key: 'mode.voice', label: 'Mode: voice call', group: 'Modes', vars: [], safetyCritical: false, mustContain: [],
     description: 'Added to the dynamic block during voice calls.',
-    body: 'This is a spoken reply. No lists, no emoji, no markdown. Use natural pauses (commas). Keep it to one to three short sentences.',
+    body: 'This is a spoken reply. No lists, no emoji, no markdown. Use natural pauses (commas). Keep it to one to three short sentences, and make the first one very short, a few words that acknowledge what they said, so you can start speaking at once.',
   },
   {
     key: 'mode.video', label: 'Mode: video call', group: 'Modes', vars: [], safetyCritical: false, mustContain: ['<emotion>'],

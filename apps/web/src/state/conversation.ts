@@ -17,6 +17,9 @@ let player: PcmPlayer | null = null;
 let browserQueue: string[] = [];
 let browserSpeaking = false;
 let silenceTimer: ReturnType<typeof setInterval> | undefined;
+/** Timing of the spoken turn in flight, as the person felt it (see the “latency” message). */
+let felt: { endpointMs: number; sentAt: number } | null = null;
+let lastInterimAt = 0;
 let lastActivity = Date.now();
 let toastFn: (m: string) => void = () => undefined;
 let onCrisis: () => void = () => undefined;
@@ -99,7 +102,7 @@ function onServer(m: ServerMsg) {
     }
     case 'thinking': set({ typing: true, callPhase: 'thinking' }); return;
     case 'ack': set(s => ({ risk: nextRisk(s.risk, m.riskLevel as RiskLevel) })); return;
-    case 'sentence': aiSays(m.text, true, m.emotion); return;
+    case 'sentence': reportFelt(); aiSays(m.text, true, m.emotion); return;
     case 'done': set(s => ({ typing: false, callPhase: s.speakingNow ? 'speaking' : s.callMode === 'sit' ? 'idle' : 'listening' })); return;
     case 'care_card': set({ careCard: true }); return;
     case 'crisis': {
@@ -110,7 +113,7 @@ function onServer(m: ServerMsg) {
     }
     case 'minor': set({ typing: false }); onMinor(); return;
     case 'transcript': set({ callLine: { who: 'me', text: m.text } }); if (!m.final) bargeIn(); return;
-    case 'audio_start': set({ speakingNow: true, callPhase: 'speaking' }); player ??= new PcmPlayer(v => set({ mouth: v }), () => { set(s => ({ speakingNow: false, mouth: 0, callPhase: s.typing ? 'thinking' : 'listening' })); }); return;
+    case 'audio_start': reportFelt(); set({ speakingNow: true, callPhase: 'speaking' }); player ??= new PcmPlayer(v => set({ mouth: v }), () => { set(s => ({ speakingNow: false, mouth: 0, callPhase: s.typing ? 'thinking' : 'listening' })); }); return;
     case 'audio_end': return;
     case 'visemes': return; // the avatar follows loudness today; vendor visemes can drive it later
     case 'error': {
@@ -135,6 +138,14 @@ function aiSays(text: string, live: boolean, emotion?: string) {
   if (getState().conv?.voice.serverTts) return; // audio arrives from the server
   browserQueue.push(text);
   drain();
+}
+
+/** The first sound (or the first words on screen) after a spoken turn: tell the server how long that took, once. */
+function reportFelt() {
+  if (!felt) return;
+  const f = felt;
+  felt = null;
+  transport?.latency(f.endpointMs, Date.now() - f.sentAt);
 }
 
 function drain() {
@@ -171,6 +182,7 @@ export function sendTurn(text: string, source: 'typed' | 'dictated' | 'voice' = 
   lastActivity = Date.now();
   stopOutput();
   set(s => ({ msgs: [...s.msgs, { who: 'me', text: t }], callLine: { who: 'me', text: t }, typing: true, callPhase: 'thinking', draft: '' }));
+  felt = source === 'voice' ? { endpointMs: lastInterimAt ? Math.max(0, Date.now() - lastInterimAt) : 0, sentAt: Date.now() } : null;
   transport.turn(t, source);
   return true;
 }
@@ -205,7 +217,7 @@ export async function startListening(): Promise<MicOutcome> {
   }
   if (!recognitionSupported()) return 'unsupported';
   recognizer = new Recognizer(recLang(), {
-    onInterim: text => { set({ callLine: { who: 'me', text } }); bargeIn(); },
+    onInterim: text => { lastInterimAt = Date.now(); set({ callLine: { who: 'me', text } }); bargeIn(); },
     onFinal: text => { if (getState().screen === 'call' || getState().screen === 'walk') sendTurn(text, 'voice'); },
     onFatal: reason => { set({ callPhase: 'error' }); toastFn(reason === 'denied' ? 'I can’t hear you. Allow the microphone in your browser, or type instead.' : 'This browser can’t listen. You can type instead.'); },
   });

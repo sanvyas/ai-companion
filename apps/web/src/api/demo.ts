@@ -205,6 +205,7 @@ export class DemoApi implements Api {
       silence: () => undefined,
       voiceStart: () => undefined,
       voiceStop: () => undefined,
+      latency: () => undefined,
       sendAudio: () => undefined,
       close: () => undefined,
     };
