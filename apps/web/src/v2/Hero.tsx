@@ -17,9 +17,9 @@ interface Pin { k: PerchKey; label: string; x: number; y: number; icon: IconName
 const PINS: Pin[] = [
   { k: 'sleep', label: 'Sleep', x: 122, y: 80, icon: 'moon', color: '#C9CDF0', earned: c => (c.sleep ?? 0) > 0, go: () => go('calm', { calmTab: 'sleep' }) },
   { k: 'calm', label: 'Calm', x: 262, y: 78, icon: 'lotus', color: '#BFE3F0', earned: c => (c.breathe ?? 0) + (c.meditate ?? 0) > 0, go: () => go('calm', { calmTab: 'meditate' }) },
-  { k: 'journal', label: 'Journal', x: 112, y: 206, icon: 'book', color: '#F8CDD6', earned: c => (c.journal ?? 0) > 0, go: () => go('journal') },
-  { k: 'plan', label: 'Plan', x: 288, y: 194, icon: 'list', color: '#CBE7B5', earned: c => (c.plan ?? 0) > 0, go: () => push({ id: 'plan' }) },
-  { k: 'talk', label: 'Talk', x: 192, y: 178, icon: 'mic', color: '#BFC8F3', earned: () => true, go: () => go('talk') },
+  { k: 'journal', label: 'Journal', x: 80, y: 206, icon: 'book', color: '#F8CDD6', earned: c => (c.journal ?? 0) > 0, go: () => go('journal') },
+  { k: 'plan', label: 'Plan', x: 312, y: 204, icon: 'list', color: '#CBE7B5', earned: c => (c.plan ?? 0) > 0, go: () => push({ id: 'plan' }) },
+  { k: 'talk', label: 'Talk', x: 196, y: 134, icon: 'mic', color: '#BFC8F3', earned: () => true, go: () => go('talk') },
   { k: 'out', label: 'Outside', x: 196, y: 262, icon: 'pin', color: '#F9DCC0', earned: () => true, go: () => go('outside') },
 ];
 
@@ -108,9 +108,9 @@ export function Hero({ pick, interactive = true }: { pick?: PerchKey | null; int
         </div>
       )}
       {interactive && (
-        <button className="hchip" aria-label={`${STAGES[stage].name}. See how your garden grows`} onClick={() => push({ id: 'garden' })}>
+        <button className="hchip" aria-label={`Day ${garden?.activeDays ?? 0}, ${STAGES[stage].name}. See how your garden grows`} onClick={() => push({ id: 'garden' })}>
           <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r={R} fill="none" stroke="#E5EDDD" strokeWidth="4" /><circle className="rg" cx="16" cy="16" r={R} fill="none" stroke="#3F8F5A" strokeWidth="4" strokeLinecap="round" strokeDasharray={C.toFixed(1)} strokeDashoffset={(C * (1 - progress / 100)).toFixed(1)} /></svg>
-          <span>{STAGES[stage].name}</span>
+          <span>Day {garden?.activeDays ?? 0} · {STAGES[stage].name}</span>
         </button>
       )}
       <div className={'bird' + (fly ? ' fly' : '') + (perch[0] < 190 ? ' left' : '') + (say ? ' talk' : '')} aria-hidden="true" style={{ left: pct(perch[0], 390), top: pct(perch[1], 360) }}><Bird size={44} /></div>

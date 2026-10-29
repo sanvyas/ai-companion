@@ -20,8 +20,9 @@ export interface IslandModel {
 /** Weather-of-the-day colours for the flowers in the journal bed. Index is the mood value 0 (heaviest) to 4. */
 const FLOWER = ['#7F9BD6', '#F2A25E', '#B79BE0', '#F3A6B8', '#F0D84F'];
 const PLANT_COLOR: Record<string, string> = { marigold: '#FFB11F', sunflower: '#FFD21F', jasmine: '#FFFFFF', mango: '#F5A524', banyan: '#3A9049' };
-const SLOTS: [number, number][] = [[150, 148], [234, 150], [170, 124], [300, 150], [238, 198], [96, 200], [120, 176], [276, 122]];
-export const AT = { tree: [196, 96], sleep: [118, 124], calm: [262, 122], beds: [124, 174], bench: [190, 170], herbs: [278, 178], gate: [196, 242], house: [58, 154] } as const;
+// Plots sit in a tidy ring around the front, clear of the path and of every place that has its own spot.
+const SLOTS: [number, number][] = [[138, 208], [252, 208], [160, 192], [232, 192], [166, 172], [226, 172], [322, 152], [104, 198]];
+export const AT = { tree: [196, 112], sleep: [112, 132], calm: [274, 128], beds: [102, 168], bench: [196, 148], herbs: [286, 172], gate: [196, 244], house: [62, 150] } as const;
 /** Where the bird perches for each place, and where its label pin sits. */
 export const PERCH = { tree: [170, 104], sleep: [150, 128], calm: [222, 142], journal: [142, 194], talk: [184, 176], plan: [244, 190], out: [196, 226], house: [96, 164], home: [184, 176] } as const;
 const POT_COL = ['#C98B5B', '#B9737F', '#8CA3B8'];
@@ -50,7 +51,7 @@ export function islandSVG(m: IslandModel): string {
 
   function defs() {
     const P = NT
-      ? { t: ['#5A9C8E', '#2E6B66'], l: ['#5D4F82', '#2A2347'], r: ['#6F5E94', '#31284F'], w: ['#5C93CC', '#244B8E'], s: ['#7A5560', '#523A47'], c1: ['#6CC3A8', '#237565'], c2: ['#58AE96', '#1B5E55'] }
+      ? { t: ['#4C8F92', '#2B5A68'], l: ['#6A5C93', '#2D2650'], r: ['#7C6CA6', '#352C59'], w: ['#6AA6E0', '#2A55A0'], s: ['#8A6370', '#5A404C'], c1: ['#58B09A', '#1F6A5C'], c2: ['#449A88', '#185A4F'] }
       : { t: ['#C6E98A', '#84C86C'], l: ['#A27048', '#5A3A29'], r: ['#B8804F', '#6B4631'], w: ['#8FDCEE', '#48A5CC'], s: ['#A06E48', '#7E5435'], c1: ['#97DC72', '#3A9049'], c2: ['#7FCB63', '#2F7D3F'] };
     const lg = (id: string, p: string[]) => `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${p[0]}"/><stop offset="1" stop-color="${p[1]}"/></linearGradient>`;
     const rg = (id: string, p: string[]) => `<radialGradient id="${id}" cx=".35" cy=".28" r=".85"><stop offset="0" stop-color="${p[0]}"/><stop offset="1" stop-color="${p[1]}"/></radialGradient>`;
@@ -67,14 +68,14 @@ export function islandSVG(m: IslandModel): string {
     o += '<path d="M368 172C320 204 260 228 200 258M330 208C284 236 240 262 200 290" stroke="rgba(0,0,0,.13)" stroke-width="2" fill="none" stroke-linecap="round"/>';
     for (let i = 0; i < 9; i++) { const side = i % 2 ? 1 : -1, px = 195 + side * (24 + r() * 120), py = 214 + r() * 50 - Math.abs(px - 195) * .12; o += `<ellipse cx="${n0(px)}" cy="${n0(py)}" rx="${n1(3 + r() * 4)}" ry="${n1(2 + r() * 3)}" fill="rgba(255,255,255,.13)"/>`; }
     o += '<ellipse cx="112" cy="300" rx="7" ry="5" fill="#8A5A3A"/><ellipse cx="282" cy="308" rx="6" ry="4.5" fill="#8A5A3A"/><ellipse cx="236" cy="330" rx="4" ry="3" fill="#8A5A3A"/>';
-    o += dia(195, 152, 171, 85, `fill="url(#iTop)" stroke="${NT ? '#3F8077' : '#8BCB6E'}" stroke-width="14" stroke-linejoin="round"`);
-    o += dia(195, 150, 150, 74, `fill="${NT ? '#8FD9C4' : '#DDF5A8'}" opacity="${NT ? '.16' : '.38'}" stroke="${NT ? '#8FD9C4' : '#DDF5A8'}" stroke-width="12" stroke-linejoin="round"`);
+    o += dia(195, 152, 171, 85, `fill="url(#iTop)" stroke="${NT ? '#78BDB0' : '#8BCB6E'}" stroke-width="14" stroke-linejoin="round"`);
+    o += dia(195, 150, 150, 74, `fill="${NT ? '#B8E8DC' : '#DDF5A8'}" opacity="${NT ? '.10' : '.38'}" stroke="${NT ? '#B8E8DC' : '#DDF5A8'}" stroke-width="12" stroke-linejoin="round"`);
     o += `<path d="M24 150L195 64L366 150" fill="none" stroke="${NT ? 'rgba(190,235,255,.3)' : 'rgba(255,255,255,.35)'}" stroke-width="3" stroke-linecap="round"/>`;
     o += `<path d="M184 244Q192 222 189 198L205 198Q203 224 208 244Z" fill="${NT ? '#8C87AE' : '#EBDDB6'}" opacity=".9"/>`;
     for (let j = 0; j < 30; j++) {
       const u = r(), v = r(), x = 195 + (u - v) * 150, y = 152 + (u + v - 1) * 74;
       if (Math.abs(x - 195) / 150 + Math.abs(y - 152) / 74 > .92) continue;
-      o += `<path d="M${n0(x - 3)} ${n0(y)}q1-6 3-8q1 4 0 8M${n0(x)} ${n0(y)}q2-7 5-9q0 5-1 9" stroke="${NT ? '#7FD6BA' : '#5FAE4F'}" stroke-width="1.8" fill="none" stroke-linecap="round" opacity=".8"/>`;
+      o += `<path d="M${n0(x - 3)} ${n0(y)}q1-6 3-8q1 4 0 8M${n0(x)} ${n0(y)}q2-7 5-9q0 5-1 9" stroke="${NT ? '#A6E6D2' : '#5FAE4F'}" stroke-width="1.8" fill="none" stroke-linecap="round" opacity="${NT ? '.55' : '.8'}"/>`;
     }
     return o;
   }
@@ -88,13 +89,13 @@ export function islandSVG(m: IslandModel): string {
 
   function tree(x: number, y: number, lv: number, lantern: boolean, F: string) {
     const o = shd(x, y + 3, 12 + lv * 8, 4 + lv * 1.6, .22), s = [0, .55, .8, 1, 1.18][lv];
-    const tw = [3, 5, 7, 10, 12][lv], th = [20, 30, 44, 58, 68][lv];
+    const tw = [3, 5, 7, 9, 11][lv], th = [18, 28, 38, 46, 52][lv];
     const tr = `<path d="M${x - tw} ${y + 2}Q${x - tw * .35} ${y - th * .5} ${x - tw * .45} ${y - th}L${x + tw * .45} ${y - th}Q${x + tw * .35} ${y - th * .5} ${x + tw} ${y + 2}Z" fill="#7A4E30"/><path d="M${x + tw * .2} ${y + 2}Q${x + tw * .5} ${y - th * .5} ${x + tw * .1} ${y - th}L${x + tw * .45} ${y - th}Q${x + tw * .35} ${y - th * .5} ${x + tw} ${y + 2}Z" fill="#5E3A22" opacity=".55"/>`;
     let can = '';
     if (lv === 0) {
       can = `<g class="sway" style="transform-origin:${x}px ${y}px"><ellipse cx="${x - 6}" cy="${y - th - 2}" rx="7" ry="3.5" fill="#6FC25C" transform="rotate(-25 ${x - 6} ${y - th - 2})"/><ellipse cx="${x + 6}" cy="${y - th - 4}" rx="7" ry="3.5" fill="#8AD36B" transform="rotate(25 ${x + 6} ${y - th - 4})"/></g>`;
     } else {
-      const cy = y - th - 8 * s, R = [0, 18, 24, 30, 36][lv];
+      const cy = y - th - 8 * s, R = [0, 16, 21, 25, 29][lv];
       const blobs: number[][] = [[0, 0, R], [-R * .75, R * .35, R * .72], [R * .75, R * .3, R * .74]];
       if (lv >= 2) blobs.push([-R * .35, -R * .55, R * .7], [R * .4, -R * .5, R * .66]);
       if (lv >= 3) blobs.push([-R * 1.05, R * .5, R * .5], [R * 1.05, R * .5, R * .52], [0, -R * .95, R * .55]);
@@ -115,9 +116,9 @@ export function islandSVG(m: IslandModel): string {
 
   function beds(cx: number, cy: number) {
     const list = g.flowers, n = g.counts.journal ?? 0;
-    if (!n && !list.length) return ghost(cx, cy, 48, 24);
-    const hw = 48, hh = 24;
-    let o = bedSides(cx, cy, hw, hh, 8) + dia(cx, cy, hw, hh, 'fill="url(#iSoil)" stroke="#C99A64" stroke-width="3" stroke-linejoin="round"');
+    if (!n && !list.length) return ghost(cx, cy, 38, 19);
+    const hw = 38, hh = 19;
+    let o = bedSides(cx, cy, hw, hh, 7) + dia(cx, cy, hw, hh, 'fill="url(#iSoil)" stroke="#C99A64" stroke-width="3" stroke-linejoin="round"');
     const count = Math.max(1, Math.min(12, n || list.length));
     const items = Array.from({ length: count }, (_, i) => { const e = list[i - (count - list.length)]; return { c: FLOWER[e ?? (i * 3) % 5] ?? FLOWER[3], i }; });
     const pts = items.map(it => { const col = it.i % 4, row = Math.floor(it.i / 4), u = (col + .5) / 4, v = (row + .5) / 3; return { x: cx + (u - v) * hw * .9, y: cy + (u + v - 1) * hh * .9 + 4, c: it.c, i: it.i }; }).sort((a, b) => a.y - b.y);
@@ -153,9 +154,9 @@ export function islandSVG(m: IslandModel): string {
 
   function herbs(cx: number, cy: number) {
     const n = g.counts.plan ?? 0;
-    if (!n) return ghost(cx, cy, 34, 17);
-    const hw = 34, hh = 17;
-    let o = bedSides(cx, cy, hw, hh, 6) + dia(cx, cy, hw, hh, 'fill="url(#iSoil)" stroke="#C99A64" stroke-width="2.5" stroke-linejoin="round"');
+    if (!n) return ghost(cx, cy, 28, 14);
+    const hw = 28, hh = 14;
+    let o = bedSides(cx, cy, hw, hh, 5) + dia(cx, cy, hw, hh, 'fill="url(#iSoil)" stroke="#C99A64" stroke-width="2.5" stroke-linejoin="round"');
     const spots = [[-14, -3], [8, -8], [-2, 4], [16, 2], [-20, 5], [4, 10]];
     for (let i = 0; i < Math.min(6, n); i++) {
       const x = cx + spots[i][0], y = cy + spots[i][1];
@@ -198,18 +199,17 @@ export function islandSVG(m: IslandModel): string {
   function visitors() {
     const v = g.visitors, cols = ['#F9A3C0', '#FFC857', '#8FB8F0'];
     let o = '';
-    for (let i = 0; i < Math.min(3, v.butterflies); i++) { const bx = 140 + i * 60, by = 130 + (i % 2) * 14; o += `<g class="flit" style="animation-delay:-${i * 1.7}s;animation-duration:${5 + i}s"><g transform="translate(${bx} ${by})"><g class="wing"><ellipse cx="-4" cy="-2" rx="4.5" ry="3.4" fill="${cols[i]}"/><ellipse cx="4" cy="-2" rx="4.5" ry="3.4" fill="${cols[i]}"/></g><ellipse cx="0" cy="0" rx="1" ry="3" fill="#463"/></g></g>`; }
-    if (v.bulbul) o += '<g transform="translate(219 66)"><ellipse rx="7" ry="5.5" fill="#6B5B4B"/><ellipse cx="2" cy="2" rx="4" ry="3" fill="#E9DCC6"/><circle cx="5" cy="-2" r="1.2" fill="#111"/><path d="M8 -2l5 1-5 2z" fill="#F4A62E"/><path d="M-6 1l-7 3 7-0z" fill="#6B5B4B"/></g>';
-    if (v.squirrel) o += '<g transform="translate(222 108)"><ellipse rx="6" ry="4.5" fill="#B9763F"/><circle cx="5" cy="-3" r="3.4" fill="#B9763F"/><path d="M-5 -1c-9-2-11-12-4-14 3 4 2 8 4 10z" fill="#D18F55"/><circle cx="6" cy="-3.6" r="1" fill="#111"/></g>';
+    for (let i = 0; i < Math.min(2, v.butterflies); i++) { const bx = 150 + i * 90, by = 196 + (i % 2) * 10; o += `<g class="flit" style="animation-delay:-${i * 1.7}s;animation-duration:${5 + i}s"><g transform="translate(${bx} ${by})"><g class="wing"><ellipse cx="-4" cy="-2" rx="4.5" ry="3.4" fill="${cols[i]}"/><ellipse cx="4" cy="-2" rx="4.5" ry="3.4" fill="${cols[i]}"/></g><ellipse cx="0" cy="0" rx="1" ry="3" fill="#463"/></g></g>`; }
+    if (v.bulbul) o += '<g transform="translate(236 70)"><ellipse rx="7" ry="5.5" fill="#6B5B4B"/><ellipse cx="2" cy="2" rx="4" ry="3" fill="#E9DCC6"/><circle cx="5" cy="-2" r="1.2" fill="#111"/><path d="M8 -2l5 1-5 2z" fill="#F4A62E"/><path d="M-6 1l-7 3 7-0z" fill="#6B5B4B"/></g>';
+    if (v.squirrel) o += '<g transform="translate(160 192)"><ellipse rx="6" ry="4.5" fill="#B9763F"/><circle cx="5" cy="-3" r="3.4" fill="#B9763F"/><path d="M-5 -1c-9-2-11-12-4-14 3 4 2 8 4 10z" fill="#D18F55"/><circle cx="6" cy="-3.6" r="1" fill="#111"/></g>';
     return o;
   }
 
   function extras(st: number) {
     let o = '';
-    if (st >= 1) o += bush(330, 168, 1) + bush(70, 176, .9);
-    if (st >= 2) o += `<g>${[[150, 214], [246, 214]].map(p => `${shd(p[0], p[1] + 2, 8, 3, .2)}<rect x="${p[0] - 3}" y="${p[1] - 16}" width="6" height="16" rx="1.5" fill="#B8AB92"/><rect x="${p[0] - 6}" y="${p[1] - 24}" width="12" height="10" rx="3" fill="#EAD9A8"/><circle cx="${p[0]}" cy="${p[1] - 19}" r="9" fill="url(#iGlow)"/>`).join('')}</g>`;
-    if (st >= 3) o += tree(266, 100, 2, false, '-') + tree(120, 98, 1, false, '-');
-    if (st >= 4) { const rr = rng(21); for (let i = 0; i < 14; i++) { const u = rr(), v = rr(), x = 195 + (u - v) * 140, y = 152 + (u + v - 1) * 68; o += `<circle cx="${n0(x)}" cy="${n0(y)}" r="2.4" fill="${['#F9A3C0', '#FFD36B', '#fff'][i % 3]}"/>`; } }
+    if (st >= 1) o += bush(334, 170, .9) + bush(66, 182, .8);
+    if (st >= 2) o += `<g>${[[150, 236], [242, 236]].map(p => `${shd(p[0], p[1] + 2, 7, 2.5, .2)}<rect x="${p[0] - 2.5}" y="${p[1] - 18}" width="5" height="18" rx="1.5" fill="#B8AB92"/><rect x="${p[0] - 5.5}" y="${p[1] - 26}" width="11" height="9" rx="3" fill="#EAD9A8"/><circle cx="${p[0]}" cy="${p[1] - 21}" r="8" fill="url(#iGlow)"/>`).join('')}</g>`;
+    if (st >= 4) { const rr = rng(21); for (let i = 0; i < 10; i++) { const u = rr(), v = rr(), x = 195 + (u - v) * 130, y = 152 + (u + v - 1) * 62; o += `<circle cx="${n0(x)}" cy="${n0(y)}" r="2" fill="${['#F9A3C0', '#FFD36B', '#fff'][i % 3]}"/>`; } }
     return o;
   }
 
@@ -221,9 +221,9 @@ export function islandSVG(m: IslandModel): string {
   }
 
   function bunting(n: number) {
-    const A = [92, 106], B = [190, 80];
-    let o = `<path d="M${A[0]} ${A[1]}Q141 108 ${B[0]} ${B[1]}" stroke="#6b4a2b" stroke-width="1.4" fill="none"/>`;
-    for (let i = 0; i < Math.min(8, n); i++) { const t = (i + .7) / 8.4, x = (1 - t) * (1 - t) * A[0] + 2 * t * (1 - t) * 141 + t * t * B[0], y = (1 - t) * (1 - t) * A[1] + 2 * t * (1 - t) * 108 + t * t * B[1]; o += `<path d="M${n1(x - 5)} ${n1(y)}h10l-5 11z" fill="${TCOL[i % 6]}"/>`; }
+    const A = [60, 120], B = [100, 100];
+    let o = `<path d="M${A[0]} ${A[1]}Q78 118 ${B[0]} ${B[1]}" stroke="#6b4a2b" stroke-width="1.4" fill="none"/>`;
+    for (let i = 0; i < Math.min(5, n); i++) { const t = (i + .7) / 5.4, x = (1 - t) * (1 - t) * A[0] + 2 * t * (1 - t) * 78 + t * t * B[0], y = (1 - t) * (1 - t) * A[1] + 2 * t * (1 - t) * 118 + t * t * B[1]; o += `<path d="M${n1(x - 5)} ${n1(y)}h10l-5 11z" fill="${TCOL[i % 6]}"/>`; }
     return o;
   }
 
@@ -247,7 +247,7 @@ export function islandSVG(m: IslandModel): string {
         o += '</g>';
       }
     } else {
-      const lv = gr < .2 ? 0 : gr < .5 ? 1 : gr < 1 ? 2 : 3, sc = p.kind === 'banyan' ? .62 : .5;
+      const lv = gr < .2 ? 0 : gr < .5 ? 1 : gr < 1 ? 2 : 3, sc = p.kind === 'banyan' ? .4 : .34;
       let fr = '';
       o += `<g transform="translate(${x} ${y}) scale(${sc}) translate(${-x} ${-y})">${tree(x, y, Math.min(4, lv + (p.kind === 'banyan' && lv === 3 ? 1 : 0)), false, '-')}</g>`;
       if (ready && p.kind === 'mango') [[-9, -24], [7, -30], [-1, -18], [12, -22]].forEach(q => { fr += `<ellipse cx="${x + q[0]}" cy="${y + q[1]}" rx="3.2" ry="4" fill="#F5A524" stroke="#C97A0E" stroke-width=".6"/>`; });
@@ -267,7 +267,7 @@ export function islandSVG(m: IslandModel): string {
   o += herbs(AT.herbs[0], AT.herbs[1]);
   o += G(isF('talk') ? 'talk' : '-', bench(AT.bench[0], AT.bench[1]));
   o += gate(AT.gate[0], AT.gate[1]);
-  if (g.keepsakes.potSeams > 0 || g.keepsakes.pots > 0) o += potMini(226, 176, g.keepsakes.potSeams, g.keepsakes.pots);
+  if (g.keepsakes.potSeams > 0 || g.keepsakes.pots > 0) o += potMini(236, 156, g.keepsakes.potSeams, g.keepsakes.pots);
   if (g.keepsakes.flags > 0) o += bunting(g.keepsakes.flags);
   const byY = [...g.plants].sort((a, b) => (SLOTS[a.slot]?.[1] ?? 0) - (SLOTS[b.slot]?.[1] ?? 0));
   const newest = g.plants.length ? g.plants[g.plants.length - 1].id : '';
@@ -292,9 +292,9 @@ export function skySVG(phase: SkyPhase, grey: boolean, skies: number[]): string 
     const r = rng(9);
     o += '<defs><radialGradient id="mG"><stop offset="0" stop-color="#FFF6D6" stop-opacity=".55"/><stop offset=".5" stop-color="#BFD0FF" stop-opacity=".18"/><stop offset="1" stop-color="#BFD0FF" stop-opacity="0"/></radialGradient><radialGradient id="hz" cx=".5" cy="1" r=".8"><stop offset="0" stop-color="#7A86C8" stop-opacity=".55"/><stop offset="1" stop-color="#7A86C8" stop-opacity="0"/></radialGradient></defs><rect x="0" y="150" width="390" height="210" fill="url(#hz)"/>';
     for (let i = 0; i < 34; i++) o += `<circle class="st" cx="${n0(r() * 390)}" cy="${n0(r() * 180)}" r="${n1(.6 + r() * 1.4)}" fill="#fff" style="animation-delay:-${n1(r() * 3)}s"/>`;
-    const cpos = [[14, 64], [104, 4], [192, 0], [256, 62], [6, 134], [290, 120]];
+    const cpos = [[10, 8], [92, 4], [236, 6], [322, 92], [8, 92], [330, 10]];
     skies.slice(-6).forEach((ci, k) => {
-      const cn = CONS[ci % CONS.length], ps = cpos[k % 6], sc = .26;
+      const cn = CONS[ci % CONS.length], ps = cpos[k % 6], sc = .2;
       const pp = cn.pts.map(q => [ps[0] + q[0] * sc, ps[1] + q[1] * sc]);
       o += `<g opacity=".85">${pp.map((q, j) => (j ? `<line x1="${n1(pp[j - 1][0])}" y1="${n1(pp[j - 1][1])}" x2="${n1(q[0])}" y2="${n1(q[1])}" stroke="#FFE9A0" stroke-width=".9" opacity=".7"/>` : '')).join('')}${pp.map(q => `<circle cx="${n1(q[0])}" cy="${n1(q[1])}" r="1.9" fill="#FFF6D0"/>`).join('')}</g>`;
     });
@@ -320,13 +320,13 @@ export function weatherHTML(): string {
 export function lightsSVG(g: Garden): string {
   const r = rng(33);
   let o = '<svg viewBox="0 0 390 360" style="width:100%;height:100%" aria-hidden="true" focusable="false"><defs><radialGradient id="wl"><stop offset="0" stop-color="#FFC970" stop-opacity=".85"/><stop offset="1" stop-color="#FFC970" stop-opacity="0"/></radialGradient><radialGradient id="ml"><stop offset="0" stop-color="#BFD4FF" stop-opacity=".5"/><stop offset="1" stop-color="#BFD4FF" stop-opacity="0"/></radialGradient></defs>';
-  o += '<ellipse cx="196" cy="150" rx="150" ry="70" fill="url(#ml)"/>';
-  const glows = [[AT.sleep[0] - 22, AT.sleep[1] - 36, 34], [AT.gate[0], AT.gate[1] - 30, 40], [AT.bench[0], AT.bench[1] - 18, 26]];
-  if (g.stage >= 2) glows.push([150, 194, 26], [246, 194, 26]);
-  if (g.seeds.planted) glows.push([AT.house[0], AT.house[1] - 12, 28]);
-  if ((g.counts.talk ?? 0) >= 2) glows.push([AT.tree[0] + 26, AT.tree[1] - 34, 26]);
+  
+  const glows: number[][] = [[AT.sleep[0] - 20, AT.sleep[1] - 34, 22], [AT.gate[0], AT.gate[1] - 30, 26]];
+  if (g.stage >= 2) glows.push([150, 218, 16], [242, 218, 16]);
+  if (g.seeds.planted) glows.push([AT.house[0], AT.house[1] - 12, 20]);
+  if ((g.counts.talk ?? 0) >= 2) glows.push([AT.tree[0] + 22, AT.tree[1] - 36, 18]);
   glows.forEach(q => { o += `<circle cx="${q[0]}" cy="${q[1]}" r="${q[2]}" fill="url(#wl)"/>`; });
-  for (let i = 0; i < 14; i++) { const x = 60 + r() * 270, y = 70 + r() * 150; o += `<circle class="fire" cx="${n0(x)}" cy="${n0(y)}" r="2.4" fill="#FFF3A8" style="animation-delay:-${n1(r() * 3)}s"/><circle class="fire" cx="${n0(x)}" cy="${n0(y)}" r="5" fill="#FFF3A8" opacity=".18" style="animation-delay:-${n1(r() * 3)}s"/>`; }
+  for (let i = 0; i < 7; i++) { const x = 70 + r() * 250, y = 110 + r() * 110; o += `<circle class="fire" cx="${n0(x)}" cy="${n0(y)}" r="1.8" fill="#FFF3A8" style="animation-delay:-${n1(r() * 3)}s"/>`; }
   return `${o}</svg>`;
 }
 

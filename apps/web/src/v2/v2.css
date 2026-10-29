@@ -461,3 +461,4 @@ html[data-reduce="true"] .v2 *, html[data-reduce="true"] .v2 *::before, html[dat
 /* Orange used for small text needs to be darker than the orange of buttons. */
 .v2{--brand-text:#8A4A00}
 .v2.night{--brand-text:#F7B24D}
+.v2 .hchip{max-width:calc(100% - 24px)}

@@ -4,6 +4,7 @@ import { loadGarden, useGarden } from './garden';
 import { openPlant, pickPlantNow } from './garden-actions';
 import { Ic, type IconName } from './icons';
 import { ScreenFrame } from './Chrome';
+import { milestones } from './milestones';
 import { pop } from './ui';
 
 const ISLE_COLORS: [string, string][] = [['#C6E98A', '#84C86C'], ['#FFD98A', '#F2A34A'], ['#BFE3F0', '#5FA8CF'], ['#8D93D8', '#3C4488'], ['#9FD0C8', '#4F8F86'], ['#FFC9D6', '#C98FE0']];
@@ -14,6 +15,7 @@ export function GardenScreen() {
   useEffect(() => { void loadGarden({ quiet: true }); }, []);
   if (!g) return <ScreenFrame title="Your garden" onBack={pop}><p className="muted" role="status" style={{ marginTop: 20 }}>One moment…</p></ScreenFrame>;
   const C = g.counts;
+  const ms = milestones(g);
   const st = g.stage, nx = STAGES[st + 1];
   const pct = nx ? Math.round(((g.sunlight - STAGES[st].at) / (nx.at - STAGES[st].at)) * 100) : 100;
   const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
@@ -38,6 +40,18 @@ export function GardenScreen() {
       <div className="card row" style={{ background: 'var(--bg2)', boxShadow: 'none', marginTop: 12, gap: 12 }}>
         <Ic n="leaf" color="#2F7A49" /><p className="small">Nothing here ever wilts. A day you skip is just a quiet day, and your plants wait for you.</p>
       </div>
+
+
+      <div className="sec-h" style={{ marginTop: 22 }}><h2 className="h2">What you have done</h2><span className="pill leaf">{ms.filter(x => x.done).length} of {ms.length}</span></div>
+      <p className="muted small" style={{ margin: '-6px 0 10px' }}>These only ever add up. Nothing here goes away.</p>
+      <ul className="list card" style={{ padding: '4px 16px' }}>
+        {ms.map(x => (
+          <li key={x.id}>
+            <span className="ico" style={{ background: x.done ? '#DDF0DC' : 'var(--bg2)' }}><Ic n={x.done ? 'check' : 'star'} color={x.done ? '#25683D' : undefined} /></span>
+            <div className="grow1"><b style={x.done ? undefined : { color: 'var(--ink2)' }}>{x.label}</b><div className="muted small">{x.done ? x.detail : `${x.have} of ${x.need}. ${x.detail}`}</div></div>
+          </li>
+        ))}
+      </ul>
 
       <div className="sec-h" style={{ marginTop: 22 }}><h2 className="h2">Your road, month by month</h2></div>
       <p className="muted small" style={{ margin: '-6px 0 10px' }}>Six isles to reach over about six months at a steady pace. There is no deadline.</p>

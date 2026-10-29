@@ -7,6 +7,7 @@ import { useGarden, loadGarden } from './garden';
 import { openPlant, pickPlantNow } from './garden-actions';
 import { useGuidance } from './guidance';
 import { Hero, pickPlace } from './Hero';
+import { milestones, nextMilestone } from './milestones';
 import { HelpPill } from './Chrome';
 import { Ic, type IconName } from './icons';
 import { moodByValue } from './Weather';
@@ -107,12 +108,29 @@ export function Home() {
       </div>
       <div data-tour="hero"><Hero pick={pick} /></div>
 
+
+      {garden && (
+        <button className="card" style={{ width: '100%', textAlign: 'left', marginTop: 12 }} onClick={() => push({ id: 'garden' })} aria-label="Your garden so far. See all of it">
+          <div className="sec-h" style={{ marginBottom: 10 }}><b className="h3">Your garden so far</b><span className="link" style={{ minHeight: 0 }}>See all</span></div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, textAlign: 'center' }}>
+            {([[garden.activeDays, 'days'], [garden.counts.journal ?? 0, 'flowers'], [garden.plants.length, 'growing'], [garden.rangolis + garden.boats + garden.jarCount, 'made']] as const).map(([n, l]) => (
+              <div key={l}><div className="h2">{n}</div><div className="fine">{l}</div></div>
+            ))}
+          </div>
+          {(() => { const nx = nextMilestone(milestones(garden)); return nx ? <p className="small muted" style={{ marginTop: 10 }}>Next: <b>{nx.label}</b>. {nx.need - nx.have} to go, whenever you like.</p> : <p className="small muted" style={{ marginTop: 10 }}>You have reached every milestone so far.</p>; })()}
+        </button>
+      )}
+
       {nudge && (
         <div className="card row" style={{ marginTop: 16, gap: 12, background: nudge.color, color: '#1F2A44' }}>
           <span className="ico" style={{ background: 'rgba(255,255,255,.7)' }}><Ic n={nudge.icon} /></span>
-          <div className="grow1"><b>{nudge.title}</b><div className="small" style={{ opacity: .8 }}>{nudge.sub}</div></div>
-          <button className="btn sm" onClick={nudge.run}>{nudge.cta}</button>
-          {cards.some(c => c.kind === 'checkin') && <button className="btn sm ghost" onClick={() => { const c = cards.find(x => x.kind === 'checkin'); if (c) void dismissCard(c.id); }}>Not now</button>}
+          <div className="grow1">
+            <b>{nudge.title}</b><div className="small" style={{ opacity: .8 }}>{nudge.sub}</div>
+            <div className="row" style={{ gap: 8, marginTop: 10 }}>
+              <button className="btn sm" onClick={nudge.run}>{nudge.cta}</button>
+              {cards.some(c => c.kind === 'checkin') && <button className="btn sm ghost" style={{ color: '#3A2400' }} onClick={() => { const c = cards.find(x => x.kind === 'checkin'); if (c) void dismissCard(c.id); }}>Not now</button>}
+            </div>
+          </div>
         </div>
       )}
 
