@@ -23,7 +23,7 @@ export function Outside() {
     <ScreenFrame title="Outside" onBack={back}>
       <p className="muted" style={{ margin: '6px 0 14px' }}>Gentle ways to step out, only when you want to.</p>
       <div className="stg">
-        <section aria-label="One small thing" className="card" style={{ background: 'linear-gradient(160deg,#FBE3CF,#F3ECE1)', color: '#3A2400', display: 'grid', gap: 10 }}>
+        <section aria-label="One small thing" className="card" style={{ background: 'var(--t-sand)', display: 'grid', gap: 10 }}>
           <span className="eyebrow">One small thing</span>
           <span className="h2" style={{ lineHeight: 1.25 }}>{SMALL_STEPS[small]}</span>
           {reply && <span role="status" style={{ fontWeight: 700, color: '#2F7A49' }}>{reply}</span>}
@@ -67,7 +67,7 @@ export function Outside() {
         <p className="muted small" style={{ margin: '-6px 0 12px' }}>Low-pressure things to start at home.</p>
         <div className="hscroll">
           {HOBBIES.map(hb => (
-            <div key={hb.title} className="card" style={{ flex: 'none', width: 200, background: hb.bg, color: '#1F2A44', display: 'grid', gap: 6, alignContent: 'start' }}>
+            <div key={hb.title} className="card" style={{ flex: 'none', width: 200, background: ['var(--t-sage)', 'var(--t-sky)', 'var(--t-rose)', 'var(--t-lilac)', 'var(--t-sand)', 'var(--t-clay)'][HOBBIES.indexOf(hb) % 6], display: 'grid', gap: 6, alignContent: 'start' }}>
               <b>{hb.title}</b><span className="small" style={{ opacity: .8 }}>{hb.desc}</span>
               <button className="btn sm soft" style={{ marginTop: 6, justifySelf: 'start', background: 'rgba(255,255,255,.8)' }} onClick={() => { void addPlanItem(`${hb.title}, 10 minutes`); toast(`Added “${hb.title}” for 10 minutes. No pressure.`); }}>Start small</button>
             </div>

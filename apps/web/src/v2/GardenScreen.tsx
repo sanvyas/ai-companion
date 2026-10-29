@@ -33,7 +33,7 @@ export function GardenScreen() {
   return (
     <ScreenFrame title="Your garden" onBack={pop}>
       <div className="card" style={{ background: 'var(--t-sage)', marginTop: 6 }}>
-        <div className="sec-h" style={{ marginBottom: 8 }}><div className="h2">{g.stageName}</div><span className="pill" style={{ background: 'rgba(255,255,255,.7)' }}>{g.sunlight} sunlight</span></div>
+        <div className="sec-h" style={{ marginBottom: 8 }}><div className="h2">{g.stageName}</div><span className="pill" style={{ background: 'var(--card)' }}>{g.sunlight} sunlight</span></div>
         <div className="bar" role="progressbar" aria-label="Progress to the next stage" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} style={{ background: 'rgba(255,255,255,.6)' }}><i style={{ width: `${pct}%` }} /></div>
         <p className="small" style={{ marginTop: 8 }}>{nx ? `${(g.nextAt ?? nx.at) - g.sunlight} more sunlight to become a ${nx.name.toLowerCase()}.` : 'Your garden is a grove.'} Every day you show up gives about {g.road.perActiveDay} sunlight.</p>
       </div>

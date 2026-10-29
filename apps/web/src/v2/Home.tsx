@@ -111,12 +111,15 @@ export function Home() {
 
   return (
     <>
-      <div className="hhead">
-        <div><div className="eyebrow" onClick={onDate}>{dateLabel()}</div><h1 className="h1" style={{ marginTop: 4 }}>{greeting()}{nick ? <>,<br />{nick}</> : null}</h1></div>
-        <HelpPill tour />
+      <div className="stage" data-tour="hero">
+        <Hero pick={pick}>
+          <div className="hhead">
+            <div><div className="eyebrow" onClick={onDate}>{dateLabel()}</div><h1 className="h1" style={{ marginTop: 4 }}>{greeting()}{nick ? <>,<br />{nick}</> : null}</h1></div>
+            <HelpPill tour />
+          </div>
+        </Hero>
       </div>
-      <div data-tour="hero"><Hero pick={pick} interactive={false} /></div>
-
+      <div className="daysheet">
       <nav className="places" aria-label="Places in your garden">
         {PLACES.map(p => {
           const today = pick === p.k;
@@ -188,6 +191,7 @@ export function Home() {
         </div>
       </div>
       <p className="foot">Nothing here ever wilts. Missing a day just means a quiet day.</p>
+      </div>
     </>
   );
 }

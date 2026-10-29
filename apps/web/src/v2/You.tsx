@@ -67,7 +67,7 @@ export function YouTab() {
       {garden && (
         <button className="card row" style={{ width: '100%', textAlign: 'left', gap: 14, marginTop: 10, background: 'var(--leafsoft)' }} onClick={() => push({ id: 'garden' })}>
           <span className="ico" style={{ background: 'rgba(255,255,255,.7)' }}><Ic n="leaf" color="#2F7A49" /></span>
-          <span className="grow1"><b style={{ display: 'block', color: '#14352A' }}>Your garden</b><span className="small" style={{ color: '#2F5A44' }}>{garden.stageName} · {garden.activeDays} day{garden.activeDays === 1 ? '' : 's'} you showed up</span></span>
+          <span className="grow1"><b style={{ display: 'block', color: 'var(--ink)' }}>Your garden</b><span className="small" style={{ color: 'var(--ink2)' }}>{garden.stageName} · {garden.activeDays} day{garden.activeDays === 1 ? '' : 's'} you showed up</span></span>
           <Ic n="chev" />
         </button>
       )}
@@ -163,7 +163,7 @@ export function MemoryScreen() {
   const themes = [...new Set(memories.map(m => m.theme))];
   return (
     <ScreenFrame title="Memory" onBack={backToYou}>
-      <div className="card" style={{ background: 'var(--leafsoft)', color: '#14352A', boxShadow: 'none', marginTop: 6 }}><p className="small">This is what lets {compName} ask how things went. It comes from your conversations, and from journal entries you chose to share.</p></div>
+      <div className="card" style={{ background: 'var(--leafsoft)', color: 'var(--ink)', boxShadow: 'none', marginTop: 6 }}><p className="small">This is what lets {compName} ask how things went. It comes from your conversations, and from journal entries you chose to share.</p></div>
       <button className="sw card" role="switch" aria-checked={remember} onClick={() => void updateConsent({ remember: !remember })} style={{ marginTop: 12 }}>
         <span><b>Remember things from our chats</b><span className="muted" style={{ display: 'block', fontSize: 13, fontWeight: 500 }}>Off means nothing new is saved. Safety checks still run.</span></span><i />
       </button>
@@ -231,7 +231,7 @@ export function PrivacyScreen() {
   if (!priv) return null;
   return (
     <ScreenFrame title="Privacy Center" onBack={backToYou}>
-      <div className="card" style={{ background: 'var(--leafsoft)', color: '#14352A', boxShadow: 'none', marginTop: 6, display: 'grid', gap: 6 }}>
+      <div className="card" style={{ background: 'var(--leafsoft)', color: 'var(--ink)', boxShadow: 'none', marginTop: 6, display: 'grid', gap: 6 }}>
         <span><b>{compName} remembers:</b> {memCount} things.</span>
         <span><b>Stored:</b> encrypted, on our servers in India.</span>
         <span><b>Shared with:</b> no one. Your messages are processed by an AI service to write replies.</span>
@@ -306,7 +306,7 @@ export function NotifScreen() {
         <div className="row" style={{ justifyContent: 'space-between' }}><b>Quiet hours</b><span className="muted">{clock12(prefs.quietHours.start)} – {clock12(prefs.quietHours.end)}</span></div>
         <p className="muted small" style={{ marginTop: 6 }}>Nothing arrives then, unless you’ve asked me to check on you after a hard day.</p>
       </div>
-      <div className="card" style={{ marginTop: 12, background: 'var(--leafsoft)', color: '#14352A', boxShadow: 'none' }}>
+      <div className="card" style={{ marginTop: 12, background: 'var(--leafsoft)', color: 'var(--ink)', boxShadow: 'none' }}>
         <h2 className="h2">What I’ll always do</h2>
         <ul style={{ display: 'grid', gap: 8, marginTop: 8 }}>
           {['Two messages a day at most, and one call.', 'If you don’t reply, I slow down. After a quiet week, I pause until you’re back.', 'No guilt, no streaks, no “you haven’t talked to me in days”.', 'Nothing personal on your lock screen unless you turn it on.'].map(t => <li key={t} className="row small" style={{ alignItems: 'baseline', gap: 10 }}><span className="dot" style={{ width: 6, height: 6, background: '#2F7A49' }} /><span>{t}</span></li>)}

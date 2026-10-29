@@ -51,7 +51,7 @@ export function Talk() {
       <div className="sec">
         <div className="card row" style={{ background: 'var(--t-rose)', gap: 12 }}>
           <span className="ico" style={{ background: 'var(--t-rose)' }}><Ic n="life" color="#8A2D1C" /></span>
-          <div className="grow1"><b style={{ color: '#3A1A12' }}>Need someone right now?</b><div className="small" style={{ color: '#6B3A30' }}>Helplines and your safety plan are one tap away.</div></div>
+          <div className="grow1"><b>Need someone right now?</b><div className="small muted">Helplines and your safety plan are one tap away.</div></div>
           <button className="btn sm" style={{ background: '#C7432B', color: '#fff', boxShadow: 'none' }} onClick={() => openSheet('support')}>Get help</button>
         </div>
       </div>
