@@ -34,6 +34,10 @@ Every new route has: input validation, an authorisation check, a happy-path test
 6. **Create and quiet games**: rangoli, paper boat, good-things jar; mend the pot, untangle the thread, constellations, unlocked by kind acts.
 7. **Hardening**: accessibility pass on every screen, low-end phone performance, offline behaviour, the browser end-to-end suite updated to the new screens, copy review against the safe-language lexicon.
 
+## How v2 ships without risk
+
+The new screens sit behind the feature flag `ui.v2` (admin portal, Feature flags). **Off (the default): everyone sees the v1 screens, exactly as now.** On: the new design. The flag can be turned on for one person first (flag override), then for everyone, and turned off again in seconds with no deploy. The two designs share the same API, so nothing is migrated or lost either way.
+
 ## Release
 
 v2 is developed on its own branch and is not merged to `main` (and so not live for everyone) until you have used it and said yes. The old app stays one switch away.

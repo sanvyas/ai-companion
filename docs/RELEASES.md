@@ -2,16 +2,18 @@
 
 | Release | What it is | Where |
 |---|---|---|
-| **v1.0.0** | The app as it stood before the new design: phone and Google sign-in, voice/chat/video companion, journal, calm, outside, safety pipeline, admin portal | git tag `v1.0.0`; `main` points here until v2 is merged |
-| **v2** (in progress) | The new design (garden home, five tabs, onboarding and tour, journal timeline and progress, quiet games) connected to the same backend | its own branch, merged to `main` only when you say so |
+| **v1.0.0** | The app as it stood before the new design: phone and Google sign-in, voice/chat/video companion, journal, calm, outside, safety pipeline, admin portal | `main` and the branch `release/v1.0.0` (commit `791e46d`) |
+| **v2** (in progress) | The new design (garden home, five tabs, onboarding and tour, journal timeline and progress, quiet games) connected to the same backend | branch `claude/hopeful-planck-y33w4w`, behind the feature flag `ui.v2` (off by default) until you switch it on; merged to `main` only when you say so |
 
 ## Going back to v1
 
 Any one of these works. Pick whichever is nearest.
 
-1. **Render dashboard**: `saathi-api` > Settings > Branch: set it to `main` (while `main` is v1), then Manual Deploy. The API serves the app and the admin portal, so both go back together.
-2. **Git**: `git checkout v1.0.0` for a look, or `git revert -m 1 <merge commit>` on `main` to take v2 out after it has been merged.
-3. **Netlify** (only if you use those optional sites): drag the zip built from the `v1.0.0` tag onto the site.
+0. **Fastest, no deploy**: in the admin portal, Feature flags, switch `ui.v2` off. Everyone sees the v1 screens again at once.
+
+1. **Render dashboard**: `saathi-api` > Settings > Branch: set it to `release/v1.0.0` (or `main` while `main` is v1), then Manual Deploy. The API serves the app and the admin portal, so both go back together.
+2. **Git**: `git checkout release/v1.0.0` for a look, or `git revert -m 1 <merge commit>` on `main` to take v2 out after it has been merged.
+3. **Netlify** (only if you use those optional sites): drag the zip built from `release/v1.0.0` onto the site.
 
 ## Why going back is safe for your data
 
@@ -21,5 +23,5 @@ Database changes are **forward-only and additive** (new tables and new columns, 
 
 ```
 npm run verify          # typecheck, all tests, production build
-git tag -a vX.Y.Z -m "..." && git push origin vX.Y.Z
+git branch release/vX.Y.Z && git push origin release/vX.Y.Z   # a tag too, where the host allows pushing tags
 ```
