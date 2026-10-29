@@ -1,10 +1,6 @@
 import { useEffect } from 'react';
-import { getState, saveUi, subscribe, useStore, type Screen } from './state/store';
-import { bindUi, handleNotificationOpen, startTicker, teardownAll } from './state/actions';
-import { boot } from './state/session';
-import { startAnalytics } from './state/analytics';
-import { listenForNotificationOpens, registerServiceWorker } from './state/push';
-import { loadVoices } from './audio/speech';
+import { useStore, type Screen } from './state/store';
+import { useAppLifecycle } from './state/lifecycle';
 import { Age, CompanionPicker, Consent, Intro, Language, NameScreen, OtpScreen, Under, Welcome } from './screens/Onboarding';
 import { Today } from './screens/Today';
 import { Talk } from './screens/Talk';
@@ -51,23 +47,7 @@ export function App() {
   const reduce = useStore(s => s.reduceMotion);
   const discreet = useStore(s => s.me?.privacy.discreetMode ?? false);
 
-  useEffect(() => {
-    bindUi();
-    loadVoices();
-    const stopTicker = startTicker();
-    const stopPush = listenForNotificationOpens(handleNotificationOpen);
-    const stopAnalytics = startAnalytics();
-    void registerServiceWorker();
-    void boot();
-    return () => { stopTicker(); stopPush(); stopAnalytics(); teardownAll(); };
-  }, []);
-
-  // Persist display preferences only. Everything personal stays on the server (see store.ts).
-  useEffect(() => {
-    let t: ReturnType<typeof setTimeout>;
-    const unsub = subscribe(() => { clearTimeout(t); t = setTimeout(() => saveUi(getState()), 300); });
-    return () => { unsub(); clearTimeout(t); };
-  }, []);
+  useAppLifecycle();
 
   useEffect(() => { document.documentElement.dataset.reduce = reduce ? 'true' : ''; }, [reduce]);
   useEffect(() => { document.title = discreet ? 'Calm' : 'Saathi'; }, [discreet]);

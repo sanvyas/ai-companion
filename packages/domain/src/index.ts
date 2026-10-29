@@ -8,3 +8,5 @@ export * from './lexicon';
 export * from './tone';
 export * from './mood';
 export * from './narrate';
+export * from './garden';
+export * from './guidance';

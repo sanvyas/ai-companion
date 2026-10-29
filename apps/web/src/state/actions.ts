@@ -214,7 +214,8 @@ async function playLine() {
   playClip(clip.audio, clip.mime, next, deviceVoice);
 }
 
-export function openPlayer(id: string) {
+/** `sounds: false` plays the reading alone, without the background sound a story is tagged with (the new design has no sounds). */
+export function openPlayer(id: string, opts: { sounds?: boolean } = {}) {
   const it = findCalm(id);
   if (!it) return;
   if (!it.lines) { openBreathe(); return; }
@@ -225,7 +226,7 @@ export function openPlayer(id: string) {
   narrator = null;
   lineAudio = new Map();
   playToken++;
-  const bg = it.bg || getState().pBg;
+  const bg = opts.sounds === false ? undefined : it.bg || getState().pBg;
   const timerMin = parseInt(getState().pTimer, 10) || undefined;
   set({ player: id, pPlaying: true, pElapsed: 0, pEnded: false, pLineText: '', pLineIdx: 0, pBg: bg || null, pSession: null, pNarrator: '' });
   void api.startCalm(id, bg ?? undefined, timerMin).then(r => set({ pSession: r.id })).catch(() => undefined);

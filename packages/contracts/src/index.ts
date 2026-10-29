@@ -4,3 +4,4 @@ export * from './profile.js';
 export * from './conversation.js';
 export * from './journal.js';
 export * from './misc.js';
+export * from './garden.js';

@@ -28,6 +28,13 @@ export async function exportAll(ctx: Ctx, userId: string) {
       wins: (await q('SELECT * FROM wins ORDER BY created_at')).map(r => ({ kind: r.kind, label: d('win', r.label_enc), createdAt: r.created_at })),
       letters: (await q('SELECT * FROM letters ORDER BY week_start')).map(r => ({ weekStart: r.week_start, body: d('letter', r.body_enc) })),
       safetyPlan: await (async () => { const r = (await q('SELECT data_enc FROM safety_plans'))[0]; return r ? JSON.parse(d('safety_plan', r.data_enc)!) : null; })(),
+      garden: {
+        plants: await q('SELECT kind, slot, picks, planted_at FROM garden_plants ORDER BY slot'),
+        keepsakes: await q('SELECT kind, n, created_at FROM garden_keepsakes ORDER BY created_at'),
+        rangolis: (await q('SELECT image_enc, created_at FROM garden_creations ORDER BY created_at')).map(r => ({ image: d('creation', r.image_enc), createdAt: r.created_at })),
+        goodThingsJar: (await q('SELECT text_enc, created_at FROM jar_items ORDER BY created_at')).map(r => ({ text: d('jar', r.text_enc), createdAt: r.created_at })),
+        breathingSessions: await q('SELECT created_at FROM breaths ORDER BY created_at'),
+      },
       calmSessions: await q('SELECT item_id, started_at, completed_pct FROM calm_sessions ORDER BY started_at'),
       notificationPrefs: (await q('SELECT * FROM notification_prefs'))[0] ?? null,
     };

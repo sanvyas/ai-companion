@@ -181,6 +181,19 @@ export class HttpApi implements Api {
   events = (city?: string) => this.req<Awaited<ReturnType<Api['events']>>>('GET', `/outside/events${city ? `?city=${encodeURIComponent(city)}` : ''}`);
   markInterest = async (id: string) => { await this.req('POST', `/outside/events/${encodeURIComponent(id)}/interest`); };
 
+  // ---------------------------------------------------------------------------------------------- garden
+  garden = () => this.req<Awaited<ReturnType<Api['garden']>>>('GET', '/garden');
+  plant = (kind: Parameters<Api['plant']>[0], slot: number) => this.req<Awaited<ReturnType<Api['plant']>>>('POST', '/garden/plants', { kind, slot }, { idem: true });
+  pickPlant = (id: string) => this.req<Awaited<ReturnType<Api['pickPlant']>>>('POST', `/garden/plants/${id}/pick`);
+  addKeepsake = (kind: Parameters<Api['addKeepsake']>[0]) => this.req<Awaited<ReturnType<Api['addKeepsake']>>>('POST', '/garden/keepsakes', { kind }, { idem: true });
+  creations = async () => (await this.req<{ items: Awaited<ReturnType<Api['creations']>> }>('GET', '/garden/creations')).items;
+  addCreation = (image: string) => this.req<Awaited<ReturnType<Api['addCreation']>>>('POST', '/garden/creations', { kind: 'rangoli', image }, { idem: true });
+  deleteCreation = async (id: string) => { await this.req('DELETE', `/garden/creations/${id}`); };
+  jar = async () => (await this.req<{ items: Awaited<ReturnType<Api['jar']>> }>('GET', '/jar')).items;
+  addJarItem = (text: string) => this.req<Awaited<ReturnType<Api['addJarItem']>>>('POST', '/jar', { text }, { idem: true });
+  deleteJarItem = async (id: string) => { await this.req('DELETE', `/jar/${id}`); };
+  breathed = async () => { await this.req('POST', '/breaths'); };
+
   // ---------------------------------------------------------------------------------------------- notifications
   prefs = () => this.req<Awaited<ReturnType<Api['prefs']>>>('GET', '/notifications/prefs');
   putPrefs = (b: Parameters<Api['putPrefs']>[0]) => this.req<Awaited<ReturnType<Api['putPrefs']>>>('PUT', '/notifications/prefs', b);

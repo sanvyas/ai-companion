@@ -18,6 +18,7 @@ import { authRoutes } from './routes/auth.js';
 import { meRoutes } from './routes/me.js';
 import { conversationRoutes } from './routes/conversations.js';
 import { dataRoutes } from './routes/data.js';
+import { gardenRoutes } from './routes/garden.js';
 import { inboxRoutes, notificationRoutes } from './routes/notifications.js';
 import { eventRoutes } from './routes/events.js';
 import { voiceRoutes } from './routes/voices.js';
@@ -100,6 +101,7 @@ export async function buildApp(cfg: Config, opts: BuildOpts = {}): Promise<{ app
   meRoutes(app, ctx);
   conversationRoutes(app, ctx);
   dataRoutes(app, ctx);
+  gardenRoutes(app, ctx);
   notificationRoutes(app, ctx);
   inboxRoutes(app, ctx);
   eventRoutes(app, ctx);

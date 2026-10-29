@@ -7,7 +7,7 @@ import { buildInfo } from '../admin/routes/overview.js';
 
 export function publicRoutes(app: FastifyInstance, ctx: Ctx) {
   // What the sign-in screen needs before anyone is signed in.
-  app.get('/public-config', async () => ({ otp: ctx.otp.canSend || (await hasAnyInvite(ctx)), google: !!ctx.rt.secrets.get('google', 'client_id'), googleClientId: ctx.rt.secrets.get('google', 'client_id') ?? null, llm: ctx.llm.configured, stt: !!ctx.stt, dictation: !!ctx.transcriber?.configured, tts: !!ctx.tts?.configured, push: ctx.push.enabled, signupsOpen: ctx.rt.settings.bool('access.signups_open'), voicePaused: ctx.rt.settings.bool('kill.voice'), analytics: ctx.rt.settings.bool('analytics.enabled') }));
+  app.get('/public-config', async () => ({ otp: ctx.otp.canSend || (await hasAnyInvite(ctx)), google: !!ctx.rt.secrets.get('google', 'client_id'), googleClientId: ctx.rt.secrets.get('google', 'client_id') ?? null, llm: ctx.llm.configured, stt: !!ctx.stt, dictation: !!ctx.transcriber?.configured, tts: !!ctx.tts?.configured, push: ctx.push.enabled, signupsOpen: ctx.rt.settings.bool('access.signups_open'), voicePaused: ctx.rt.settings.bool('kill.voice'), analytics: ctx.rt.settings.bool('analytics.enabled'), uiV2: ctx.rt.flags.isOn('ui.v2') }));
   // Google sign-in happens in the person's browser, so a failure never reaches the server on its own. The page reports the
   // step it got stuck on (no words, no tokens, nothing about the person) so a stuck sign-in shows up in the logs.
   const GOOGLE_STAGES = new Set(['script_failed', 'button_not_drawn', 'origin_rejected', 'in_app_browser', 'tapped_while_not_ready', 'popup_blocked', 'sign_in_error']);

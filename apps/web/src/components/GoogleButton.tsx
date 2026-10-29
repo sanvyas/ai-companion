@@ -24,7 +24,7 @@ function loadGsi(): Promise<void> {
 const HEIGHT = 52;
 const GIS_HEIGHT = 40; // the height of Google's "large" button; it is stretched to fill ours
 
-function GoogleG() {
+export function GoogleG() {
   return (
     <svg width="22" height="22" viewBox="0 0 48 48" aria-hidden focusable="false">
       <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z" />
@@ -50,7 +50,8 @@ const STUCK: Record<Exclude<State, 'loading' | 'ready'>, string> = {
   origin_rejected: 'Google sign-in isn’t switched on for this address yet. Please use your phone number above. (If you run this app: add this address to the Google sign-in settings.)',
 };
 
-export function GoogleButton({ clientId }: { clientId: string }) {
+/** Everything about Google's own button except how it looks: loading it, noticing when it can't be used, and saying why. */
+export function useGoogleSignIn(clientId: string) {
   const overlay = useRef<HTMLDivElement>(null);
   const [state, setState] = useState<State>(inAppBrowser() ? 'in_app_browser' : 'loading');
   const stuck = state !== 'loading' && state !== 'ready';
@@ -89,6 +90,12 @@ export function GoogleButton({ clientId }: { clientId: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientId]);
 
+  return { overlay, state, stuck, message: stuck ? STUCK[state as keyof typeof STUCK] : null, tappedWhileStuck: () => report('tapped_while_not_ready', state) };
+}
+
+export function GoogleButton({ clientId }: { clientId: string }) {
+  const g = useGoogleSignIn(clientId);
+  const { overlay, state, stuck } = g;
   return (
     <div>
       <div style={{ position: 'relative', height: HEIGHT, borderRadius: HEIGHT / 2, overflow: 'hidden' }}>
@@ -99,9 +106,9 @@ export function GoogleButton({ clientId }: { clientId: string }) {
         {/* What receives the tap: Google's own button, invisible and stretched to fill ours. */}
         <div ref={overlay} style={{ position: 'absolute', inset: 0, opacity: 0.01, transform: `scaleY(${HEIGHT / GIS_HEIGHT})`, transformOrigin: 'top', display: 'flex', justifyContent: 'center', pointerEvents: stuck ? 'none' : 'auto' }} />
         {/* When Google's button can't be used, our own button says why instead of doing nothing. */}
-        {stuck && <button type="button" aria-label="Continue with Google" onClick={() => { report('tapped_while_not_ready', state); }} style={{ position: 'absolute', inset: 0, background: 'transparent', border: 0, cursor: 'pointer' }} />}
+        {stuck && <button type="button" aria-label="Continue with Google" onClick={g.tappedWhileStuck} style={{ position: 'absolute', inset: 0, background: 'transparent', border: 0, cursor: 'pointer' }} />}
       </div>
-      {stuck && <div role="status" style={{ fontSize: 14, color: C.amberText, background: C.amber, borderRadius: 14, padding: '10px 12px', marginTop: 10, lineHeight: 1.4 }}>{STUCK[state as keyof typeof STUCK]}</div>}
+      {g.message && <div role="status" style={{ fontSize: 14, color: C.amberText, background: C.amber, borderRadius: 14, padding: '10px 12px', marginTop: 10, lineHeight: 1.4 }}>{g.message}</div>}
     </div>
   );
 }

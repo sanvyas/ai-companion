@@ -1,10 +1,10 @@
 import type { ServerMsg } from '@saathi/contracts';
-import { analyzeJournalLocally, classify, moodIndexFor } from '@saathi/domain';
+import { analyzeJournalLocally, classify, moodIndexFor, summariseGarden, SLOTS_BY_STAGE, ISLES, PLANT_KINDS, POT_SEAMS, daysTo, type ActKind, type DayActs } from '@saathi/domain';
 import { mockCompanion } from '../providers/companion';
 import { EVENTS } from '../data/outside';
 import { SEED_JOURNAL, SEED_MEMORIES, SEED_PLAN, MOOD_SERIES, WINS, SAFETY_PLAN, TRUSTED_CONTACT } from '../data/seed';
 import { YOUTH_HELPLINES, HELPLINES } from '../data/helplines';
-import { ApiError, type Api, type ConvEvents, type ConvTransport, type Helpline, type Insights, type JournalEntry, type MemoryItem, type Me, type OutsideEvent, type PlanItem, type SafetyPlan } from './types';
+import { ApiError, type Api, type Creation, type Garden, type JarItem, type ConvEvents, type ConvTransport, type Helpline, type Insights, type JournalEntry, type MemoryItem, type Me, type OutsideEvent, type PlanItem, type SafetyPlan } from './types';
 
 // An in-memory stand-in for the backend, used only for design review (?demo). It follows the same interface and
 // the same rules as the server (consent, one-time hook, nothing saved until Done) with seeded demo data and no
@@ -12,6 +12,7 @@ import { ApiError, type Api, type ConvEvents, type ConvTransport, type Helpline,
 
 const iso = (daysAgo: number) => new Date(Date.now() - daysAgo * 86_400_000).toISOString();
 const uuid = () => crypto.randomUUID();
+const dayKey = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
 const wait = (ms = 120) => new Promise(r => setTimeout(r, ms));
 
 export class DemoApi implements Api {
@@ -102,6 +103,7 @@ export class DemoApi implements Api {
   async createJournal(b: Parameters<Api['createJournal']>[0]) {
     const entry: JournalEntry = { id: uuid(), mode: b.mode, prompt: b.prompt ?? null, text: b.text, mood: 2, shared: b.shared, createdAt: new Date().toISOString() };
     this.jr = [entry, ...this.jr];
+    this.act('journal');
     return { entry, riskLevel: classify(b.text) };
   }
   async analyzeJournal(id: string) {
@@ -128,10 +130,10 @@ export class DemoApi implements Api {
   async deleteJournal(id: string) { this.jr = this.jr.filter(e => e.id !== id); }
 
   private moods = MOOD_SERIES.map((v, i) => ({ day: new Date(Date.now() - (MOOD_SERIES.length - 1 - i) * 86_400_000).toISOString().slice(0, 10), value: Math.max(0, Math.min(4, Math.round(v * 6))) }));
-  async logMood(value: number) { const day = new Date().toISOString().slice(0, 10); const last = this.moods.at(-1); if (last?.day === day) last.value = value; else this.moods.push({ day, value }); }
+  async logMood(value: number) { const day = new Date().toISOString().slice(0, 10); const last = this.moods.at(-1); if (last?.day === day) last.value = value; else this.moods.push({ day, value }); this.act('checkin', value); }
   async plan() { return structuredClone(this.pl); }
   async addPlan(label: string, source: 'user' | 'journal' | 'checkin' = 'user') { const p: PlanItem = { id: uuid(), label, done: false, source }; this.pl = [...this.pl.filter(x => !x.done), p].slice(-3); return p; }
-  async setPlanDone(id: string, done: boolean) { const p = this.pl.find(x => x.id === id)!; p.done = done; return structuredClone(p); }
+  async setPlanDone(id: string, done: boolean) { const p = this.pl.find(x => x.id === id)!; p.done = done; if (done) this.act('plan'); return structuredClone(p); }
   async insights(): Promise<Insights> {
     return { moodSeries: this.moods, rhythms: ['Days you step out for a walk tend to be lighter.', 'Sleep is a little shorter lately. Want to try winding down earlier?'], wins: this.wins.map(w => ({ ...w })), daysOfData: this.moods.length };
   }
@@ -143,7 +145,7 @@ export class DemoApi implements Api {
   async putSafetyPlan(p: SafetyPlan) { this.plan_ = p; }
   async safetyAck() { /* recorded server-side in the real app */ }
 
-  async startCalm() { return { id: uuid() }; }
+  async startCalm(itemId: string) { this.act(/sleep|story/i.test(itemId) ? 'sleep' : 'meditate'); return { id: uuid() }; }
   async transcribe(): Promise<never> { throw new ApiError(503, 'stt_unavailable', 'Server dictation isn’t connected in this preview.'); }
   async calmNarration() { return { server: false, voice: null, pace: 0.85, mood: 'unknown', reason: 'the phone’s own voice' }; }
   async narrate(): Promise<never> { await wait(); throw new ApiError(503, 'voice_unavailable', 'The voices aren’t connected in this preview.'); }
@@ -151,6 +153,84 @@ export class DemoApi implements Api {
     return { title: `Evening story: ${theme}`, generated: false, lines: ['Tonight you sit somewhere quiet, as the light turns soft and golden.', 'There is nothing you need to do. Just listen, and let your body get heavy and warm.', 'A cup of tea waits beside you, exactly warm enough.', 'Your breath slows, in and out, in and out.', 'Everything that needed doing has been done enough.', 'Rest here as long as you like. Sleep well.'] };
   }
   async progressCalm(_id: string, pct: number) { if (pct >= 90) this.wins.unshift({ id: uuid(), kind: 'calm', label: 'A calm session', createdAt: new Date().toISOString() }); }
+
+  // ---------------------------------------------------------------------------------------------- garden (an in-memory stand-in that follows the server's rules)
+  private log: DayActs[] = [-5, -4, -3, -2, -1].map((d, i) => ({ day: dayKey(d), mood: [2, 3, 1, 3, 4][i], acts: { checkin: 1, journal: i % 2, breathe: i % 3 === 0 ? 1 : 0, plan: 1 } }));
+  private planted: { id: string; kind: string; slot: number; atDays: number; picks: number }[] = [];
+  private keeps: { kind: string; n: number }[] = [];
+  private made: Creation[] = [];
+  private jarItems: JarItem[] = [];
+  private pickCount = 0;
+  private boatCount = 0;
+  private act(kind: ActKind, mood?: number) {
+    const day = dayKey(0);
+    let d = this.log.find(x => x.day === day);
+    if (!d) { d = { day, mood: null, acts: {} }; this.log.push(d); }
+    if (mood !== undefined) d.mood = mood;
+    d.acts[kind] = (d.acts[kind] ?? 0) + 1;
+  }
+  private buildGarden(): Garden {
+    const g = summariseGarden(this.log, this.pickCount);
+    const today = this.log.find(x => x.day === dayKey(0));
+    const n = (k: ActKind) => today?.acts[k] ?? 0;
+    const body = (['breathe', 'meditate', 'sleep', 'walk', 'event', 'plan', 'create'] as ActKind[]).some(k => n(k) > 0);
+    const flags = { checkin: n('checkin') > 0 || today?.mood != null, body, words: n('journal') + n('talk') > 0 };
+    const seam = this.keeps.filter(k => k.kind === 'seam').length;
+    const flagN = this.keeps.filter(k => k.kind === 'flag').length;
+    const skies = this.keeps.filter(k => k.kind === 'sky').map(k => k.n);
+    const current = ISLES.reduce((acc, s, i) => (g.sunlight >= s.at ? i : acc), 0);
+    return {
+      sunlight: g.sunlight, stage: g.stage, stageName: g.stageName, nextAt: g.nextAt, activeDays: g.activeDays, treeLevel: g.treeLevel, counts: g.counts,
+      today: { ...flags, golden: flags.checkin && flags.body && flags.words, mood: (today?.mood ?? null) as Garden['today']['mood'] },
+      flowers: this.jr.slice(0, 12).reverse().map(e => e.mood) as Garden['flowers'],
+      visitors: { butterflies: Math.floor(g.counts.journal / 2), bulbul: g.counts.talk > 0, squirrel: g.counts.walk > 0, kingfisher: g.goldenDays > 0 },
+      seeds: { planted: g.seeds, sprouted: g.seedDays.filter(d => d < dayKey(0)).length },
+      slots: SLOTS_BY_STAGE[g.stage],
+      plants: this.planted.map(p => {
+        const def = PLANT_KINDS.find(k => k.id === p.kind)!;
+        const grown = Math.max(0, g.activeDays - p.atDays);
+        return { id: p.id, kind: p.kind as Garden['plants'][number]['kind'], slot: p.slot, growth: Math.min(1, grown / def.days), ready: grown >= def.days, daysLeft: Math.max(0, def.days - grown), picks: p.picks };
+      }),
+      tokens: { gold: Math.max(0, g.goldEarned - seam), thread: Math.max(0, g.threadsEarned - flagN), sky: Math.max(0, g.skiesEarned - skies.length) },
+      unlocked: { pot: g.goldEarned > 0 || seam > 0, thread: g.threadsEarned > 0 || flagN > 0, sky: g.skiesEarned > 0 || skies.length > 0 },
+      keepsakes: { potSeams: seam === 0 ? 0 : ((seam - 1) % POT_SEAMS) + 1, pots: seam === 0 ? 0 : Math.floor((seam - 1) / POT_SEAMS), flags: flagN, skies },
+      jarCount: this.jarItems.length, boats: this.boatCount, rangolis: this.made.length,
+      road: { perActiveDay: Math.round(g.perActiveDay), current, isles: ISLES.map(i => ({ name: i.name, theme: i.theme, at: i.at, days: daysTo(i.at, g.sunlight, g.perActiveDay) })) },
+    };
+  }
+  async garden() { return this.buildGarden(); }
+  async plant(kind: Parameters<Api['plant']>[0], slot: number) {
+    const g = this.buildGarden();
+    const def = PLANT_KINDS.find(k => k.id === kind);
+    if (!def) throw new ApiError(400, 'unknown_plant', 'I don’t know that plant.');
+    if (g.sunlight < def.at) throw new ApiError(409, 'not_yet', 'That one isn’t ready to plant yet.');
+    if (slot >= g.slots) throw new ApiError(409, 'slot_closed', 'That spot opens a little later.');
+    if (this.planted.some(p => p.slot === slot)) throw new ApiError(409, 'slot_taken', 'Something is already growing there.');
+    this.planted.push({ id: uuid(), kind, slot, atDays: g.activeDays, picks: 0 });
+    return this.buildGarden();
+  }
+  async pickPlant(id: string) {
+    const p = this.planted.find(x => x.id === id);
+    const g = this.buildGarden();
+    if (!p || !g.plants.find(x => x.id === id)?.ready) throw new ApiError(409, 'not_ready', 'Not ready yet. It just needs a few more days.');
+    p.picks++; p.atDays = g.activeDays; this.pickCount++;
+    return this.buildGarden();
+  }
+  async addKeepsake(kind: 'seam' | 'flag' | 'sky' | 'boat') {
+    const g = this.buildGarden();
+    if (kind === 'boat') { this.boatCount++; this.act('create'); return this.buildGarden(); }
+    const have = kind === 'seam' ? g.tokens.gold : kind === 'flag' ? g.tokens.thread : g.tokens.sky;
+    if (have < 1) throw new ApiError(409, 'nothing_earned', 'Nothing to play yet. A small kind act earns one.');
+    this.keeps.push({ kind, n: kind === 'sky' ? g.keepsakes.skies.length + 1 : 1 });
+    return this.buildGarden();
+  }
+  async creations() { return structuredClone(this.made); }
+  async addCreation(image: string) { this.made.unshift({ id: uuid(), kind: 'rangoli', image, createdAt: new Date().toISOString() }); this.act('create'); return this.buildGarden(); }
+  async deleteCreation(id: string) { this.made = this.made.filter(c => c.id !== id); }
+  async jar() { return structuredClone(this.jarItems); }
+  async addJarItem(text: string) { const j: JarItem = { id: uuid(), text, createdAt: new Date().toISOString() }; this.jarItems.unshift(j); return j; }
+  async deleteJarItem(id: string) { this.jarItems = this.jarItems.filter(j => j.id !== id); }
+  async breathed() { this.act('breathe'); }
 
   async events() {
     const items: OutsideEvent[] = EVENTS.map((e, i) => ({ id: e.id, city: 'Bengaluru', title: e.title, venue: e.where, startsAt: new Date(Date.now() + (i + 2) * 86_400_000).toISOString(), beginnerFriendly: true, groupSize: null, category: 'demo', price: e.price, organiser: 'Demo listing', details: { tags: e.tags, why: e.why, like: e.like, stay: e.stay, how: e.how, when: e.when, far: e.far, img: e.img, readback: e.readback }, interested: false }));

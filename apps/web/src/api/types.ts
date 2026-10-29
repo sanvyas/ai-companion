@@ -1,15 +1,15 @@
 import type {
   Companion, Consent, ConsentUpdate, ConversationItem, ConversationMode, EndConversationResponse, Helpline, Insights, JournalAnalysis,
   JournalCreateBody, JournalEntry, MemoryItem, Me, MeUpdate, NotificationPrefs, OtpStartResponse, OutsideEvent, PlanItem, Privacy,
-  PrivacyUpdate, SafetyPlan, ServerMsg, StoryResponse, StoryTheme, Theme, TrustedContact, Letter,
+  PrivacyUpdate, SafetyPlan, ServerMsg, StoryResponse, StoryTheme, Theme, TrustedContact, Letter, Garden, GardenPlant, Creation, JarItem,
 } from '@saathi/contracts';
 
-export type { Companion, Consent, ConsentUpdate, ConversationItem, ConversationMode, EndConversationResponse, Helpline, Insights, JournalAnalysis, JournalCreateBody, JournalEntry, MemoryItem, Me, MeUpdate, NotificationPrefs, OtpStartResponse, OutsideEvent, PlanItem, Privacy, PrivacyUpdate, SafetyPlan, StoryResponse, StoryTheme, Theme, TrustedContact, Letter };
+export type { Companion, Consent, ConsentUpdate, ConversationItem, ConversationMode, EndConversationResponse, Helpline, Insights, JournalAnalysis, JournalCreateBody, JournalEntry, MemoryItem, Me, MeUpdate, NotificationPrefs, OtpStartResponse, OutsideEvent, PlanItem, Privacy, PrivacyUpdate, SafetyPlan, StoryResponse, StoryTheme, Theme, TrustedContact, Letter, Garden, GardenPlant, Creation, JarItem };
 
 export interface CalmNarration { server: boolean; voice: { id: string; label: string } | null; pace: number; mood: string; reason: string }
 export interface VoiceItem { id: string; label: string; gender: 'female' | 'male' | null; provider: 'device' | 'sarvam' }
 export interface VoiceList { language: string; serverVoices: boolean; items: VoiceItem[] }
-export interface PublicConfig { otp: boolean; google: boolean; googleClientId: string | null; llm: boolean; stt: boolean; tts: boolean; push: boolean; /** Server speech-to-text for the journal is connected. */ dictation?: boolean; signupsOpen?: boolean; voicePaused?: boolean; analytics?: boolean }
+export interface PublicConfig { otp: boolean; google: boolean; googleClientId: string | null; llm: boolean; stt: boolean; tts: boolean; push: boolean; /** Server speech-to-text for the journal is connected. */ dictation?: boolean; signupsOpen?: boolean; voicePaused?: boolean; analytics?: boolean; /** The new design is switched on for everyone. */ uiV2?: boolean }
 
 export interface AnalyticsEvent { name: 'screen_view' | 'click' | 'step' | 'error'; screen?: string; el?: string; durationMs?: number; step?: string; result?: string; at?: number }
 
@@ -125,6 +125,20 @@ export interface Api {
 
   // product analytics (only for people who opted in)
   sendEvents(sessionId: string, events: AnalyticsEvent[]): Promise<void>;
+
+  // garden: derived on the server from what they did; only chosen things (plants, keepsakes, creations, the jar) are stored
+  garden(): Promise<Garden>;
+  /** Every change returns the whole garden again, so the screen never has to guess what grew. */
+  plant(kind: GardenPlant['kind'], slot: number): Promise<Garden>;
+  pickPlant(id: string): Promise<Garden>;
+  addKeepsake(kind: 'seam' | 'flag' | 'sky' | 'boat'): Promise<Garden>;
+  creations(): Promise<Creation[]>;
+  addCreation(image: string): Promise<Garden>;
+  deleteCreation(id: string): Promise<void>;
+  jar(): Promise<JarItem[]>;
+  addJarItem(text: string): Promise<JarItem>;
+  deleteJarItem(id: string): Promise<void>;
+  breathed(): Promise<void>;
 
   // conversations
   createConversation(mode: ConversationMode, continueFrom?: string, first?: boolean): Promise<{ id: string; mode: ConversationMode; voice: { serverStt: boolean; serverTts: boolean } }>;
