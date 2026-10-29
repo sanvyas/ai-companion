@@ -86,6 +86,9 @@ describe('sending', () => {
     await plan(t.ctx, EVENING_IST);
     await runDue(t.ctx, EVENING_IST, 1000);
     expect(push.sent.filter(s => (s.to as { endpoint?: string }).endpoint?.endsWith(a.userId))).toHaveLength(0);
+    // The card is made at the test's fixed evening and expires some hours later by the real clock, so this test would start
+    // failing as the calendar moves on. What it checks is that the card is there and can be dismissed, not how long it lives.
+    await withSystem(t.ctx.db, tx => tx.query(`UPDATE inbox_cards SET expires_at = now() + interval '1 hour' WHERE user_id = $1`, [a.userId]));
     const inbox = (await j(a, 'GET', '/inbox')).json();
     expect(inbox.cards).toHaveLength(1);
     expect(inbox.cards[0].kind).toBe('checkin');
