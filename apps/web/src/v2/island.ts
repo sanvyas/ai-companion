@@ -52,7 +52,7 @@ export function islandSVG(m: IslandModel): string {
   function defs() {
     const P = NT
       ? { t: ['#4C8F92', '#2B5A68'], l: ['#6A5C93', '#2D2650'], r: ['#7C6CA6', '#352C59'], w: ['#6AA6E0', '#2A55A0'], s: ['#8A6370', '#5A404C'], c1: ['#58B09A', '#1F6A5C'], c2: ['#449A88', '#185A4F'] }
-      : { t: ['#C6E98A', '#84C86C'], l: ['#A27048', '#5A3A29'], r: ['#B8804F', '#6B4631'], w: ['#8FDCEE', '#48A5CC'], s: ['#A06E48', '#7E5435'], c1: ['#97DC72', '#3A9049'], c2: ['#7FCB63', '#2F7D3F'] };
+      : { t: ['#D2E2A8', '#A4C58A'], l: ['#B08C6B', '#6A5140'], r: ['#C09B79', '#7B5D49'], w: ['#B6DCE8', '#7DB4CB'], s: ['#A57E5B', '#82603F'], c1: ['#9DC686', '#5C9468'], c2: ['#87B575', '#4D8760'] };
     const lg = (id: string, p: string[]) => `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${p[0]}"/><stop offset="1" stop-color="${p[1]}"/></linearGradient>`;
     const rg = (id: string, p: string[]) => `<radialGradient id="${id}" cx=".35" cy=".28" r=".85"><stop offset="0" stop-color="${p[0]}"/><stop offset="1" stop-color="${p[1]}"/></radialGradient>`;
     return `<defs>${lg('iTop', P.t)}${lg('iL', P.l)}${lg('iR', P.r)}${lg('iWater', P.w)}${lg('iSoil', P.s)}${rg('iCan', P.c1)}${rg('iCan2', P.c2)}<radialGradient id="iGlow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFF3B0" stop-opacity=".95"/><stop offset="1" stop-color="#FFF3B0" stop-opacity="0"/></radialGradient></defs>`;
@@ -68,14 +68,14 @@ export function islandSVG(m: IslandModel): string {
     o += '<path d="M368 172C320 204 260 228 200 258M330 208C284 236 240 262 200 290" stroke="rgba(0,0,0,.13)" stroke-width="2" fill="none" stroke-linecap="round"/>';
     for (let i = 0; i < 9; i++) { const side = i % 2 ? 1 : -1, px = 195 + side * (24 + r() * 120), py = 214 + r() * 50 - Math.abs(px - 195) * .12; o += `<ellipse cx="${n0(px)}" cy="${n0(py)}" rx="${n1(3 + r() * 4)}" ry="${n1(2 + r() * 3)}" fill="rgba(255,255,255,.13)"/>`; }
     o += '<ellipse cx="112" cy="300" rx="7" ry="5" fill="#8A5A3A"/><ellipse cx="282" cy="308" rx="6" ry="4.5" fill="#8A5A3A"/><ellipse cx="236" cy="330" rx="4" ry="3" fill="#8A5A3A"/>';
-    o += dia(195, 152, 171, 85, `fill="url(#iTop)" stroke="${NT ? '#78BDB0' : '#8BCB6E'}" stroke-width="14" stroke-linejoin="round"`);
-    o += dia(195, 150, 150, 74, `fill="${NT ? '#B8E8DC' : '#DDF5A8'}" opacity="${NT ? '.10' : '.38'}" stroke="${NT ? '#B8E8DC' : '#DDF5A8'}" stroke-width="12" stroke-linejoin="round"`);
+    o += dia(195, 152, 171, 85, `fill="url(#iTop)" stroke="${NT ? '#78BDB0' : '#A9CB8E'}" stroke-width="14" stroke-linejoin="round"`);
+    o += dia(195, 150, 150, 74, `fill="${NT ? '#B8E8DC' : '#E8F3C8'}" opacity="${NT ? '.10' : '.38'}" stroke="${NT ? '#B8E8DC' : '#E8F3C8'}" stroke-width="12" stroke-linejoin="round"`);
     o += `<path d="M24 150L195 64L366 150" fill="none" stroke="${NT ? 'rgba(190,235,255,.3)' : 'rgba(255,255,255,.35)'}" stroke-width="3" stroke-linecap="round"/>`;
     o += `<path d="M184 244Q192 222 189 198L205 198Q203 224 208 244Z" fill="${NT ? '#8C87AE' : '#EBDDB6'}" opacity=".9"/>`;
     for (let j = 0; j < 30; j++) {
       const u = r(), v = r(), x = 195 + (u - v) * 150, y = 152 + (u + v - 1) * 74;
       if (Math.abs(x - 195) / 150 + Math.abs(y - 152) / 74 > .92) continue;
-      o += `<path d="M${n0(x - 3)} ${n0(y)}q1-6 3-8q1 4 0 8M${n0(x)} ${n0(y)}q2-7 5-9q0 5-1 9" stroke="${NT ? '#A6E6D2' : '#5FAE4F'}" stroke-width="1.8" fill="none" stroke-linecap="round" opacity="${NT ? '.55' : '.8'}"/>`;
+      o += `<path d="M${n0(x - 3)} ${n0(y)}q1-6 3-8q1 4 0 8M${n0(x)} ${n0(y)}q2-7 5-9q0 5-1 9" stroke="${NT ? '#A6E6D2' : '#76AA64'}" stroke-width="1.8" fill="none" stroke-linecap="round" opacity="${NT ? '.55' : '.8'}"/>`;
     }
     return o;
   }
@@ -287,7 +287,7 @@ export function islandSVG(m: IslandModel): string {
 export function skySVG(phase: SkyPhase, grey: boolean, skies: number[]): string {
   const night = phase === 'night', gold = phase === 'golden';
   let o = '<svg viewBox="0 0 390 360" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">';
-  const hill1 = night ? '#1E2A63' : gold ? '#E7A98A' : grey ? '#9DB5B5' : '#B8DDB0', hill2 = night ? '#2B3A7A' : gold ? '#D8977D' : grey ? '#8EA8A8' : '#9ACE9A';
+  const hill1 = night ? '#1E2A63' : gold ? '#E4B99E' : grey ? '#9DB5B5' : '#C5DAB5', hill2 = night ? '#2B3A7A' : gold ? '#D7A88F' : grey ? '#8EA8A8' : '#AACBA2';
   if (night) {
     const r = rng(9);
     o += '<defs><radialGradient id="mG"><stop offset="0" stop-color="#FFF6D6" stop-opacity=".55"/><stop offset=".5" stop-color="#BFD0FF" stop-opacity=".18"/><stop offset="1" stop-color="#BFD0FF" stop-opacity="0"/></radialGradient><radialGradient id="hz" cx=".5" cy="1" r=".8"><stop offset="0" stop-color="#7A86C8" stop-opacity=".55"/><stop offset="1" stop-color="#7A86C8" stop-opacity="0"/></radialGradient></defs><rect x="0" y="150" width="390" height="210" fill="url(#hz)"/>';

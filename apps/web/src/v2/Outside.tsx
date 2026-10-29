@@ -34,7 +34,7 @@ export function Outside() {
           </div>
         </section>
         <button className="mode" onClick={() => void startWalkFlow()}>
-          <span className="ico" style={{ background: '#D9EEDD' }}><Ic n="pin" /></span>
+          <span className="ico" style={{ background: 'var(--t-sage)' }}><Ic n="pin" /></span>
           <span className="grow1"><b style={{ display: 'block' }}>Walk with me</b><span className="muted small">I’ll keep you company, quietly. Audio only.</span></span><Ic n="chev" />
         </button>
       </div>

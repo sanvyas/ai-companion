@@ -1,15 +1,17 @@
 /* Generated from the design prototype, scoped under .v2 so it can never touch the previous screens. */
 .v2{
-  --page:#E9DFC9; --bg:#FFF9EE; --bg2:#F5EBD6; --card:#FFFFFF; --ink:#1F2A44; --ink2:#59647F; --line:#EBE2CF;
-  --brand:#F29A2E; --brand2:#E98614; --brand-ink:#2B1A00; --indigo:#2D3A6B; --leaf:#3F8F5A; --leaf2:#2F7A49; --leafsoft:#DDF0DC;
-  --rose:#F4A6B7; --sky:#CFE8F4; --gold:#FFD36B;
-  --sh1:0 1px 2px rgba(31,42,68,.06),0 6px 18px rgba(31,42,68,.08); --sh2:0 2px 4px rgba(31,42,68,.08),0 16px 40px rgba(31,42,68,.16);
-  --ease:cubic-bezier(.22,1,.36,1); --spring:cubic-bezier(.34,1.56,.64,1);
-  --disp:'Bricolage Grotesque','Plus Jakarta Sans',system-ui,sans-serif; --body:'Plus Jakarta Sans',system-ui,sans-serif;
+  --page:#EFEAE0; --bg:#FAF7F2; --bg2:#F1ECE3; --card:#FFFFFF; --ink:#1D2433; --ink2:#586173; --line:#E6DFD3;
+  --brand:#2C3A6B; --brand2:#2C3A6B; --brand-ink:#FFFFFF; --indigo:#2C3A6B; --leaf:#4F8A5E; --leaf2:#25683D; --leafsoft:#E4EBDF;
+  --accent:#D98A2B; --gold:#E9B756; --rose:#E8B4A8; --sky:#DFE8EE;
+  --t-sage:#E4EBDF; --t-rose:#F3E3DE; --t-sky:#DFE8EE; --t-sand:#F2E9D6; --t-lilac:#E9E4EF; --t-clay:#F0E0D2;
+  --sh1:0 1px 2px rgba(29,36,51,.05); --sh2:0 8px 24px -8px rgba(29,36,51,.18);
+  --ease:cubic-bezier(.22,1,.36,1); --spring:cubic-bezier(.34,1.4,.64,1);
+  --disp:'Fraunces Variable','Noto Serif Devanagari',Georgia,serif; --body:'Plus Jakarta Sans Variable','Noto Sans Devanagari',system-ui,sans-serif;
 }
-.v2.night{--page:#0B1022; --bg:#12172B; --bg2:#1A2140; --card:#1E2748; --ink:#F2F0FF; --ink2:#AEB7D8; --line:#2C3659;
-  --brand:#F7B24D; --brand2:#F29A2E; --leaf:#7FD1A0; --leaf2:#9BE0B8; --leafsoft:#21393A; --indigo:#9FB0F0;
-  --sh1:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.35); --sh2:0 2px 4px rgba(0,0,0,.4),0 16px 40px rgba(0,0,0,.5)}
+.v2.night{--page:#0A0E1C; --bg:#10152A; --bg2:#192040; --card:#1A2142; --ink:#F1EFFA; --ink2:#AEB6D4; --line:#2A3358;
+  --brand:#E9B756; --brand2:#E9B756; --brand-ink:#1B1A10; --indigo:#AEBBF2; --leaf:#7FC59A; --leaf2:#9BE0B8; --leafsoft:#1F3A38;
+  --accent:#E9B756; --t-sage:#213A36; --t-rose:#3A2A33; --t-sky:#1F3248; --t-sand:#3A3223; --t-lilac:#2C2848; --t-clay:#3A2C27;
+  --sh1:0 1px 2px rgba(0,0,0,.3); --sh2:0 8px 24px -8px rgba(0,0,0,.6)}
 .v2 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 .v2{height:100%}
 .v2{margin:0;background:var(--page);color:var(--ink);font-family:var(--body);font-weight:500;font-size:15.5px;line-height:1.4;
@@ -462,3 +464,158 @@ html[data-reduce="true"] .v2 *, html[data-reduce="true"] .v2 *::before, html[dat
 .v2{--brand-text:#8A4A00}
 .v2.night{--brand-text:#F7B24D}
 .v2 .hchip{max-width:calc(100% - 24px)}
+
+/* =====================================================================================================================
+   Design system pass: restrained colour, an editorial serif for voice and a quiet sans for everything else, hairlines instead
+   of heavy shadows, one accent, generous space on a 4-point grid.
+   ===================================================================================================================== */
+.v2{font-size:15px;font-weight:400;line-height:1.5;letter-spacing:0}
+.v2 b, .v2 strong{font-weight:600}
+.v2 .h1{font-family:var(--disp);font-weight:500;font-size:30px;line-height:1.12;letter-spacing:-.02em;font-variation-settings:"opsz" 72,"SOFT" 40}
+.v2 .h2{font-family:var(--disp);font-weight:500;font-size:21px;line-height:1.2;letter-spacing:-.012em;font-variation-settings:"opsz" 36,"SOFT" 40}
+.v2 .h3{font-family:var(--disp);font-weight:500;font-size:17px;line-height:1.25;letter-spacing:-.005em;font-variation-settings:"opsz" 24,"SOFT" 40}
+.v2 .eyebrow{font-size:11.5px;font-weight:600;letter-spacing:.09em;color:var(--ink2)}
+.v2 .small{font-size:13.5px}
+.v2 .fine{font-size:12.5px}
+.v2 .pane{padding:0 20px 32px}
+.v2 .hhead{padding:28px 0 18px;align-items:flex-end}
+.v2 .hhead .h1{font-size:32px}
+
+/* surfaces */
+.v2 .card{background:var(--card);border-radius:20px;box-shadow:none;border:1px solid var(--line);padding:18px}
+.v2 .card.flat{padding:0 18px}
+.v2 .card+.card{margin-top:12px}
+.v2 .sec{margin-top:32px}
+.v2 .sec-h{margin-bottom:14px}
+.v2 .sec-h .h2{font-size:20px}
+.v2 .list>li{padding:14px 0}
+.v2 .mode{border:1px solid var(--line);box-shadow:none;border-radius:20px;padding:14px 16px}
+.v2 .mode .ico{width:44px;height:44px;border-radius:14px}
+.v2 .mode.big{border:0;background:var(--brand);color:var(--brand-ink)}
+.v2.night .mode.big{background:var(--bg2);color:var(--ink);border:1px solid var(--line)}
+.v2 .mode.big .ico{background:rgba(255,255,255,.14);color:inherit}
+
+/* buttons: one confident primary, quiet secondaries */
+.v2 .btn{background:var(--brand);color:var(--brand-ink);font-weight:600;font-size:15px;box-shadow:none;min-height:50px;border-radius:25px;letter-spacing:0}
+.v2 .btn.sm{min-height:40px;font-size:14px;border-radius:20px;padding:0 18px}
+.v2 .btn.indigo{background:var(--brand);color:var(--brand-ink);box-shadow:none}
+.v2 .btn.soft{background:var(--bg2);color:var(--ink)}
+.v2 .btn.line{border:1px solid var(--line);color:var(--ink);background:transparent;border-width:1px}
+.v2 .btn.ghost{background:none;color:var(--ink2);font-weight:600}
+.v2 .btn.glass{background:rgba(255,255,255,.14)}
+.v2 .link{font-weight:600;color:var(--ink);text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+.v2 .chip{box-shadow:none;border:1px solid var(--line);font-weight:500;background:var(--card)}
+.v2 .chip[aria-pressed=true], .v2 .chip[aria-checked=true]{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+.v2 .pill{font-weight:600;font-size:12px;background:var(--bg2);color:var(--ink2)}
+.v2 .pill.leaf{background:var(--leafsoft);color:var(--leaf2)}
+.v2 .tag{background:var(--accent);color:#2A1A00;font-weight:600}
+.v2 input[type=text], .v2 textarea{border:1px solid var(--line);font-weight:400;border-radius:16px}
+.v2 .helpbtn{background:var(--t-rose);color:#7A3B30;font-weight:600;height:38px;font-size:13.5px}
+.v2.night .helpbtn{background:var(--t-rose);color:#F3C9BE}
+.v2 .iconbtn, .v2 .backbtn{box-shadow:none;border:1px solid var(--line);background:var(--card)}
+.v2 .backbtn{font-weight:600}
+.v2 .dark .iconbtn, .v2 .dark .backbtn{border-color:rgba(255,255,255,.2)}
+
+/* tab bar: flat, hairline, no floating blob */
+.v2 .tabbar{height:72px;background:var(--bg);border-top:1px solid var(--line);padding:6px 8px 0}
+.v2 .pane{inset:0 0 72px 0}
+.v2 .tabbar button{font-weight:600;font-size:11px;letter-spacing:.01em;gap:3px}
+.v2 .tabbar button svg{width:24px;height:24px}
+.v2 .tabbar button[aria-current=true]{color:var(--ink)}
+.v2 .tabbar button[aria-current=true]::after{width:16px;height:3px;border-radius:2px;bottom:0;background:var(--accent)}
+.v2 .tabbar .tt{margin-top:0}
+.v2 .tabbar .tt i{width:48px;height:34px;border-radius:17px;background:var(--brand);box-shadow:none;margin-bottom:-2px}
+.v2 .tabbar .tt i svg{width:22px;height:22px;transform:none}
+.v2.night .tabbar .tt i{color:var(--brand-ink)}
+
+/* the garden picture */
+.v2 .hero{border-radius:28px;box-shadow:none;border:1px solid rgba(29,36,51,.08)}
+.v2 .hchip{height:34px;padding:0 14px 0 6px;background:rgba(255,255,255,.82);backdrop-filter:blur(8px);box-shadow:none;font-weight:600;font-size:12.5px;left:12px;top:12px}
+.v2 .hchip svg{width:24px;height:24px}
+.v2.night .hchip{background:rgba(16,21,42,.62);color:#EEF0FF}
+.v2 .bubble>div{box-shadow:0 4px 14px rgba(20,30,50,.18);font-weight:500}
+
+/* places in the garden */
+.v2 .places{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-top:16px}
+.v2 .places button{position:relative;display:flex;flex-direction:column;align-items:center;gap:7px;padding:6px 0;font-size:11.5px;font-weight:600;color:var(--ink2)}
+.v2 .places i{width:46px;height:46px;border-radius:16px;display:grid;place-items:center;color:var(--ink);transition:transform .35s var(--spring)}
+.v2 .places button:active i{transform:scale(.94)}
+.v2 .places svg.i{width:22px;height:22px}
+.v2 .places button.on{color:var(--ink)}
+.v2 .places button.on i{box-shadow:0 0 0 2px var(--bg),0 0 0 3.5px var(--accent)}
+.v2 .places em{position:absolute;top:2px;right:6px;width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px var(--bg)}
+
+/* a gentle suggestion */
+.v2 .nudge{margin-top:16px;padding:16px;border-radius:20px;color:var(--ink)}
+.v2 .nudge .ico{background:rgba(255,255,255,.7);color:var(--ink)}
+.v2.night .nudge .ico{background:rgba(255,255,255,.1)}
+
+/* today */
+.v2 .steps.card{padding:4px 0}
+.v2 .steps>li{box-shadow:none;border-radius:0;background:none;padding:16px 18px;gap:14px}
+.v2 .steps>li+li{margin-top:0;border-top:1px solid var(--line)}
+.v2 .steps .num{width:28px;height:28px;font-size:13px;font-weight:600;background:transparent;border:1.5px solid var(--line);color:var(--ink2);margin-top:1px}
+.v2 .steps .num svg{width:15px;height:15px}
+.v2 .steps li.done .num{background:var(--leaf);border-color:var(--leaf);color:#fff}
+.v2 .steps li.next{box-shadow:none;position:relative}
+.v2 .steps li.next::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:2px;background:var(--accent)}
+.v2 .steps li.next .num{border-color:var(--ink);color:var(--ink)}
+.v2 .steps li.later{opacity:1}
+.v2 .steps li.later .tt2{color:var(--ink2)}
+.v2 .steps .tt2{font-family:var(--body);font-weight:600;font-size:15.5px}
+.v2 .steps li.done .tt2{color:var(--ink2);font-weight:500}
+.v2 .steps .ss{font-size:13.5px;line-height:1.45}
+.v2 .steps .acts{margin-top:12px}
+.v2 .golden:not(.grade){background:var(--t-sand);color:var(--ink);border:1px solid var(--line);margin-top:12px;border-radius:18px;animation:none}
+.v2 .golden:not(.grade) .ico{background:rgba(255,255,255,.6)}
+
+/* the garden in numbers */
+.v2 .stats{display:grid;grid-template-columns:repeat(4,1fr);padding:18px 0 0}
+.v2 .stats div{text-align:center;position:relative}
+.v2 .stats div+div::before{content:"";position:absolute;left:0;top:6px;bottom:6px;width:1px;background:var(--line)}
+.v2 .stats b{display:block;font-family:var(--disp);font-weight:500;font-size:26px;letter-spacing:-.02em;line-height:1.1}
+.v2 .stats span{font-size:12px;color:var(--ink2);font-weight:500}
+.v2 .rowlink{display:flex;align-items:center;gap:12px;width:100%;text-align:left;margin:14px -18px 0;padding:14px 18px;width:calc(100% + 36px);border-top:1px solid var(--line);font-weight:600}
+.v2 .rowlink span{flex:1}
+.v2 .rowlink em{font-style:normal;font-weight:400;color:var(--ink2);margin-left:6px;font-size:13px}
+
+/* more ways: quiet two-column rows, one tinted icon each */
+.v2 .tiles{gap:10px}
+.v2 .tile{flex-direction:row;align-items:center;gap:12px;min-height:0;padding:12px;border-radius:18px;background:var(--card);border:1px solid var(--line);color:var(--ink)}
+.v2 .tile .ico{width:40px;height:40px;border-radius:13px}
+.v2 .tile svg.i{width:20px;height:20px}
+.v2 .tile b{font-family:var(--body);font-weight:600;font-size:14.5px}
+.v2 .tile span:not(.ico){font-size:12px;opacity:1;color:var(--ink2)}
+.v2 .foot{margin-top:32px}
+
+/* sheets and overlays */
+.v2 .sheet{background:var(--bg);border-radius:28px 28px 0 0}
+.v2 .scrim{background:rgba(16,20,36,.42)}
+.v2 .toast{background:var(--ink);color:var(--bg);font-weight:500}
+.v2 .ribbon{box-shadow:var(--sh2);font-weight:500}
+.v2 .ribbon b{background:var(--gold);color:#2A1A00;font-weight:600}
+.v2 .cover{border-radius:20px}
+.v2 .cover .pl{box-shadow:none}
+.v2 .sw i{background:var(--line)}
+.v2 .set, .v2 .check{box-shadow:none;border:1px solid var(--line)}
+.v2 .seg{background:var(--bg2);border:0}
+.v2 .seg button{font-weight:600}
+.v2 .seg button[aria-selected=true]{box-shadow:0 1px 2px rgba(29,36,51,.08)}
+
+.v2 .hero{border:0;background:#D9E8EC}
+.v2 .hero.sky-day{background:linear-gradient(180deg,#BBDAE8,#E4EFEE 70%,#F3F3E7)}
+.v2 .hero.sky-golden{background:linear-gradient(180deg,#E7C3AA,#F4DABD 60%,#F9E9D2)}
+.v2 .hero.sky-grey{background:linear-gradient(180deg,#B2C3CD,#D6E0E4 70%,#EBEFEA)}
+.v2 .hero.sky-night{background:linear-gradient(180deg,#0D1330,#1C2956 58%,#3A477E)}
+.v2 .hero .grade.golden{background:linear-gradient(180deg,rgba(255,170,110,.10),rgba(255,140,80,.04))}
+.v2 .hero .grade.night{background:linear-gradient(180deg,rgba(8,12,40,.10),rgba(8,12,40,0) 60%)}
+
+/* illustrations and glyphs: a little quieter so they sit with the type */
+.v2 .cover svg.bg{filter:saturate(.5) brightness(1.04)}
+.v2 .cover{color:#1F2A44}
+.v2 .face svg, .v2 .weekrow svg, .v2 .m svg{filter:saturate(.85)}
+.v2 .btn.glass{background:rgba(255,255,255,.14);color:#fff}
+/* Night: icon tiles sit on dark tints, so their glyphs follow the text colour; covers keep their light artwork and dark text */
+.v2.night .ico{color:var(--ink)}
+.v2.night .mode.big .ico{color:inherit}
+.v2 .cover .fine,.v2 .cover .small{color:#4A5470!important}

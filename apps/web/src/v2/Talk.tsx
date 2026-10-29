@@ -28,29 +28,29 @@ export function Talk() {
       <p className="muted" style={{ margin: '-4px 0 16px' }}>{compName} listens without judging. Choose how you’d like to talk.</p>
       <div className="stg">
         <Mode big icon="mic" title="Talk out loud" sub="Voice call. Just speak, and I listen." onClick={() => void startCall('voice')} track="talk.voice" />
-        <Mode icon="chat" bg="#D9DEFA" title={`Type to ${compName}`} sub="Chat at your own pace." onClick={() => void openChat()} track="talk.text" />
-        <Mode icon="cam" bg="#FADCE3" title={`See ${compName}`} sub="Video call, a face to talk to." onClick={() => void startCall('video')} track="talk.video" />
+        <Mode icon="chat" bg="var(--t-lilac)" title={`Type to ${compName}`} sub="Chat at your own pace." onClick={() => void openChat()} track="talk.text" />
+        <Mode icon="cam" bg="var(--t-rose)" title={`See ${compName}`} sub="Video call, a face to talk to." onClick={() => void startCall('video')} track="talk.video" />
       </div>
 
       <div className="sec">
         <div className="sec-h"><h2 className="h2">Quieter ways</h2></div>
         <Mode icon="user" bg="#E4DDF3" title="Just sit with me" sub="Quiet company. No need to say anything." onClick={() => void startCall('sit')} track="talk.sit" />
         <Mode icon="pen" bg="#FBE2CE" title="Talk it out" sub="Speak freely. Saved as a private journal entry." onClick={() => startJournal('speak')} track="talk.talk_it_out" />
-        <Mode icon="wave" bg="#D3ECF5" title="Breathe" sub="Three slow breaths, guided." onClick={openBreathe} track="talk.breathe" />
+        <Mode icon="wave" bg="var(--t-sky)" title="Breathe" sub="Three slow breaths, guided." onClick={openBreathe} track="talk.breathe" />
       </div>
 
       <div className="sec">
         <div className="sec-h"><h2 className="h2">{compName} checks on you</h2></div>
         <div className="card row" style={{ gap: 12 }}>
-          <span className="ico" style={{ background: '#FFE9B8' }}><Ic n="bell" /></span>
+          <span className="ico" style={{ background: 'var(--t-sand)' }}><Ic n="bell" /></span>
           <div className="grow1"><b>Daily check-in</b><div className="muted small">{prefs ? CHECKIN_LABEL[prefs.checkinTime] : '…'}. You can change this any time.</div></div>
           <button className="link" onClick={() => go('notifs')}>Change</button>
         </div>
       </div>
 
       <div className="sec">
-        <div className="card row" style={{ background: '#FFF1EE', gap: 12 }}>
-          <span className="ico" style={{ background: '#FFD9D2' }}><Ic n="life" color="#8A2D1C" /></span>
+        <div className="card row" style={{ background: 'var(--t-rose)', gap: 12 }}>
+          <span className="ico" style={{ background: 'var(--t-rose)' }}><Ic n="life" color="#8A2D1C" /></span>
           <div className="grow1"><b style={{ color: '#3A1A12' }}>Need someone right now?</b><div className="small" style={{ color: '#6B3A30' }}>Helplines and your safety plan are one tap away.</div></div>
           <button className="btn sm" style={{ background: '#C7432B', color: '#fff', boxShadow: 'none' }} onClick={() => openSheet('support')}>Get help</button>
         </div>

@@ -37,9 +37,9 @@ export function Chat() {
       </div>
 
       {careCard && (
-        <section aria-label="Support" className="card" style={{ margin: '0 14px 10px', background: '#FFF0CF', display: 'grid', gap: 10 }}>
+        <section aria-label="Support" className="card" style={{ margin: '0 14px 10px', background: 'var(--t-sand)', display: 'grid', gap: 10 }}>
           <b>Talk to a real person</b>
-          <span className="small" style={{ color: '#5A4300' }}>Free, any time, in your language. I’ll stay here too.</span>
+          <span className="small" style={{ color: 'var(--ink2)' }}>Free, any time, in your language. I’ll stay here too.</span>
           <div className="row" style={{ gap: 8 }}>
             <button className="btn sm indigo grow1" onClick={() => openSheet('helplines')}>See helplines</button>
             <button className="btn sm ghost" onClick={() => set({ careCard: false })}>Not now</button>

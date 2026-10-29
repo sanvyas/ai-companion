@@ -184,7 +184,7 @@ export function JarScreen() {
       <JarArt items={list} drop={drop} />
       <div className="fine" style={{ textAlign: 'center', margin: '0 0 12px' }} role="status">{list.length} saved</div>
       {out && (
-        <div className="card" style={{ background: '#FFF6DF', marginBottom: 12 }}>
+        <div className="card" style={{ background: 'var(--t-sand)', marginBottom: 12 }}>
           <div className="eyebrow">From {new Date(out.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</div>
           <p style={{ fontFamily: 'var(--disp)', fontSize: 19, marginTop: 4 }}>“{out.text}”</p>
           <button className="link" style={{ marginTop: 4 }} onClick={() => void remove(out)}>Remove this one</button>

@@ -54,10 +54,10 @@ export function WelcomeV2() {
 }
 
 const HOW: { i: 'mic' | 'pen' | 'lotus' | 'leaf'; bg: string; t: string; d: string }[] = [
-  { i: 'mic', bg: '#D9DEFA', t: 'Talk', d: 'Say what’s on your mind. Saathi listens, day or night.' },
-  { i: 'pen', bg: '#FADCE3', t: 'Write', d: 'A private journal. Type it or speak it.' },
-  { i: 'lotus', bg: '#D3ECF5', t: 'Calm', d: 'Breathing, meditation and sleep stories.' },
-  { i: 'leaf', bg: '#DDF0DC', t: 'Your garden', d: 'Everything you do grows a little garden. It never wilts.' },
+  { i: 'mic', bg: 'var(--t-sky)', t: 'Talk', d: 'Say what’s on your mind. Saathi listens, day or night.' },
+  { i: 'pen', bg: 'var(--t-rose)', t: 'Write', d: 'A private journal. Type it or speak it.' },
+  { i: 'lotus', bg: 'var(--t-sky)', t: 'Calm', d: 'Breathing, meditation and sleep stories.' },
+  { i: 'leaf', bg: 'var(--t-sage)', t: 'Your garden', d: 'Everything you do grows a little garden. It never wilts.' },
 ];
 
 export function IntroV2() {
@@ -108,7 +108,7 @@ export function UnderV2() {
       <p className="muted" style={{ margin: '10px 0 16px' }}>Saathi isn’t built for under-18s yet, so we won’t create an account, and nothing is stored. Talking to an adult you trust, like a family member or teacher, can really help.</p>
       <div style={{ display: 'grid', gap: 10 }}>
         {YOUTH_HELPLINES.map(h => (
-          <div key={h.id} className="card row" style={{ gap: 12, background: '#FFF1D6' }}>
+          <div key={h.id} className="card row" style={{ gap: 12, background: 'var(--t-sand)' }}>
             <div className="grow1"><b>{h.name} · {h.num}</b><div className="muted small">{h.desc}</div></div>
             <a className="btn sm indigo" href={`tel:${h.tel}`}><Ic n="phone" />Call</a>
           </div>

@@ -105,7 +105,7 @@ export function WhyScreen() {
       </ul>
       <div className="sec-h" style={{ marginTop: 20 }}><h2 className="h2">Messages coming up</h2></div>
       {notes.length
-        ? <ul className="list card" style={{ padding: '4px 16px' }}>{notes.map(nn => row('bell', '#FFE9B8', nn.text, nn.when, nn.why))}</ul>
+        ? <ul className="list card" style={{ padding: '4px 16px' }}>{notes.map(nn => row('bell', 'var(--t-sand)', nn.text, nn.when, nn.why))}</ul>
         : <div className="card"><p className="muted small">Check-ins are off. Saathi won’t send anything unless you turn them on in You.</p></div>}
       <div className="sec-h" style={{ marginTop: 20 }}><h2 className="h2">You are in control</h2></div>
       <div className="card">
@@ -125,7 +125,7 @@ export function LetterScreen() {
   return (
     <ScreenFrame title="A letter from Saathi" onBack={pop}>
       {letter ? (
-        <div className="card" style={{ padding: 22, background: '#FFFDF6' }}>
+        <div className="card" style={{ padding: 22, background: 'var(--t-sand)' }}>
           <p className="muted small">{dayOf(letter.createdAt)}</p>
           <div style={{ fontFamily: 'var(--disp)', fontSize: 18, lineHeight: 1.6, marginTop: 10, display: 'grid', gap: 12 }}>
             {letter.body.split(/\n{2,}/).map((para, i) => <p key={i}>{para}</p>)}

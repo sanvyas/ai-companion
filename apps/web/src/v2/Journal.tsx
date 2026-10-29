@@ -13,10 +13,10 @@ import { MOODS5, Weather, moodByValue } from './Weather';
 
 type Kind = 'page' | 'voice' | 'chat' | 'video';
 const KIND: Record<Kind, { icon: IconName; bg: string; label: string }> = {
-  page: { icon: 'pen', bg: '#FADCE3', label: 'Page' },
-  voice: { icon: 'mic', bg: '#D9DEFA', label: 'Voice' },
-  chat: { icon: 'chat', bg: '#D9DEFA', label: 'Chat' },
-  video: { icon: 'cam', bg: '#FADCE3', label: 'Video' },
+  page: { icon: 'pen', bg: 'var(--t-rose)', label: 'Page' },
+  voice: { icon: 'mic', bg: 'var(--t-sky)', label: 'Voice' },
+  chat: { icon: 'chat', bg: 'var(--t-sky)', label: 'Chat' },
+  video: { icon: 'cam', bg: 'var(--t-rose)', label: 'Video' },
 };
 const kindOfConversation = (m: ConversationItem['mode']): Kind => (m === 'video' ? 'video' : m === 'text' || m === 'checkin' ? 'chat' : 'voice');
 
@@ -47,12 +47,12 @@ export function JournalTab() {
   return (
     <>
       <div className="hhead"><div><div className="eyebrow">Journal</div><h1 className="h1" style={{ marginTop: 4 }}>Your story<br />so far</h1></div><HelpPill /></div>
-      <div className="card" style={{ background: 'linear-gradient(135deg,#FFE4B5,#FFD0B0)', color: '#3A2400', padding: 14 }}>
+      <div className="card" style={{ background: 'var(--t-sand)', padding: 14 }}>
         <div className="row" style={{ gap: 10, flexWrap: 'nowrap' }}>
           <button className="btn grow1" data-track="journal.write" onClick={() => startJournal('write')}><Ic n="pen" />Write</button>
-          <button className="btn grow1 soft" style={{ background: 'rgba(255,255,255,.65)', color: '#3A2400' }} data-track="journal.talk_it_out" onClick={() => startJournal('speak')}><Ic n="mic" />Speak</button>
+          <button className="btn grow1 soft" style={{ background: 'var(--card)' }} data-track="journal.talk_it_out" onClick={() => startJournal('speak')}><Ic n="mic" />Speak</button>
         </div>
-        <p className="small" style={{ marginTop: 8, opacity: .8 }}>Everything you write or say is kept here, only for you.</p>
+        <p className="small muted" style={{ marginTop: 10 }}>Everything you write or say is kept here, only for you.</p>
       </div>
       <div className="seg" role="tablist" aria-label="Journal view" style={{ marginTop: 14 }}>
         <button role="tab" aria-selected={seg === 'timeline'} onClick={() => setV2({ jseg: 'timeline' })}>Timeline</button>
@@ -153,7 +153,7 @@ function Progress() {
       <div className="card">
         <b className="h3">What seems to help you</b>
         {enough && ins && ins.rhythms.length > 0
-          ? <ul className="list" style={{ marginTop: 4 }}>{ins.rhythms.map(r => <li key={r}><span className="ico" style={{ background: '#DDF0DC' }}><Ic n="leaf" color="#2F7A49" /></span><div className="grow1">{r}</div></li>)}</ul>
+          ? <ul className="list" style={{ marginTop: 4 }}>{ins.rhythms.map(r => <li key={r}><span className="ico" style={{ background: 'var(--t-sage)' }}><Ic n="leaf" color="#2F7A49" /></span><div className="grow1">{r}</div></li>)}</ul>
           : <p className="muted small" style={{ marginTop: 6 }}>Saathi needs a couple of weeks of check-ins to see what helps you. Nothing to do, just keep showing up.</p>}
       </div>
       {(ins?.wins.length ?? 0) > 0 && (
@@ -164,12 +164,12 @@ function Progress() {
       )}
       {letter && (
         <button className="mode" onClick={() => push({ id: 'letter' })}>
-          <span className="ico" style={{ background: '#F8D9E3' }}><Ic n="pen" /></span>
+          <span className="ico" style={{ background: 'var(--t-rose)' }}><Ic n="pen" /></span>
           <span className="grow1"><b style={{ display: 'block' }}>Sunday letter</b><span className="muted small">{dayOf(letter.createdAt)}</span></span><Ic n="chev" />
         </button>
       )}
       <button className="mode" onClick={() => push({ id: 'why' })}>
-        <span className="ico" style={{ background: '#FFE9B8' }}><Ic n="star" /></span>
+        <span className="ico" style={{ background: 'var(--t-sand)' }}><Ic n="star" /></span>
         <span className="grow1"><b style={{ display: 'block' }}>How Saathi uses this</b><span className="muted small">See how today’s plan, stories, messages and events are chosen</span></span><Ic n="chev" />
       </button>
     </div>
@@ -187,7 +187,7 @@ export function ConvoScreen({ id, onBack }: { id: string; onBack: () => void }) 
   return (
     <ScreenFrame title={`${k.label} conversation`} onBack={onBack}>
       {convo && <div className="row" style={{ gap: 10, margin: '6px 0 10px', flexWrap: 'wrap' }}><b>{dayOf(convo.startedAt)}</b></div>}
-      {convo?.summary && <div className="card" style={{ background: '#FFF6DF', boxShadow: 'none' }}><div className="eyebrow">{comp}’s note</div><p className="small" style={{ marginTop: 4 }}>{convo.summary}</p></div>}
+      {convo?.summary && <div className="card" style={{ background: 'var(--t-sand)', boxShadow: 'none' }}><div className="eyebrow">{comp}’s note</div><p className="small" style={{ marginTop: 4 }}>{convo.summary}</p></div>}
       {msgs === null && !failed && <p className="muted" role="status" style={{ marginTop: 14 }}>One moment…</p>}
       {failed && <p className="muted" role="alert" style={{ marginTop: 14 }}>I couldn’t open that conversation right now.</p>}
       {msgs && <div className="msgs" style={{ marginTop: 10 }}>{msgs.filter(m => m.role !== 'system').map(m => <div key={m.id} className={'m ' + (m.role === 'user' ? 'me' : 'her')}>{m.text}</div>)}</div>}
@@ -288,9 +288,9 @@ function Review() {
       <h2 className="h1">What I noticed</h2>
       <div className="row" style={{ gap: 12, alignItems: 'flex-start' }}><span style={{ width: 34, flex: 'none' }} aria-label={m.label}><Weather k={m.k} /></span><p style={{ fontSize: 16.5, lineHeight: 1.55 }}>{r.noticed}</p></div>
       {r.careFlag && (
-        <section aria-label="Support" className="card" style={{ background: '#FFF0CF', display: 'grid', gap: 10 }}>
+        <section aria-label="Support" className="card" style={{ background: 'var(--t-sand)', display: 'grid', gap: 10 }}>
           <b>That sounds really heavy.</b>
-          <span className="small" style={{ color: '#5A4300' }}>Would it help to talk to a real person? It’s free, any time. I’m here too.</span>
+          <span className="small" style={{ color: 'var(--ink2)' }}>Would it help to talk to a real person? It’s free, any time. I’m here too.</span>
           <div className="row" style={{ gap: 8 }}><button className="btn sm indigo grow1" onClick={() => openSheet('helplines')}>See helplines</button><button className="btn sm line grow1" onClick={() => void startCall('voice')}>Talk with {comp}</button></div>
         </section>
       )}

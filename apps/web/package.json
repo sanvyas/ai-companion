@@ -12,10 +12,12 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "react": "18.3.1",
-    "react-dom": "18.3.1",
+    "@fontsource-variable/fraunces": "^5.3.0",
+    "@fontsource-variable/plus-jakarta-sans": "^5.3.0",
+    "@saathi/contracts": "*",
     "@saathi/domain": "*",
-    "@saathi/contracts": "*"
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",

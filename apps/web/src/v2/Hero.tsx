@@ -29,12 +29,14 @@ export function pickPlace(oneId: string | null | undefined, bodyDone: boolean): 
   return ({ voice: 'talk', breathe: 'calm', walk: 'out', meditate: 'calm', plan: 'plan', sleep: 'sleep', boat: 'calm', rangoli: 'out', jar: 'journal' } as Record<string, PerchKey>)[oneId] ?? null;
 }
 
+/** The island. With `interactive` it carries tappable markers; Home keeps the picture clean and puts its places in a row beneath. */
 export function Hero({ pick, interactive = true }: { pick?: PerchKey | null; interactive?: boolean }) {
   const garden = useGarden(s => s.garden);
   const fresh = useGarden(s => s.fresh);
   const phase = useSkyPhase();
   const mood = useStore(s => s.mood);
   const hasPins = interactive;
+  void pick;
   const birdAt = useV2(s => s.birdAt);
   const say = useV2(s => s.say);
   const [fly, setFly] = useState(false);
@@ -107,7 +109,7 @@ export function Hero({ pick, interactive = true }: { pick?: PerchKey | null; int
           {garden.seeds.planted > 0 && <button className="mini" style={{ left: pct(40, 390), top: pct(118, 360) }} aria-label="Greenhouse" onClick={() => push({ id: 'garden' })}><Ic n="flower" color="#2F7A49" /></button>}
         </div>
       )}
-      {interactive && (
+      {(
         <button className="hchip" aria-label={`Day ${garden?.activeDays ?? 0}, ${STAGES[stage].name}. See how your garden grows`} onClick={() => push({ id: 'garden' })}>
           <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r={R} fill="none" stroke="#E5EDDD" strokeWidth="4" /><circle className="rg" cx="16" cy="16" r={R} fill="none" stroke="#3F8F5A" strokeWidth="4" strokeLinecap="round" strokeDasharray={C.toFixed(1)} strokeDashoffset={(C * (1 - progress / 100)).toFixed(1)} /></svg>
           <span>Day {garden?.activeDays ?? 0} · {STAGES[stage].name}</span>

@@ -92,13 +92,13 @@ describe('the new design', () => {
     await page.getByRole('button', { name: 'Maybe later' }).click();
 
     // Plant something in a free plot.
-    await page.getByRole('button', { name: 'Plant something here' }).first().click();
+    await page.getByRole('button', { name: /^Plant something/ }).first().click();
     await page.getByRole('button', { name: /^Marigold/ }).click();
     await page.getByText('Planted. It grows on the days you show up.').waitFor();
     expect((await get(user, '/garden')).plants).toHaveLength(1);
 
     // The gentle plan: add, reword, tick, remove.
-    await page.getByRole('button', { name: /^Plan/ }).last().click();
+    await page.getByRole('navigation', { name: 'Places in your garden' }).getByRole('button', { name: /^Plan/ }).click();
     await page.getByRole('heading', { name: 'Gentle plan' }).waitFor().catch(() => undefined);
     await page.getByLabel('Add a step').fill('Water the tulsi');
     await page.getByRole('button', { name: 'Add step' }).click();
@@ -178,7 +178,8 @@ describe('the new design', () => {
       await page.getByRole('button', { name: 'Back' }).click();
     }
     await calm();
-    await page.getByRole('button', { name: /^Your garden/ }).click();
+    await nav('today');
+    await page.getByRole('button', { name: /See how your garden grows/ }).click();
     await page.getByRole('heading', { name: 'Your road, month by month' }).waitFor();
     problems.push(...await scan(page, 'garden'));
 

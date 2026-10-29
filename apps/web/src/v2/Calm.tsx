@@ -25,14 +25,14 @@ function Cover({ it, k, forYou, why }: { it: CalmItem; k: number; forYou: boolea
       <span className="pl"><Ic n="play" color="#1F2A44" /></span>
       <b className="h3">{it.title}</b>
       <span className="small" style={{ opacity: .75 }}>{it.mins} min · {it.desc}</span>
-      {why && <span className="fine" style={{ color: '#3A3A66', marginTop: 4 }}>{why}</span>}
+      {why && <span className="fine" style={{ color: 'var(--ink2)', marginTop: 4 }}>{why}</span>}
     </button>
   );
 }
 
 const GAMES: { id: PushedId; name: string; icon: IconName; color: string; token: 'gold' | 'thread' | 'sky'; unlock: 'pot' | 'thread' | 'sky'; rule: string }[] = [
   { id: 'game-pot', name: 'Mend the pot', icon: 'star', color: '#FBE2CE', token: 'gold', unlock: 'pot', rule: 'Unlocks on a hard day when you still show up, in any small way.' },
-  { id: 'game-thread', name: 'Untangle the thread', icon: 'wave', color: '#D3ECF5', token: 'thread', unlock: 'thread', rule: 'Unlocks after a breathing session or a meditation.' },
+  { id: 'game-thread', name: 'Untangle the thread', icon: 'wave', color: 'var(--t-sky)', token: 'thread', unlock: 'thread', rule: 'Unlocks after a breathing session or a meditation.' },
   { id: 'game-stars', name: 'Constellations', icon: 'moon', color: '#DAD7F0', token: 'sky', unlock: 'sky', rule: 'Unlocks after a sleep story.' },
 ];
 
@@ -73,9 +73,9 @@ export function Calm() {
           <button className="btn block" style={{ marginTop: 16 }} onClick={openBreathe}><Ic n="play" />Start breathing</button>
         </div>
         {top && (
-          <div className="card row" style={{ marginTop: 12, gap: 12, background: '#E9E3FA', color: '#26244A' }}>
+          <div className="card row" style={{ marginTop: 12, gap: 12, background: 'var(--t-lilac)' }}>
             <span className="ico" style={{ background: 'rgba(255,255,255,.7)' }}><Ic n={top.item.c.kind === 'sleep' ? 'moon' : 'lotus'} /></span>
-            <div className="grow1"><div className="eyebrow" style={{ color: '#5A4FA8' }}>Picked for you</div><b>{top.item.c.title}</b><div className="small" style={{ opacity: .8 }}>{top.why}</div></div>
+            <div className="grow1"><div className="eyebrow" style={{ color: 'var(--brand-text)' }}>Picked for you</div><b>{top.item.c.title}</b><div className="small" style={{ opacity: .8 }}>{top.why}</div></div>
             <button className="btn sm" onClick={() => playCalmById(top.item.c.id)}><Ic n="play" />Play</button>
           </div>
         )}
@@ -100,9 +100,9 @@ export function Calm() {
       <div className="sec" id="v2create">
         <div className="sec-h"><h2 className="h2">Create</h2><span className="fine">No skill needed</span></div>
         <div className="tiles">
-          <button className="tile" style={{ background: '#FADCE3' }} onClick={() => push({ id: 'create-rangoli' })}><Ic n="flower" /><div><b>Draw a rangoli</b><span>Colour and pattern</span></div></button>
-          <button className="tile" style={{ background: '#D3ECF5' }} onClick={() => push({ id: 'create-boat' })}><Ic n="leaf" /><div><b>Paper boat</b><span>Let a worry float away</span></div></button>
-          <button className="tile" style={{ background: '#FFF1D2', gridColumn: 'span 2' }} onClick={() => push({ id: 'create-jar' })}><Ic n="star" /><div><b>Good-things jar</b><span>{garden?.jarCount ? `${garden.jarCount} saved for hard days` : 'Save one good thing from today'}</span></div></button>
+          <button className="tile" style={{ background: 'var(--t-rose)' }} onClick={() => push({ id: 'create-rangoli' })}><Ic n="flower" /><div><b>Draw a rangoli</b><span>Colour and pattern</span></div></button>
+          <button className="tile" style={{ background: 'var(--t-sky)' }} onClick={() => push({ id: 'create-boat' })}><Ic n="leaf" /><div><b>Paper boat</b><span>Let a worry float away</span></div></button>
+          <button className="tile" style={{ background: 'var(--t-sand)', gridColumn: 'span 2' }} onClick={() => push({ id: 'create-jar' })}><Ic n="star" /><div><b>Good-things jar</b><span>{garden?.jarCount ? `${garden.jarCount} saved for hard days` : 'Save one good thing from today'}</span></div></button>
         </div>
         {createCount > 0 && <p className="fine" style={{ marginTop: 8 }}>You have made {createCount} thing{createCount === 1 ? '' : 's'} so far. They live in your garden.</p>}
       </div>

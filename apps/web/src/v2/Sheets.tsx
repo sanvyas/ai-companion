@@ -98,7 +98,7 @@ function CheckinSheet() {
           <div className="card" style={{ marginTop: 16, boxShadow: '0 0 0 2px var(--brand),var(--sh1)' }}>
             <div className="eyebrow" style={{ color: 'var(--brand-text)' }}>One small thing</div>
             <div className="row" style={{ gap: 12, marginTop: 8 }}>
-              <span className="ico" style={{ background: '#FFE9B8' }}><Ic n={one.icon} /></span>
+              <span className="ico" style={{ background: 'var(--t-sand)' }}><Ic n={one.icon} /></span>
               <div className="grow1"><b>{one.title}</b><div className="muted small">{one.sub}</div></div>
             </div>
             <p className="fine" style={{ marginTop: 10 }}>Because: {one.why}</p>
@@ -169,19 +169,19 @@ function Support() {
       <p className="muted" style={{ margin: '6px 0 14px' }}>If you are in danger right now, or thinking about hurting yourself, please reach out to someone. It’s okay to ask. Free, always, and it works without internet.</p>
       <div style={{ display: 'grid', gap: 10 }}>
         <Call className="mode" tel={EMERGENCY.tel} onClick={() => acknowledgeHelp('emergency')}>
-          <span className="ico" style={{ background: '#FFD9D2' }}><Ic n="phone" color="#8A2D1C" /></span>
+          <span className="ico" style={{ background: 'var(--t-rose)' }}><Ic n="phone" color="#8A2D1C" /></span>
           <span className="grow1"><b style={{ display: 'block' }}>Emergency · {EMERGENCY.num}</b><span className="small" style={{ color: 'var(--ink2)' }}>If someone is in immediate danger</span></span>
         </Call>
         <Call className="mode" tel={tele?.tel ?? TELE_MANAS.tel} onClick={() => acknowledgeHelp('helpline')}>
-          <span className="ico" style={{ background: '#D9EEDD' }}><Ic n="phone" color="#2F7A49" /></span>
+          <span className="ico" style={{ background: 'var(--t-sage)' }}><Ic n="phone" color="#2F7A49" /></span>
           <span className="grow1"><b style={{ display: 'block' }}>Tele-MANAS · {tele?.number ?? TELE_MANAS.num}</b><span className="muted small">Free mental health helpline, 24 hours</span></span>
         </Call>
         {trusted
-          ? <Call className="mode" tel={trusted.phone} onClick={() => acknowledgeHelp('contact')}><span className="ico" style={{ background: '#FADCE3' }}><Ic n="heart" /></span><span className="grow1"><b style={{ display: 'block' }}>Call {trusted.name}</b><span className="muted small">Your trusted person</span></span></Call>
-          : <button className="mode" onClick={() => openStoreSheet('trusted')}><span className="ico" style={{ background: '#FADCE3' }}><Ic n="heart" /></span><span className="grow1"><b style={{ display: 'block' }}>Add someone you trust</b><span className="muted small">A person you could call on a hard day</span></span><Ic n="chev" /></button>}
-        <button className="mode" onClick={() => openStoreSheet('helplines')}><span className="ico" style={{ background: '#E4DDF3' }}><Ic n="life" /></span><span className="grow1"><b style={{ display: 'block' }}>More helplines</b><span className="muted small">Every number, with hours and languages</span></span><Ic n="chev" /></button>
-        <button className="mode" onClick={() => openStoreSheet('plan')}><span className="ico" style={{ background: '#CBE7B5' }}><Ic n="list" /></span><span className="grow1"><b style={{ display: 'block' }}>My safety plan</b><span className="muted small">What helps, and who to call</span></span><Ic n="chev" /></button>
-        <button className="mode" onClick={openBreathe}><span className="ico" style={{ background: '#D3ECF5' }}><Ic n="wave" /></span><span className="grow1"><b style={{ display: 'block' }}>Breathe with me</b><span className="muted small">One minute, guided</span></span><Ic n="chev" /></button>
+          ? <Call className="mode" tel={trusted.phone} onClick={() => acknowledgeHelp('contact')}><span className="ico" style={{ background: 'var(--t-rose)' }}><Ic n="heart" /></span><span className="grow1"><b style={{ display: 'block' }}>Call {trusted.name}</b><span className="muted small">Your trusted person</span></span></Call>
+          : <button className="mode" onClick={() => openStoreSheet('trusted')}><span className="ico" style={{ background: 'var(--t-rose)' }}><Ic n="heart" /></span><span className="grow1"><b style={{ display: 'block' }}>Add someone you trust</b><span className="muted small">A person you could call on a hard day</span></span><Ic n="chev" /></button>}
+        <button className="mode" onClick={() => openStoreSheet('helplines')}><span className="ico" style={{ background: 'var(--t-lilac)' }}><Ic n="life" /></span><span className="grow1"><b style={{ display: 'block' }}>More helplines</b><span className="muted small">Every number, with hours and languages</span></span><Ic n="chev" /></button>
+        <button className="mode" onClick={() => openStoreSheet('plan')}><span className="ico" style={{ background: 'var(--t-sage)' }}><Ic n="list" /></span><span className="grow1"><b style={{ display: 'block' }}>My safety plan</b><span className="muted small">What helps, and who to call</span></span><Ic n="chev" /></button>
+        <button className="mode" onClick={openBreathe}><span className="ico" style={{ background: 'var(--t-sky)' }}><Ic n="wave" /></span><span className="grow1"><b style={{ display: 'block' }}>Breathe with me</b><span className="muted small">One minute, guided</span></span><Ic n="chev" /></button>
       </div>
       <button className="btn ghost block" style={{ marginTop: 8 }} onClick={closeStoreSheet}>Close</button>
     </>

@@ -88,7 +88,7 @@ export function PotGame() {
       <p className="muted" style={{ margin: '4px 0 8px' }}>{whole ? 'Your pot is whole, and more beautiful for the cracks.' : can ? 'Trace the glowing crack with your finger. The gold follows you. Take your time.' : 'No gold right now. It arrives on a hard day when you still show up, in any small way. It never expires.'}</p>
       <div className="row" style={{ gap: 8 }}><span className={'pill' + (gold ? ' leaf' : '')}>{gold} gold ready</span><span className="pill">{n} of 6 seams</span></div>
       <svg ref={svgRef} viewBox="0 0 300 300" role="img" aria-label={`A clay pot with ${n} of 6 cracks mended in gold`} style={{ width: '100%', maxWidth: 340, display: 'block', margin: '6px auto', touchAction: 'none' }} dangerouslySetInnerHTML={{ __html: svgMarkup }} />
-      {msg && <div className="card" role="status" style={{ background: '#FFF6DF', boxShadow: 'none', textAlign: 'center', marginTop: 6 }}><b>{msg}</b></div>}
+      {msg && <div className="card" role="status" style={{ background: 'var(--t-sand)', boxShadow: 'none', textAlign: 'center', marginTop: 6 }}><b>{msg}</b></div>}
       <p className="fine" style={{ textAlign: 'center', marginTop: 10 }}>Hard days leave gold seams, not scars.</p>
       {whole && gold > 0 && <button className="btn block" style={{ marginTop: 12 }} onClick={() => { setFresh(true); setMsg(null); }}>Start a new pot</button>}
       {busy && <p className="fine" role="status" style={{ textAlign: 'center' }}>Saving…</p>}
@@ -146,13 +146,13 @@ export function ThreadGame() {
     <ScreenFrame title="Untangle the thread" onBack={pop}>
       <p className="muted" style={{ margin: '4px 0 8px' }}>{done ? 'There. It was only ever a thread.' : can ? 'Drag your finger over the thread. Slowly is fine. It loosens as you go.' : 'No thread right now. One arrives after each breathing session or meditation. It never expires.'}</p>
       <div className="row" style={{ gap: 8 }}><span className={'pill' + (threads ? ' leaf' : '')}>{threads} thread ready</span><span className="pill">{flags} flag{flags === 1 ? '' : 's'} hung</span></div>
-      <div style={{ borderRadius: 28, background: 'linear-gradient(160deg,#EAF6FB,#D3ECF5)', margin: '12px 0', boxShadow: 'var(--sh1)' }}>
+      <div style={{ borderRadius: 28, background: 'linear-gradient(160deg,var(--card),var(--t-sky))', margin: '12px 0', boxShadow: 'var(--sh1)' }}>
         <svg ref={svgRef} viewBox="0 0 320 320" role="img" aria-label="A tangled thread" style={{ width: '100%', display: 'block', touchAction: 'none' }}>
           <path d={d} fill="none" stroke="rgba(31,42,68,.12)" strokeWidth="11" strokeLinecap="round" strokeLinejoin="round" transform="translate(3 5)" />
           <path d={d} fill="none" stroke={col} strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </div>
-      {done && <div className="card" role="status" style={{ background: '#E7F4EC', boxShadow: 'none', textAlign: 'center' }}><b>A new flag now hangs in your garden.</b></div>}
+      {done && <div className="card" role="status" style={{ background: 'var(--t-sage)', boxShadow: 'none', textAlign: 'center' }}><b>A new flag now hangs in your garden.</b></div>}
       {done && threads > 0 && <button className="btn block" style={{ marginTop: 10 }} onClick={again}>Untangle another</button>}
       <Seeit />
       <p className="fine" style={{ textAlign: 'center', marginTop: 10 }}>A knot loosens when you stop pulling.</p>
@@ -209,8 +209,8 @@ export function StarsGame() {
       </div>
       <div role="status" className="fine" style={{ minHeight: 18, textAlign: 'center' }}>{hint}</div>
       {found !== null && (
-        <div className="card" style={{ background: '#EDE9FB', boxShadow: 'none', textAlign: 'center' }}>
-          <div className="eyebrow" style={{ color: '#5A4FA8' }}>You found</div><div className="h2" style={{ margin: '2px 0' }}>{cn.n}</div><p className="small">{cn.l}</p>
+        <div className="card" style={{ background: 'var(--t-lilac)', boxShadow: 'none', textAlign: 'center' }}>
+          <div className="eyebrow" style={{ color: 'var(--brand-text)' }}>You found</div><div className="h2" style={{ margin: '2px 0' }}>{cn.n}</div><p className="small">{cn.l}</p>
           <p className="fine" style={{ marginTop: 6 }}>It now glows over your garden at night.</p>
         </div>
       )}

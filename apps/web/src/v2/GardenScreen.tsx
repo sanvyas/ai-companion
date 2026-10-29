@@ -21,18 +21,18 @@ export function GardenScreen() {
   const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
   const calm = (C.breathe ?? 0) + (C.meditate ?? 0);
   const rows: { name: string; icon: IconName; bg: string; text: string; value: string; on: boolean }[] = [
-    { name: 'Your tree', icon: 'leaf', bg: '#DDF0DC', text: 'Grows taller on every day you show up, in any way.', value: `Day ${g.activeDays}`, on: g.activeDays > 0 },
-    { name: 'Flower beds', icon: 'book', bg: '#F8CDD6', text: 'Every journal page plants a flower. Its colour is the weather you named.', value: plural(C.journal ?? 0, 'flower'), on: (C.journal ?? 0) > 0 },
-    { name: 'Pond', icon: 'lotus', bg: '#BFE3F0', text: 'Breathing and meditation add lily pads and lotus flowers.', value: plural(calm, 'calm moment'), on: calm > 0 },
-    { name: 'Saathi’s bench', icon: 'mic', bg: '#BFC8F3', text: 'Each talk hangs a lantern in your tree.', value: plural(C.talk ?? 0, 'talk'), on: (C.talk ?? 0) > 0 },
-    { name: 'Herb patch', icon: 'list', bg: '#CBE7B5', text: 'Tiny daily steps grow tulsi, mint and tomatoes.', value: plural(C.plan ?? 0, 'step'), on: (C.plan ?? 0) > 0 },
-    { name: 'Moon nook', icon: 'moon', bg: '#C9CDF0', text: 'Sleep stories bring fireflies and a moon lantern.', value: plural(C.sleep ?? 0, 'night'), on: (C.sleep ?? 0) > 0 },
-    { name: 'Path and gate', icon: 'pin', bg: '#F9DCC0', text: 'Every walk or outing lays a stone. The path always goes on.', value: plural((C.walk ?? 0) + (C.event ?? 0), 'stone'), on: (C.walk ?? 0) + (C.event ?? 0) > 0 },
-    { name: 'Greenhouse', icon: 'flower', bg: '#D3EBEF', text: 'On a heavy day, any small act plants a seed. It sprouts once the day is over.', value: plural(g.seeds.planted, 'seed'), on: g.seeds.planted > 0 },
+    { name: 'Your tree', icon: 'leaf', bg: 'var(--t-sage)', text: 'Grows taller on every day you show up, in any way.', value: `Day ${g.activeDays}`, on: g.activeDays > 0 },
+    { name: 'Flower beds', icon: 'book', bg: 'var(--t-rose)', text: 'Every journal page plants a flower. Its colour is the weather you named.', value: plural(C.journal ?? 0, 'flower'), on: (C.journal ?? 0) > 0 },
+    { name: 'Pond', icon: 'lotus', bg: 'var(--t-sky)', text: 'Breathing and meditation add lily pads and lotus flowers.', value: plural(calm, 'calm moment'), on: calm > 0 },
+    { name: 'Saathi’s bench', icon: 'mic', bg: 'var(--t-sky)', text: 'Each talk hangs a lantern in your tree.', value: plural(C.talk ?? 0, 'talk'), on: (C.talk ?? 0) > 0 },
+    { name: 'Herb patch', icon: 'list', bg: 'var(--t-sage)', text: 'Tiny daily steps grow tulsi, mint and tomatoes.', value: plural(C.plan ?? 0, 'step'), on: (C.plan ?? 0) > 0 },
+    { name: 'Moon nook', icon: 'moon', bg: 'var(--t-lilac)', text: 'Sleep stories bring fireflies and a moon lantern.', value: plural(C.sleep ?? 0, 'night'), on: (C.sleep ?? 0) > 0 },
+    { name: 'Path and gate', icon: 'pin', bg: 'var(--t-clay)', text: 'Every walk or outing lays a stone. The path always goes on.', value: plural((C.walk ?? 0) + (C.event ?? 0), 'stone'), on: (C.walk ?? 0) + (C.event ?? 0) > 0 },
+    { name: 'Greenhouse', icon: 'flower', bg: 'var(--t-sage)', text: 'On a heavy day, any small act plants a seed. It sprouts once the day is over.', value: plural(g.seeds.planted, 'seed'), on: g.seeds.planted > 0 },
   ];
   return (
     <ScreenFrame title="Your garden" onBack={pop}>
-      <div className="card" style={{ background: 'linear-gradient(135deg,#DDF0DC,#F5F9D8)', color: '#14352A', marginTop: 6 }}>
+      <div className="card" style={{ background: 'var(--t-sage)', marginTop: 6 }}>
         <div className="sec-h" style={{ marginBottom: 8 }}><div className="h2">{g.stageName}</div><span className="pill" style={{ background: 'rgba(255,255,255,.7)' }}>{g.sunlight} sunlight</span></div>
         <div className="bar" role="progressbar" aria-label="Progress to the next stage" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} style={{ background: 'rgba(255,255,255,.6)' }}><i style={{ width: `${pct}%` }} /></div>
         <p className="small" style={{ marginTop: 8 }}>{nx ? `${(g.nextAt ?? nx.at) - g.sunlight} more sunlight to become a ${nx.name.toLowerCase()}.` : 'Your garden is a grove.'} Every day you show up gives about {g.road.perActiveDay} sunlight.</p>
@@ -47,7 +47,7 @@ export function GardenScreen() {
       <ul className="list card" style={{ padding: '4px 16px' }}>
         {ms.map(x => (
           <li key={x.id}>
-            <span className="ico" style={{ background: x.done ? '#DDF0DC' : 'var(--bg2)' }}><Ic n={x.done ? 'check' : 'star'} color={x.done ? '#25683D' : undefined} /></span>
+            <span className="ico" style={{ background: x.done ? 'var(--t-sage)' : 'var(--bg2)' }}><Ic n={x.done ? 'check' : 'star'} color={x.done ? '#25683D' : undefined} /></span>
             <div className="grow1"><b style={x.done ? undefined : { color: 'var(--ink2)' }}>{x.label}</b><div className="muted small">{x.done ? x.detail : `${x.have} of ${x.need}. ${x.detail}`}</div></div>
           </li>
         ))}
@@ -77,7 +77,7 @@ export function GardenScreen() {
             const d = PLANT_KINDS.find(k => k.id === p.kind)!;
             return (
               <li key={p.id}>
-                <span className="ico" style={{ background: d.kind === 'tree' ? '#DDF0DC' : '#FFF1D2' }}><Ic n={d.kind === 'tree' ? 'leaf' : 'flower'} color={d.kind === 'tree' ? '#2F7A49' : '#B26A00'} /></span>
+                <span className="ico" style={{ background: d.kind === 'tree' ? 'var(--t-sage)' : 'var(--t-sand)' }}><Ic n={d.kind === 'tree' ? 'leaf' : 'flower'} color={d.kind === 'tree' ? '#2F7A49' : '#B26A00'} /></span>
                 <div className="grow1"><b>{d.name}</b><div className="bar" style={{ marginTop: 6, height: 7 }}><i style={{ width: `${Math.round(p.growth * 100)}%` }} /></div></div>
                 {p.ready ? <button className="btn sm" onClick={() => void pickPlantNow(p.id)}>Pick</button> : <span className="pill">{p.daysLeft} day{p.daysLeft === 1 ? '' : 's'}</span>}
               </li>
