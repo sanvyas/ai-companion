@@ -17,7 +17,8 @@ export const MemoryBulkBody = z.object({
 export const MoodBody = z.object({ value: Mood, source: z.enum(['tap', 'checkin', 'journal']).default('tap') });
 export const PlanItem = z.object({ id: Uuid, label: z.string(), done: z.boolean(), source: z.enum(['ai', 'user', 'journal', 'checkin']) });
 export const PlanCreateBody = z.object({ label: z.string().trim().min(1).max(120), source: z.enum(['user', 'journal', 'checkin']).default('user') });
-export const PlanPatchBody = z.object({ done: z.boolean() });
+/** Tick it, or change its words. Either, or both. */
+export const PlanPatchBody = z.object({ done: z.boolean().optional(), label: z.string().trim().min(1).max(120).optional() }).refine(b => b.done !== undefined || b.label !== undefined, { message: 'Nothing to change' });
 export const Insights = z.object({
   moodSeries: z.array(z.object({ day: IsoDate, value: Mood })),
   rhythms: z.array(z.string()),

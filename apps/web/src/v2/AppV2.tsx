@@ -10,22 +10,34 @@ import { Home } from './Home';
 import { AboutV2, CompanionV2, ConsentV2, IntroV2, OtpV2, SignInV2, UnderV2, WelcomeV2 } from './Onboarding';
 import { BreatheOverlay, CrisisOverlay, LevelUpOverlay, PaywallOverlay, PlayerOverlay, SeedScreen, Tour } from './Overlays';
 import { Sheets } from './Sheets';
-import { Soon } from './Soon';
-import { clearStack, setV2, useV2, type Tab } from './ui';
+import { Call } from './Call';
+import { Chat } from './Chat';
+import { Calm } from './Calm';
+import { JournalCompose, JournalTab } from './Journal';
+import { Outside, Walk } from './Outside';
+import { PushedScreen } from './Pushed';
+import { Talk } from './Talk';
+import { MemoryScreen, NotifScreen, PrivacyScreen, StudioScreen, YouTab } from './You';
+import { clearStack, getV2, setV2, useV2, type Tab } from './ui';
 
 const ONBOARDING: Partial<Record<Screen, () => JSX.Element>> = {
   welcome: WelcomeV2, intro: IntroV2, age: AboutV2, lang: AboutV2, under: UnderV2, name: SignInV2, otp: OtpV2, companion: CompanionV2, consent: ConsentV2,
 };
 
-const TAB_OF: Partial<Record<Screen, Tab>> = { today: 'today', journal: 'journal', talk: 'talk', calm: 'calm', you: 'you' };
+const TAB_OF: Partial<Record<Screen, Tab>> = { today: 'today', journal: 'journal', journey: 'journal', talk: 'talk', calm: 'calm', you: 'you' };
+
+// Screens that open over the tabs, whichever tab they were opened from.
+const OVER: Partial<Record<Screen, () => JSX.Element | null>> = {
+  call: Call, chat: Chat, outside: Outside, walk: Walk, jcompose: JournalCompose, memory: MemoryScreen, privacy: PrivacyScreen, notifs: NotifScreen, studio: StudioScreen,
+};
 
 // Tab panes. Screens that are not in the new design yet say so plainly (only people previewing it see this: it is off for everyone else).
 const PANES: Record<Tab, () => JSX.Element> = {
   today: Home,
-  journal: () => <Soon name="Journal" />,
-  talk: () => <Soon name="Talk" />,
-  calm: () => <Soon name="Calm" />,
-  you: () => <Soon name="You" />,
+  journal: JournalTab,
+  talk: Talk,
+  calm: Calm,
+  you: YouTab,
 };
 
 function Splash() {
@@ -75,10 +87,11 @@ export function AppV2() {
   useEffect(() => { const t = TAB_OF[screen]; if (t) setV2({ lastTab: t }); }, [screen]);
 
   const tab = TAB_OF[screen] ?? null;
+  const Over = OVER[screen];
   const Onboard = ONBOARDING[screen];
   const inApp = phase === 'in' && !seed && !Onboard;
   const behind = !!(sheet || v2Sheet || paywall || breathe || crisis || player || tour !== null);
-  const pushed = inApp && !tab;
+  const pushed = inApp && !!Over;
   const noTabs = !inApp || pushed || stack.length > 0;
 
   return (
@@ -93,10 +106,11 @@ export function AppV2() {
               {phase === 'in' && seed && <SeedScreen />}
               {inApp && (
                 <>
-                  {PANES[tab ?? 'today'] && <TabPane tab={tab ?? 'today'} />}
-                  {!noTabs || tab ? <TabBar current={tab} /> : null}
-                  {pushed && <Soon name={screen} pushed />}
-                  {stack.map(p => <Soon key={p.id} name={p.id} pushed />)}
+                  <TabPane tab={tab ?? getV2().lastTab} />
+                  <TabBar current={tab} />
+                  {Over && <Over />}
+                  {!tab && !Over && <RedirectHome />}
+                  {stack.map(p => <PushedScreen key={p.id} p={p} />)}
                 </>
               )}
             </div>
@@ -121,4 +135,8 @@ function TabPane({ tab }: { tab: Tab }) {
   return <section className="pane on" aria-label={tab} key={tab}><Pane /></section>;
 }
 
-void go;
+/** Screens that only existed for previewing notifications in the previous design lead home. */
+function RedirectHome() {
+  useEffect(() => { go('today'); }, []);
+  return null;
+}

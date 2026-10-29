@@ -9,7 +9,7 @@ import { parse, uid } from '../http.js';
 import { assertAdult } from '../services/users.js';
 import { addMemories, deleteMemory, forgetEverything, listMemories, patchMemory } from '../services/memory.js';
 import { analyzeEntry, commitEntry, createEntry, deleteEntry, discardAnalysis, listEntries, setShared } from '../services/journal.js';
-import { addPlanItem, getInsights, getPlanToday, getSafetyPlan, logMood, putSafetyPlan, queueJob, setPlanDone } from '../services/daily.js';
+import { addPlanItem, getInsights, getPlanToday, getSafetyPlan, logMood, putSafetyPlan, queueJob, removePlanItem, updatePlanItem } from '../services/daily.js';
 import { HOBBIES, getCalmItem, getEvent, listCalm, listEvents, markInterest, progressCalm, startCalm } from '../services/catalogue.js';
 import { logSafetyEvent } from '../services/safety.js';
 import { makeStory } from '../services/story.js';
@@ -79,7 +79,8 @@ export function dataRoutes(app: FastifyInstance, ctx: Ctx) {
     const b = parse(PlanCreateBody, req.body);
     return { status: 201, body: await addPlanItem(ctx, uid(req), b.label, b.source) };
   }));
-  app.patch('/plan/:id', adult, async req => setPlanDone(ctx, uid(req), idOf(req), parse(PlanPatchBody, req.body).done));
+  app.patch('/plan/:id', adult, async req => updatePlanItem(ctx, uid(req), idOf(req), parse(PlanPatchBody, req.body)));
+  app.delete('/plan/:id', adult, async (req, reply) => { await removePlanItem(ctx, uid(req), idOf(req)); return reply.code(204).send(); });
   app.get('/letters/latest', adult, async (req, reply) => {
     const userId = uid(req);
     const out = await withUser(ctx.db, userId, async tx => {

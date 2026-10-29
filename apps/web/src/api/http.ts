@@ -166,6 +166,8 @@ export class HttpApi implements Api {
   plan = async () => (await this.req<{ items: Awaited<ReturnType<Api['plan']>> }>('GET', '/plan/today')).items;
   addPlan = (label: string, source: 'user' | 'journal' | 'checkin' = 'user') => this.req<Awaited<ReturnType<Api['addPlan']>>>('POST', '/plan', { label, source }, { idem: true });
   setPlanDone = (id: string, done: boolean) => this.req<Awaited<ReturnType<Api['setPlanDone']>>>('PATCH', `/plan/${id}`, { done });
+  updatePlan = (id: string, patch: { label?: string; done?: boolean }) => this.req<Awaited<ReturnType<Api['updatePlan']>>>('PATCH', `/plan/${id}`, patch);
+  removePlan = async (id: string) => { await this.req('DELETE', `/plan/${id}`); };
   insights = (weeks = 4) => this.req<Awaited<ReturnType<Api['insights']>>>('GET', `/insights?weeks=${weeks}`);
   latestLetter = async () => (await this.req<Awaited<ReturnType<Api['latestLetter']>> | undefined>('GET', '/letters/latest')) ?? null;
 

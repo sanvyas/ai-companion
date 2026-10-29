@@ -96,6 +96,10 @@ export interface Api {
   plan(): Promise<PlanItem[]>;
   addPlan(label: string, source?: 'user' | 'journal' | 'checkin'): Promise<PlanItem>;
   setPlanDone(id: string, done: boolean): Promise<PlanItem>;
+  /** Reword a step (it becomes theirs), tick it, or both. */
+  updatePlan(id: string, patch: { label?: string; done?: boolean }): Promise<PlanItem>;
+  /** Take a step off today's list. What it already earned stays earned. */
+  removePlan(id: string): Promise<void>;
   insights(weeks?: number): Promise<Insights>;
   latestLetter(): Promise<Letter | null>;
 

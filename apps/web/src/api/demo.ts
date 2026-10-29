@@ -134,6 +134,14 @@ export class DemoApi implements Api {
   async plan() { return structuredClone(this.pl); }
   async addPlan(label: string, source: 'user' | 'journal' | 'checkin' = 'user') { const p: PlanItem = { id: uuid(), label, done: false, source }; this.pl = [...this.pl.filter(x => !x.done), p].slice(-3); return p; }
   async setPlanDone(id: string, done: boolean) { const p = this.pl.find(x => x.id === id)!; p.done = done; if (done) this.act('plan'); return structuredClone(p); }
+  async updatePlan(id: string, patch: { label?: string; done?: boolean }) {
+    const p = this.pl.find(x => x.id === id);
+    if (!p) throw new ApiError(404, 'not_found', 'That plan item isn’t there.');
+    if (patch.label !== undefined) { p.label = patch.label; p.source = 'user'; }
+    if (patch.done !== undefined) { p.done = patch.done; if (patch.done) this.act('plan'); }
+    return structuredClone(p);
+  }
+  async removePlan(id: string) { this.pl = this.pl.filter(x => x.id !== id); }
   async insights(): Promise<Insights> {
     return { moodSeries: this.moods, rhythms: ['Days you step out for a walk tend to be lighter.', 'Sleep is a little shorter lately. Want to try winding down earlier?'], wins: this.wins.map(w => ({ ...w })), daysOfData: this.moods.length };
   }
@@ -221,7 +229,7 @@ export class DemoApi implements Api {
     if (kind === 'boat') { this.boatCount++; this.act('create'); return this.buildGarden(); }
     const have = kind === 'seam' ? g.tokens.gold : kind === 'flag' ? g.tokens.thread : g.tokens.sky;
     if (have < 1) throw new ApiError(409, 'nothing_earned', 'Nothing to play yet. A small kind act earns one.');
-    this.keeps.push({ kind, n: kind === 'sky' ? g.keepsakes.skies.length + 1 : 1 });
+    this.keeps.push({ kind, n: kind === 'sky' ? g.keepsakes.skies.length % 6 : 0 });
     return this.buildGarden();
   }
   async creations() { return structuredClone(this.made); }

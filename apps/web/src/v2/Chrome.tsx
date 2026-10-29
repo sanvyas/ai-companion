@@ -70,3 +70,17 @@ export function Ribbon() {
   if (!r) return null;
   return <div className={'ribbon' + (out ? ' out' : '')} role="status"><span>{r.lines[i]}</span>{i === 0 && r.gain > 0 && <b>+{r.gain} sunlight</b>}</div>;
 }
+
+/** A screen that slides in over the tabs, with a Back button and Help always in reach. */
+export function ScreenFrame({ title, onBack, dark, back = 'Back', right, children, bodyStyle }: { title: string; onBack: () => void; dark?: boolean; back?: string; right?: React.ReactNode; children: React.ReactNode; bodyStyle?: React.CSSProperties }) {
+  return (
+    <div className={'screen' + (dark ? ' dark' : '')} role="main" aria-label={title}>
+      <div className="sc-head">
+        <button className="backbtn" onClick={onBack} aria-label={back === 'Back' ? 'Back' : back}><Ic n="back" />{back}</button>
+        <div className="ttl">{title}</div>
+        {right ?? <HelpPill />}
+      </div>
+      <div className="sc-body" style={bodyStyle}>{children}</div>
+    </div>
+  );
+}

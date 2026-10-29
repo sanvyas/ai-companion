@@ -187,6 +187,28 @@ describe('mood, plan, insights', () => {
     expect(wins.filter((w: { kind: string }) => w.kind === 'plan')).toHaveLength(1);
   });
 
+  it('plan: a person can reword or remove a step, and what it already earned stays earned', async () => {
+    const a = await signIn(t);
+    const b = await signIn(t);
+    const items = (await j(a, 'GET', '/plan/today')).json().items;
+    const id = items[0].id;
+    expect((await j(a, 'PATCH', `/plan/${id}`, { done: true })).statusCode).toBe(200);
+    const edited = (await j(a, 'PATCH', `/plan/${id}`, { label: '  Walk to the gate  ' })).json();
+    expect(edited).toMatchObject({ id, label: 'Walk to the gate', done: true, source: 'user' });
+    expect((await j(a, 'GET', '/plan/today')).json().items.find((p: { id: string }) => p.id === id).label).toBe('Walk to the gate');
+    expect((await j(a, 'PATCH', `/plan/${id}`, {})).statusCode).toBe(400);
+    expect((await j(a, 'PATCH', `/plan/${id}`, { label: '   ' })).statusCode).toBe(400);
+    expect((await j(b, 'PATCH', `/plan/${id}`, { label: 'not yours' })).statusCode).toBe(404);
+    expect((await j(b, 'DELETE', `/plan/${id}`)).statusCode).toBe(404);
+
+    expect((await j(a, 'DELETE', `/plan/${id}`)).statusCode).toBe(204);
+    expect((await j(a, 'DELETE', `/plan/${id}`)).statusCode).toBe(404);
+    expect((await j(a, 'GET', '/plan/today')).json().items.map((p: { id: string }) => p.id)).not.toContain(id);
+    // The win it earned is still there, and so is the sunlight it grew.
+    expect((await j(a, 'GET', '/insights')).json().wins.filter((w: { kind: string }) => w.kind === 'plan')).toHaveLength(1);
+    expect((await j(a, 'GET', '/garden')).json().counts.plan).toBe(1);
+  });
+
   it('carries unfinished items forward without calling them failures', async () => {
     const a = await signIn(t);
     const plan = (await j(a, 'GET', '/plan/today')).json().items;

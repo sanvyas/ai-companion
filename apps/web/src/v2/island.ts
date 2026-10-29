@@ -293,7 +293,7 @@ export function skySVG(phase: SkyPhase, grey: boolean, skies: number[]): string 
     o += '<defs><radialGradient id="mG"><stop offset="0" stop-color="#FFF6D6" stop-opacity=".55"/><stop offset=".5" stop-color="#BFD0FF" stop-opacity=".18"/><stop offset="1" stop-color="#BFD0FF" stop-opacity="0"/></radialGradient><radialGradient id="hz" cx=".5" cy="1" r=".8"><stop offset="0" stop-color="#7A86C8" stop-opacity=".55"/><stop offset="1" stop-color="#7A86C8" stop-opacity="0"/></radialGradient></defs><rect x="0" y="150" width="390" height="210" fill="url(#hz)"/>';
     for (let i = 0; i < 34; i++) o += `<circle class="st" cx="${n0(r() * 390)}" cy="${n0(r() * 180)}" r="${n1(.6 + r() * 1.4)}" fill="#fff" style="animation-delay:-${n1(r() * 3)}s"/>`;
     const cpos = [[14, 64], [104, 4], [192, 0], [256, 62], [6, 134], [290, 120]];
-    skies.forEach((ci, k) => {
+    skies.slice(-6).forEach((ci, k) => {
       const cn = CONS[ci % CONS.length], ps = cpos[k % 6], sc = .26;
       const pp = cn.pts.map(q => [ps[0] + q[0] * sc, ps[1] + q[1] * sc]);
       o += `<g opacity=".85">${pp.map((q, j) => (j ? `<line x1="${n1(pp[j - 1][0])}" y1="${n1(pp[j - 1][1])}" x2="${n1(q[0])}" y2="${n1(q[1])}" stroke="#FFE9A0" stroke-width=".9" opacity=".7"/>` : '')).join('')}${pp.map(q => `<circle cx="${n1(q[0])}" cy="${n1(q[1])}" r="1.9" fill="#FFF6D0"/>`).join('')}</g>`;

@@ -36,6 +36,10 @@ const PATHS = {
   leaf: '<path d="M12 21V11"/><path d="M12 13c-4.500 0-6.500-3-6.500-7 4.500 0 6.500 3 6.500 7z"/><path d="M12 15c4 0 6-2.600 6-6-4 0-6 2.600-6 6z"/>',
   mute: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M4 4l16 16"/>',
   gift: '<rect x="4" y="9" width="16" height="11" rx="2"/><path d="M12 9v11M3 9h18v-3H3zM12 6c-1-3-5-3-5-1s3 1 5 1zm0 0c1-3 5-3 5-1s-3 1-5 1z"/>',
+  stop: '<rect x="7" y="7" width="10" height="10" rx="2.5"/>',
+  trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/>',
+  search: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',
+  edit: '<path d="M4 20l1-4L16 5l3 3L8 19z"/><path d="M13.5 7.5l3 3"/>',
   flower: '<circle cx="12" cy="12" r="2.5"/><path d="M12 9.500C10 5 12 3 12 3s2 2 0 6.500zM14.500 12c4.500-2 6.500 0 6.500 0s-2 2-6.500 0zM12 14.500c2 4.500 0 6.500 0 6.500s-2-2 0-6.500zM9.500 12C5 14 3 12 3 12s2-2 6.500 0z"/>',
 } as const;
 

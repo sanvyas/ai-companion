@@ -85,15 +85,28 @@ export async function addPlanItem(ctx: Ctx, userId: string, label: string, sourc
   });
 }
 
-export async function setPlanDone(ctx: Ctx, userId: string, id: string, done: boolean): Promise<PlanItem> {
+export async function updatePlanItem(ctx: Ctx, userId: string, id: string, patch: { done?: boolean; label?: string }): Promise<PlanItem> {
   return withUser(ctx.db, userId, async tx => {
     const dek = await getDek(ctx, userId, tx);
-    const r = (await tx.query('UPDATE plan_items SET done = $2 WHERE id = $1 RETURNING id, label_enc, done, source', [id, done])).rows[0];
-    if (!r) throw notFound('That plan item');
-    const label = ctx.crypto.decrypt(dek, userId, 'plan', r.label_enc);
-    // "That counts." A completed item becomes a win, once.
-    if (done) await tx.query(`INSERT INTO wins (user_id, kind, label_enc, source_id) VALUES ($1,'plan',$2,$3) ON CONFLICT DO NOTHING`, [userId, ctx.crypto.encrypt(dek, userId, 'win', label), id]);
+    const cur = (await tx.query('SELECT id, label_enc, done, source FROM plan_items WHERE id = $1 FOR UPDATE', [id])).rows[0];
+    if (!cur) throw notFound('That plan item');
+    const label = patch.label ?? ctx.crypto.decrypt(dek, userId, 'plan', cur.label_enc);
+    const done = patch.done ?? cur.done;
+    // Changing the words makes it theirs: it is no longer something Saathi suggested.
+    const r = (await tx.query('UPDATE plan_items SET done = $2, label_enc = $3, source = $4 WHERE id = $1 RETURNING id, done, source', [id, done, patch.label ? ctx.crypto.encrypt(dek, userId, 'plan', label) : cur.label_enc, patch.label ? 'user' : cur.source])).rows[0];
+    // "That counts." A completed item becomes a win, once. Un-ticking or editing it later never takes the win back.
+    if (patch.done) await tx.query(`INSERT INTO wins (user_id, kind, label_enc, source_id) VALUES ($1,'plan',$2,$3) ON CONFLICT DO NOTHING`, [userId, ctx.crypto.encrypt(dek, userId, 'win', label), id]);
     return { id: r.id, label, done: r.done, source: r.source };
+  });
+}
+
+export const setPlanDone = (ctx: Ctx, userId: string, id: string, done: boolean) => updatePlanItem(ctx, userId, id, { done });
+
+/** Take a step off today's list. Anything it already earned stays earned. */
+export async function removePlanItem(ctx: Ctx, userId: string, id: string): Promise<void> {
+  await withUser(ctx.db, userId, async tx => {
+    const r = await tx.query('DELETE FROM plan_items WHERE id = $1', [id]);
+    if (!r.rowCount) throw notFound('That plan item');
   });
 }
 

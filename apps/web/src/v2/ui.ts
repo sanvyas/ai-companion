@@ -6,7 +6,7 @@ import { useSyncExternalStore } from 'react';
 export type Tab = 'today' | 'journal' | 'talk' | 'calm' | 'you';
 export const TABS: readonly Tab[] = ['today', 'journal', 'talk', 'calm', 'you'];
 
-export type PushedId = 'garden' | 'plan' | 'why' | 'letter' | 'convo' | 'page' | 'create-rangoli' | 'create-boat' | 'create-jar' | 'game-pot' | 'game-thread' | 'game-stars' | 'insights' | 'voice-pick';
+export type PushedId = 'garden' | 'plan' | 'why' | 'letter' | 'convo' | 'page' | 'create-rangoli' | 'create-boat' | 'create-jar' | 'game-pot' | 'game-thread' | 'game-stars' | 'insights' | 'about' | 'language';
 export interface Pushed { id: PushedId; arg?: string }
 
 export type V2Sheet = { id: 'checkin' } | { id: 'plant'; slot: number | 'auto' } | { id: 'confirm'; title: string; body: string; yes: string; onYes: () => void } | null;
@@ -24,6 +24,8 @@ interface V2State {
   seed: boolean;
   lastTab: Tab;
   /** Where the bird sits on the island, and what it is saying. */
+  /** Journal tab: the timeline or the progress view. */
+  jseg: 'timeline' | 'progress';
   birdAt: PerchKey;
   say: string | null;
   levelUp: string | null;
@@ -32,7 +34,7 @@ interface V2State {
 const TOUR_KEY = 'saathi.v2.tour';
 const seen = (() => { try { return localStorage.getItem(TOUR_KEY) === '1'; } catch { return false; } })();
 
-let state: V2State = { stack: [], sheet: null, tour: null, tourSeen: seen, reward: null, seed: false, lastTab: 'today', birdAt: 'talk', say: null, levelUp: null };
+let state: V2State = { stack: [], sheet: null, tour: null, tourSeen: seen, reward: null, seed: false, lastTab: 'today', jseg: 'timeline', birdAt: 'talk', say: null, levelUp: null };
 const listeners = new Set<() => void>();
 
 export const getV2 = () => state;
