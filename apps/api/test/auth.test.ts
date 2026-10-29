@@ -203,3 +203,14 @@ describe('public endpoints', () => {
     expect((await t.app.inject({ method: 'GET', url: '/readyz' })).json().ok).toBe(true);
   });
 });
+
+describe('Google sign-in problem reports', () => {
+  it('accepts a known stage from the page and refuses anything else', async () => {
+    const ok = await t.app.inject({ method: 'POST', url: '/diag/google', payload: { stage: 'origin_rejected', note: 'The given origin is not allowed for the given client ID.' } });
+    expect(ok.statusCode).toBe(200);
+    const bad = await t.app.inject({ method: 'POST', url: '/diag/google', payload: { stage: 'something else' } });
+    expect(bad.statusCode).toBe(400);
+    const none = await t.app.inject({ method: 'POST', url: '/diag/google' });
+    expect(none.statusCode).toBe(400);
+  });
+});

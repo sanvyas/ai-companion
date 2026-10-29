@@ -8,6 +8,17 @@ import { buildInfo } from '../admin/routes/overview.js';
 export function publicRoutes(app: FastifyInstance, ctx: Ctx) {
   // What the sign-in screen needs before anyone is signed in.
   app.get('/public-config', async () => ({ otp: ctx.otp.canSend || (await hasAnyInvite(ctx)), google: !!ctx.rt.secrets.get('google', 'client_id'), googleClientId: ctx.rt.secrets.get('google', 'client_id') ?? null, llm: ctx.llm.configured, stt: !!ctx.stt, dictation: !!ctx.transcriber?.configured, tts: !!ctx.tts?.configured, push: ctx.push.enabled, signupsOpen: ctx.rt.settings.bool('access.signups_open'), voicePaused: ctx.rt.settings.bool('kill.voice'), analytics: ctx.rt.settings.bool('analytics.enabled') }));
+  // Google sign-in happens in the person's browser, so a failure never reaches the server on its own. The page reports the
+  // step it got stuck on (no words, no tokens, nothing about the person) so a stuck sign-in shows up in the logs.
+  const GOOGLE_STAGES = new Set(['script_failed', 'button_not_drawn', 'origin_rejected', 'in_app_browser', 'tapped_while_not_ready', 'popup_blocked', 'sign_in_error']);
+  app.post('/diag/google', { config: { rateLimit: { max: 20 * ctx.cfg.RATE_LIMIT_SCALE, timeWindow: '1 minute' } } }, async (req, reply) => {
+    const b = (req.body ?? {}) as { stage?: unknown; note?: unknown };
+    const stage = typeof b.stage === 'string' && GOOGLE_STAGES.has(b.stage) ? b.stage : null;
+    if (!stage) return reply.code(400).send({ error: 'unknown_stage' });
+    const note = typeof b.note === 'string' ? b.note.replace(/[^\x20-\x7E]/g, '').slice(0, 200) : undefined;
+    req.log.warn({ diag: 'google_sign_in', stage, note, origin: req.headers.origin ?? null, ua: String(req.headers['user-agent'] ?? '').slice(0, 160) }, 'google sign-in problem reported by the page');
+    return { ok: true };
+  });
   app.get('/healthz', async () => ({ ok: true }));
   // Which build is running. No secrets; used by the admin portal's environment checks.
   app.get('/version', async () => ({ ...buildInfo(), environment: ctx.cfg.NODE_ENV }));

@@ -58,6 +58,7 @@ export class DemoApi implements Api {
     this.cards = [{ id: uuid(), kind: 'checkin' }];
     return { isNewUser: !this._me.onboarded, pendingDeletion: false };
   }
+  googleDiag() { /* nothing to report in the demo */ }
   async googleSignIn() { this.signed = true; return { isNewUser: false, pendingDeletion: false }; }
   async signOut() { this.signed = false; }
 

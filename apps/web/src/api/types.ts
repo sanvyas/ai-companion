@@ -46,6 +46,7 @@ export interface Api {
   restoreSession(): Promise<boolean>;
   otpStart(phone: string, age18: boolean): Promise<OtpStartResponse>;
   otpVerify(b: { phone: string; code: string; challengeId?: string; age18: boolean; nickname?: string }): Promise<{ isNewUser: boolean; pendingDeletion: boolean }>;
+  googleDiag(stage: string, note?: string): void;
   googleSignIn(b: { idToken: string; age18: boolean; nickname?: string }): Promise<{ isNewUser: boolean; pendingDeletion: boolean }>;
   signOut(): Promise<void>;
   onSignedOut(cb: () => void): void;

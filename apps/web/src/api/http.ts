@@ -84,6 +84,8 @@ export class HttpApi implements Api {
   }
 
   // ---------------------------------------------------------------------------------------------- public
+  /** Tells the server which step of Google sign-in got stuck. Carries no personal data. Never throws. */
+  googleDiag = (stage: string, note?: string) => { void fetch(`${BASE}/diag/google`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stage, note }), keepalive: true }).catch(() => undefined); };
   publicConfig = () => this.req<PublicConfig>('GET', '/public-config', undefined, { auth: false });
   helplines = async (kind?: string) => (await this.req<{ items: Awaited<ReturnType<Api['helplines']>> }>('GET', `/helplines${kind ? `?kind=${kind}` : ''}`, undefined, { auth: false })).items;
 

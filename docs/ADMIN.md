@@ -189,3 +189,17 @@ To go further the realistic path is streaming on both ends: speech-to-text on th
 Google's sign-in opens a popup and hands the result back to the app page. The server used to send `Cross-Origin-Opener-Policy: same-origin` (helmet's default), which cuts that link: the popup was left on a blank white page and the app never heard back. It now sends `same-origin-allow-popups`, and `Referrer-Policy: strict-origin-when-cross-origin` instead of `no-referrer`. A browser test opens a popup on another site and checks the page hears back.
 
 If Google still shows an error rather than a white page, the cause is in the Google Cloud Console, not the app: the OAuth client's **Authorized JavaScript origins** must contain the exact address people open the app on (for example `https://saathi-api-mpdh.onrender.com`, with no trailing slash), and the client id saved in the portal under Integrations must be that same client's id.
+
+### When Google sign-in still does nothing
+
+The sign-in happens in the person's browser, so a failure never reaches the server by itself. The app now notices the common ways it gets stuck, tells the person what to do (use the phone number, or open the page in Chrome or Safari), and reports **which step** got stuck, with no personal data, to `POST /diag/google`. Look for log lines with `diag: "google_sign_in"` and one of these `stage` values:
+
+| stage | meaning | fix |
+|---|---|---|
+| `origin_rejected` | Google said this address isn't allowed for the client id (the note has Google's wording) | Google Cloud Console, Credentials, the OAuth client: add the exact address under **Authorized JavaScript origins** (for example `https://saathi-api-mpdh.onrender.com`, no trailing slash) |
+| `in_app_browser` | the page was opened inside WhatsApp, Instagram, Facebook or another app's browser; Google blocks sign-in there | share the link so it opens in Chrome or Safari; nothing to change in the app |
+| `script_failed` | Google's script couldn't load (no internet, or a blocker) | none; the person can use the phone number |
+| `button_not_drawn` | the script loaded but Google drew no button | usually the same as `origin_rejected`; check the console of the page |
+| `tapped_while_not_ready` | someone tapped the greyed-out button | follows one of the above |
+
+If `/auth/google` never appears in the logs at all (only `/auth/otp/...` does), the token is not reaching the server and the cause is one of the rows above, not the server.
