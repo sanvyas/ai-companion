@@ -448,3 +448,16 @@ html[data-reduce="true"] .v2 *, html[data-reduce="true"] .v2 *::before, html[dat
 .v2 .row.wrap{flex-wrap:wrap}
 .v2 .cover{min-height:190px}
 .v2 .cover>span.tag{position:static;align-self:flex-start;margin-bottom:auto;left:auto;top:auto}
+/* The little banner never blocks the buttons underneath it. */
+.v2 .ribbon{pointer-events:none}
+/* Choices drawn as chips: one of them is selected (radios), or each can be on or off (pressed). */
+.v2 .chip[aria-checked=true]{background:var(--indigo);color:#fff;box-shadow:none}
+.v2.night .chip[aria-checked=true]{color:#14172B}
+/* Waiting steps stay fully readable. Only the number fades. */
+.v2 .steps li.later{opacity:1}
+.v2 .steps li.later .num{opacity:.75}
+.v2{--leaf2:#25683D}
+.v2.night{--leaf2:#9BE0B8}
+/* Orange used for small text needs to be darker than the orange of buttons. */
+.v2{--brand-text:#8A4A00}
+.v2.night{--brand-text:#F7B24D}

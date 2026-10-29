@@ -6,7 +6,7 @@ import { useSyncExternalStore } from 'react';
 export type Tab = 'today' | 'journal' | 'talk' | 'calm' | 'you';
 export const TABS: readonly Tab[] = ['today', 'journal', 'talk', 'calm', 'you'];
 
-export type PushedId = 'garden' | 'plan' | 'why' | 'letter' | 'convo' | 'page' | 'create-rangoli' | 'create-boat' | 'create-jar' | 'game-pot' | 'game-thread' | 'game-stars' | 'insights' | 'about' | 'language';
+export type PushedId = 'garden' | 'plan' | 'why' | 'letter' | 'convo' | 'page' | 'create-rangoli' | 'create-boat' | 'create-jar' | 'game-pot' | 'game-thread' | 'game-stars' | 'about' | 'language';
 export interface Pushed { id: PushedId; arg?: string }
 
 export type V2Sheet = { id: 'checkin' } | { id: 'plant'; slot: number | 'auto' } | { id: 'confirm'; title: string; body: string; yes: string; onYes: () => void } | null;

@@ -3,7 +3,7 @@
 | Release | What it is | Where |
 |---|---|---|
 | **v1.0.0** | The app as it stood before the new design: phone and Google sign-in, voice/chat/video companion, journal, calm, outside, safety pipeline, admin portal | `main` and the branch `release/v1.0.0` (commit `791e46d`) |
-| **v2** (in progress) | The new design (garden home, five tabs, onboarding and tour, journal timeline and progress, quiet games) connected to the same backend | branch `claude/hopeful-planck-y33w4w`, behind the feature flag `ui.v2` (off by default) until you switch it on; merged to `main` only when you say so |
+| **v2** (built, off by default) | The new design (garden home, five tabs, onboarding and tour, journal timeline and progress, quiet games) connected to the same backend | branch `claude/hopeful-planck-y33w4w`, behind the feature flag `ui.v2` until you switch it on; merged to `main` only when you say so. See [V2_PLAN.md](V2_PLAN.md) for status |
 
 ## Going back to v1
 

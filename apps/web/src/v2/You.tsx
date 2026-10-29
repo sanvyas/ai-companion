@@ -246,7 +246,7 @@ export function PrivacyScreen() {
       <div className="card" style={{ marginTop: 12 }}>
         <b>Keep conversations for</b>
         <div className="chips" role="radiogroup" aria-label="Keep conversations for" style={{ marginTop: 10 }}>
-          {RETENTION.map(r => <button key={r.value} role="radio" aria-checked={retention === r.value} className="chip" aria-pressed={retention === r.value} onClick={() => void updatePrivacy({ transcriptRetentionDays: r.value })}>{r.label}</button>)}
+          {RETENTION.map(r => <button key={r.value} role="radio" aria-checked={retention === r.value} className="chip" onClick={() => void updatePrivacy({ transcriptRetentionDays: r.value })}>{r.label}</button>)}
         </div>
         <p className="muted small" style={{ marginTop: 8 }}>Voice recordings are never kept. Summaries stay until you delete them.</p>
       </div>
@@ -298,7 +298,7 @@ export function NotifScreen() {
       <div className="card" style={{ marginTop: 12 }}>
         <b>Daily check-in</b>
         <div className="chips" role="radiogroup" aria-label="Daily check-in" style={{ marginTop: 10 }}>
-          {(['morning', 'evening', 'off'] as const).map(v => <button key={v} role="radio" aria-checked={checkin === v} className="chip" aria-pressed={checkin === v} onClick={() => void updatePrefs({ checkinTime: v })}>{CHECKIN_LABEL[v]}</button>)}
+          {(['morning', 'evening', 'off'] as const).map(v => <button key={v} role="radio" aria-checked={checkin === v} className="chip" onClick={() => void updatePrefs({ checkinTime: v })}>{CHECKIN_LABEL[v]}</button>)}
         </div>
         <p className="muted small" style={{ marginTop: 8 }}>{checkin === 'off' ? 'No daily check-in. You can still talk any time.' : `Around ${checkin === 'morning' ? '9 a.m.' : '9 p.m.'}. A short conversation, never a form. Miss one and I won’t mention it.`}</p>
       </div>

@@ -96,7 +96,7 @@ function CheckinSheet() {
         </div>
         {one && (
           <div className="card" style={{ marginTop: 16, boxShadow: '0 0 0 2px var(--brand),var(--sh1)' }}>
-            <div className="eyebrow" style={{ color: 'var(--brand2)' }}>One small thing</div>
+            <div className="eyebrow" style={{ color: 'var(--brand-text)' }}>One small thing</div>
             <div className="row" style={{ gap: 12, marginTop: 8 }}>
               <span className="ico" style={{ background: '#FFE9B8' }}><Ic n={one.icon} /></span>
               <div className="grow1"><b>{one.title}</b><div className="muted small">{one.sub}</div></div>

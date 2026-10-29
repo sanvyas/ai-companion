@@ -3,7 +3,6 @@ import { cameUp, nextNotes, rankByThemes, themeDef, THEMES, weekThemes } from '@
 import { CALM_ITEMS } from '../data/calm';
 import { addPlanItem, loadOutside, loadYou, openSheet as openStoreSheet, togglePlan } from '../state/actions';
 import { dayOf, useStore } from '../state/store';
-import { Soon } from './Soon';
 import { ScreenFrame } from './Chrome';
 import { useGuidance, useSaid } from './guidance';
 import { local } from './hooks';
@@ -153,6 +152,6 @@ export function PushedScreen({ p }: { p: Pushed }) {
     case 'convo': return p.arg ? <ConvoScreen id={p.arg} onBack={pop} /> : null;
     case 'about': return <AboutScreen onBack={pop} />;
     case 'language': return <LanguageScreen onBack={pop} />;
-    default: return <Soon name={p.id} pushed />;
+    default: return null;
   }
 }

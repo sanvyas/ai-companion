@@ -122,8 +122,15 @@ export function CrisisOverlay() {
 // ---------------------------------------------------------------------------------------------- level up
 export function LevelUpOverlay() {
   const name = useV2(s => s.levelUp);
+  // A celebration waits for a quiet moment: never over a call, a walk, writing, a story, breathing, a sheet or the safety screen.
+  const calm = useStore(s => !['call', 'chat', 'walk', 'jcompose'].includes(s.screen) && !s.breathe && !s.crisis && !s.player && !s.sheet && !s.paywall);
+  const free = useV2(s => !s.sheet && s.tour === null);
+  if (!name || !calm || !free) return null;
+  return <LevelUpCard name={name} />;
+}
+
+function LevelUpCard({ name }: { name: string }) {
   const ref = useDialog<HTMLDivElement>(() => setV2({ levelUp: null }));
-  if (!name) return null;
   const cs = ['#F9A3C0', '#FFD36B', '#8FCF7B', '#8FB8F0', '#fff'];
   return (
     <div ref={ref} tabIndex={-1} className="layer" role="dialog" aria-modal="true" aria-label={`Your garden grew: ${name}`} style={{ background: 'rgba(14,20,40,.62)', display: 'grid', placeItems: 'center', padding: 24, outline: 'none' }}>
@@ -236,7 +243,7 @@ export function Tour() {
       <div className="blocker" />
       {box && <div className="hole" style={{ left: box.x, top: box.y, width: box.w, height: box.h, borderRadius: st.sel.includes('tabbar') ? 0 : 26 }} />}
       <div className="tip" ref={tipRef} style={{ top: tipTop, opacity: box ? 1 : 0 }}>
-        <div className="eyebrow" style={{ color: 'var(--brand2)' }}>Quick tour · {step + 1} of {TOUR.length}</div>
+        <div className="eyebrow" style={{ color: 'var(--brand-text)' }}>Quick tour · {step + 1} of {TOUR.length}</div>
         <h2 className="h2" style={{ marginTop: 4 }}>{st.t}</h2>
         <p className="muted" style={{ marginTop: 6 }}>{st.d}</p>
         <div className="row">

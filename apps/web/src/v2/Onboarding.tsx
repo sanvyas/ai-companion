@@ -92,7 +92,7 @@ export function AboutV2() {
         <input type="text" id="v2nick" value={s.nick} maxLength={24} autoComplete="nickname" placeholder="For example, Meera" onChange={e => set({ nick: e.target.value })} />
         <label className="f" style={{ marginTop: 20 }}>Language</label>
         <div className="chips" role="radiogroup" aria-label="Language">
-          {LANGS.map(l => <button key={l.value} role="radio" aria-checked={s.language === l.value} className="chip" aria-pressed={s.language === l.value} lang={l.value === 'hi' ? 'hi' : 'en'} onClick={() => set({ language: l.value })}>{l.label}</button>)}
+          {LANGS.map(l => <button key={l.value} role="radio" aria-checked={s.language === l.value} className="chip" lang={l.value === 'hi' ? 'hi' : 'en'} onClick={() => set({ language: l.value })}>{l.label}</button>)}
         </div>
         <p className="fine" style={{ marginTop: 8 }}>More languages are on the way.</p>
       </>}
@@ -249,7 +249,7 @@ export function ConsentV2() {
       </div>
       <label className="f" style={{ marginTop: 18 }}>When should I check on you?</label>
       <div className="chips" role="radiogroup" aria-label="Check-in time">
-        {CHECKIN.map(c => <button key={c.v} className="chip" role="radio" aria-checked={time === c.v} aria-pressed={time === c.v} onClick={() => setTime(c.v)}>{c.label}</button>)}
+        {CHECKIN.map(c => <button key={c.v} className="chip" role="radio" aria-checked={time === c.v} onClick={() => setTime(c.v)}>{c.label}</button>)}
       </div>
       <p className="fine" style={{ marginTop: 8 }}>One small hello a day at most, and quiet at night. This only happens if you switch on notifications above.</p>
     </Frame>

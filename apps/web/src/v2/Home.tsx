@@ -1,5 +1,5 @@
-import { useEffect, useMemo } from 'react';
-import { go, loadJournal, loadTalk, loadToday, openBreathe, startCall, startJournal, startWalkFlow, loadInsights } from '../state/actions';
+import { useEffect, useMemo, useRef } from 'react';
+import { dismissCard, go, loadJournal, loadTalk, loadToday, openBreathe, startCall, startCheckin, startJournal, startWalkFlow, loadInsights } from '../state/actions';
 import { useStore } from '../state/store';
 import { playCalmById } from './calm-actions';
 import { daysBetween, dateLabel, greeting, local } from './hooks';
@@ -49,8 +49,13 @@ export function Home() {
   const mood = useStore(s => s.mood);
   const entries = useStore(s => s.jEntries);
   const letter = useStore(s => s.letter);
+  const cards = useStore(s => s.cards);
+  const quickHide = useStore(s => s.me?.privacy.quickHide ?? false);
   const garden = useGarden(s => s.garden);
   const { one } = useGuidance();
+  const taps = useRef<number[]>([]);
+  // Quick hide: three quick taps on the date switch to a breathing screen, for when someone glances over.
+  const onDate = () => { const n = Date.now(); taps.current = taps.current.filter(x => n - x < 900).concat(n); if (taps.current.length >= 3 && quickHide) { taps.current = []; openBreathe(); } };
 
   useEffect(() => {
     void loadToday(); void loadJournal(); void loadTalk(); void loadInsights();
@@ -67,6 +72,9 @@ export function Home() {
   const pick = pickPlace(one?.id, body);
 
   const nudge = useMemo<Nudge | null>(() => {
+    // A check-in the person asked for (quiet cards) comes first: it is what they chose to be reminded of.
+    const card = cards.find(c => c.kind === 'checkin');
+    if (card) return { title: 'A quiet moment for you?', sub: 'Your check-in is here whenever you are. Two minutes, or skip it.', cta: 'Check in', icon: 'bell', color: '#FFE9B8', run: () => { void dismissCard(card.id); void startCheckin(); } };
     if (!garden) return null;
     const last = local(LAST_VISIT);
     const gap = last ? daysBetween(new Date(last), new Date()) : 0;
@@ -80,7 +88,7 @@ export function Home() {
     if (e && !words) return { title: 'Saathi remembers', sub: `You wrote: “${e.text.length > 60 ? `${e.text.slice(0, 58)}…` : e.text}” How is it today?`, cta: 'Tell Saathi', icon: 'mic', color: '#DDE3FA', run: () => void startCall('voice') };
     if (garden.plants.length < garden.slots && checked) return { title: 'Room to grow', sub: `You have ${garden.slots - garden.plants.length} free plot${garden.slots - garden.plants.length === 1 ? '' : 's'}. Plant something, and it grows on the days you show up.`, cta: 'Choose a plant', icon: 'flower', color: '#DDF0DC', run: () => openPlant('auto') };
     return null;
-  }, [garden, checked, words, entries, letter, nick]);
+  }, [garden, checked, words, entries, letter, nick, cards]);
 
   useEffect(() => { local(LAST_VISIT, new Date().toISOString()); }, []);
 
@@ -94,7 +102,7 @@ export function Home() {
   return (
     <>
       <div className="hhead">
-        <div><div className="eyebrow">{dateLabel()}</div><h1 className="h1" style={{ marginTop: 4 }}>{greeting()}{nick ? <>,<br />{nick}</> : null}</h1></div>
+        <div><div className="eyebrow" onClick={onDate}>{dateLabel()}</div><h1 className="h1" style={{ marginTop: 4 }}>{greeting()}{nick ? <>,<br />{nick}</> : null}</h1></div>
         <HelpPill tour />
       </div>
       <div data-tour="hero"><Hero pick={pick} /></div>
@@ -104,6 +112,7 @@ export function Home() {
           <span className="ico" style={{ background: 'rgba(255,255,255,.7)' }}><Ic n={nudge.icon} /></span>
           <div className="grow1"><b>{nudge.title}</b><div className="small" style={{ opacity: .8 }}>{nudge.sub}</div></div>
           <button className="btn sm" onClick={nudge.run}>{nudge.cta}</button>
+          {cards.some(c => c.kind === 'checkin') && <button className="btn sm ghost" onClick={() => { const c = cards.find(x => x.kind === 'checkin'); if (c) void dismissCard(c.id); }}>Not now</button>}
         </div>
       )}
 
