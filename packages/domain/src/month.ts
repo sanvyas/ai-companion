@@ -137,12 +137,12 @@ export function letterBody(name: string, kinds: MonthKind[]): string {
 
 /** A line Saathi offers to add to today, from something it noticed. Never added without asking. */
 export const NOTICED: Record<number, { kind: MonthKind; text: string }> = {
-  0: { kind: 'walk', text: 'A Monday walk. Put “A walk” in today’s envelope?' },
+  0: { kind: 'walk', text: 'Did you get out for a walk today? Put “A walk” in today’s envelope?' },
   1: { kind: 'friend', text: 'Did you speak to a friend today? Add it?' },
-  2: { kind: 'sleep', text: 'Phone down early last night? Add a rested night?' },
-  3: { kind: 'breathe', text: 'Did you take a breathing minute today? Add it?' },
-  4: { kind: 'talk', text: 'You talked things through with me. Add it?' },
+  2: { kind: 'sleep', text: 'Did you rest well last night? Add a rested night?' },
+  3: { kind: 'breathe', text: 'Did you take a moment to breathe today? Add it?' },
+  4: { kind: 'talk', text: 'Did you talk something through today, with me or someone else? Add it?' },
   5: { kind: 'play', text: 'Did you play for a bit to unwind? Add it?' },
-  6: { kind: 'walk', text: 'A Sunday walk. Add it?' },
+  6: { kind: 'walk', text: 'Did you get out for a Sunday walk? Add it?' },
 };
 export const noticedFor = (day: string) => NOTICED[(new Date(parse(day)).getUTCDay() + 6) % 7];

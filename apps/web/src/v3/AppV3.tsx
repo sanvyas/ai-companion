@@ -8,7 +8,7 @@ import { BannerView, HelpSheet, TabBar, Toast } from './Chrome';
 import { Home } from './Home';
 import { MoodScreen, WhyScreen } from './Mood';
 import { V3Sheets, EventSheet } from './Sheets';
-import { MonthTab } from './stubs';
+import { MonthTab } from './Month';
 import { GameScreen } from './Games';
 import { BreatheScreen, PlayerScreen } from './Play';
 import { Relax } from './Relax';
