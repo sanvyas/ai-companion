@@ -17,9 +17,9 @@ const STORY_BG = ['linear-gradient(180deg,#2B3A63,#5A5493)', 'linear-gradient(18
 interface Game { id: GameId; title: string; meta: string; bg: string; tags: Feel[]; deco: [string, string, string, string, string][] }
 const GAMES: Game[] = [
   { id: 'rangoli', title: 'Rangoli', meta: 'Draw · no rules', bg: '#2B2350', tags: ['Calm down', 'Focus'], deco: [['60%', '10%', '70px', '50%', '#F2B33D'], ['72%', '22%', '40px', '50%', '#F28DB2'], ['82%', '34%', '14px', '50%', '#7FD1C3']] },
-  { id: 'balloon', title: 'Balloon pop', meta: 'Tap · no timer', bg: '#D9715A', tags: ['Lift me up', 'Calm down'], deco: [['58%', '8%', '44px', '50% 50% 50% 50% / 56% 56% 44% 44%', '#FCEFCF'], ['76%', '26%', '34px', '50% 50% 50% 50% / 56% 56% 44% 44%', '#F2B33D'], ['42%', '24%', '26px', '50% 50% 50% 50% / 56% 56% 44% 44%', '#F4C7B8']] },
-  { id: 'fruit', title: 'Fruit slice', meta: 'Swipe · no timer', bg: '#3E7F4C', tags: ['Lift me up'], deco: [['56%', '8%', '60px', '50%', '#F05D5E'], ['70%', '20%', '36px', '50%', '#F2B33D'], ['50%', '34%', '20px', '50%', '#FCEFCF']] },
-  { id: 'room', title: 'Cozy room', meta: 'Decorate', bg: '#8C6A4A', tags: ['Calm down', 'Focus'], deco: [['62%', '10%', '56px', '12px 12px 4px 4px', '#F2B33D'], ['74%', '34%', '30px', '50%', '#4E9A5C']] },
+  { id: 'balloon', title: 'Balloon pop', meta: 'Tap · no timer', bg: '#AE4F38', tags: ['Lift me up', 'Calm down'], deco: [['58%', '8%', '44px', '50% 50% 50% 50% / 56% 56% 44% 44%', '#FCEFCF'], ['76%', '26%', '34px', '50% 50% 50% 50% / 56% 56% 44% 44%', '#F2B33D'], ['42%', '24%', '26px', '50% 50% 50% 50% / 56% 56% 44% 44%', '#F4C7B8']] },
+  { id: 'fruit', title: 'Fruit slice', meta: 'Swipe · no timer', bg: '#2F6B3B', tags: ['Lift me up'], deco: [['56%', '8%', '60px', '50%', '#F05D5E'], ['70%', '20%', '36px', '50%', '#F2B33D'], ['50%', '34%', '20px', '50%', '#FCEFCF']] },
+  { id: 'room', title: 'Cozy room', meta: 'Decorate', bg: '#775A3D', tags: ['Calm down', 'Focus'], deco: [['62%', '10%', '56px', '12px 12px 4px 4px', '#F2B33D'], ['74%', '34%', '30px', '50%', '#4E9A5C']] },
 ];
 
 export function Relax() {

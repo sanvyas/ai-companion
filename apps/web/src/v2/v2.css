@@ -628,7 +628,7 @@ html[data-reduce="true"] .v2 *, html[data-reduce="true"] .v2 *::before, html[dat
 .v2 .hero .hwx{pointer-events:none}
 .v2 .flick{animation:flick 3.4s ease-in-out infinite}
 @keyframes flick{0%,100%{opacity:.85}45%{opacity:1}70%{opacity:.7}}
-.v2 .ghost{animation:ghost 3.6s ease-in-out infinite}
+.v2 .ghost:not(.btn){animation:ghost 3.6s ease-in-out infinite}
 @keyframes ghost{0%,100%{opacity:.55}50%{opacity:.95}}
 
 /* On the sky */
