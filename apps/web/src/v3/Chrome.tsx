@@ -81,7 +81,7 @@ export function Sheet({ label, onClose, children }: { label: string; onClose: ()
   return (
     <>
       <div onClick={onClose} aria-hidden="true" style={s('position:absolute;inset:0;background:rgba(20,20,40,.4);z-index:60;animation:kFade 300ms')} />
-      <div ref={ref} tabIndex={-1} role="dialog" aria-modal="true" aria-label={label} style={{ ...s('position:absolute;left:0;right:0;bottom:0;z-index:61;background:#FAF6EF;border-radius:30px 30px 0 0;padding:12px 20px 36px;display:flex;flex-direction:column;gap:12px;animation:kSheet 400ms cubic-bezier(.22,.61,.36,1);max-height:88%;overflow:auto;outline:none') }}>
+      <div ref={ref} tabIndex={-1} role="dialog" aria-modal="true" aria-label={label} style={{ ...s('position:absolute;left:0;right:0;bottom:0;z-index:61;background:#FAF6EF;border-radius:30px 30px 0 0;padding:12px 20px 36px;display:flex;flex-direction:column;gap:12px;animation:kSheet 400ms cubic-bezier(.22,.61,.36,1);max-height:88%;overflow:auto;outline:none;color:#1E2430') }}>
         <span style={s('align-self:center;width:40px;height:5px;border-radius:3px;background:#D9D2C5;flex:none')} aria-hidden="true" />
         {children}
       </div>

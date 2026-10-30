@@ -2,13 +2,16 @@ import { Suspense, lazy, useEffect, useRef } from 'react';
 import { startCheckin, dismissCard, go, loadToday, closeSheet as closeStoreSheet } from '../state/actions';
 import { useAppLifecycle } from '../state/lifecycle';
 import { getState, useStore, type Screen } from '../state/store';
-import { moodSkipped, setV3, useV3 } from './ui';
+import { getV3, moodSkipped, setV3, useV3 } from './ui';
 import { setV2, useV2 } from '../v2/ui';
 import { BannerView, HelpSheet, TabBar, Toast } from './Chrome';
 import { Home } from './Home';
 import { MoodScreen, WhyScreen } from './Mood';
 import { V3Sheets, EventSheet } from './Sheets';
-import { BreatheScreen, CallScreen, ChatScreen, Compose, GameScreen, JournalTab, MonthTab, PlayerScreen, Relax, TalkTab, WalkScreen, YouTab } from './stubs';
+import { BreatheScreen, GameScreen, MonthTab, PlayerScreen, Relax } from './stubs';
+import { CallScreen, ChatScreen, TalkTab, WalkScreen } from './Talk';
+import { Compose, JournalTab } from './Journal';
+import { YouTab } from './You';
 import { s } from './css';
 import { openHelp } from './ui';
 import type { LegacyKind } from './Legacy';
@@ -60,8 +63,8 @@ export function AppV3() {
   // A real card from the app (a quiet check-in the person asked for) arrives as a banner, never a pop-up that blocks anything.
   useEffect(() => {
     const c = cards.find(x => x.kind === 'checkin');
-    if (phase === 'in' && c && !banner && !getState().crisis) setV3({ banner: { text: 'A quiet moment for you? Your check-in is here whenever you are.', go: 'checkin' } });
-  }, [cards, phase, banner]);
+    if (phase === 'in' && c && !getV3().bannerShown && !getState().crisis) setV3({ bannerShown: true, banner: { text: 'A quiet moment for you? Your check-in is here whenever you are.', go: 'checkin' } });
+  }, [cards, phase]);
 
   // The last step of sign-up leaves the screen where it was, and the older design then shows its own next step. Here, they arrive.
   // (The older sign-up marks that moment by asking for a first seed, which this design does not have.)
@@ -76,7 +79,7 @@ export function AppV3() {
   const showHelp = !!(storeSheet === 'support' || sheet?.id === 'help');
   const showEvent = storeSheet === 'event' && !!eventId;
   const legacySheet = storeSheet && (LEGACY_SHEETS as readonly string[]).includes(storeSheet);
-  const showTabs = inApp && !!Tab && !over && !Full && !breathe && !player && !legacyScreen;
+  const showTabs = inApp && !!Tab && screen !== 'you' && !over && !Full && !breathe && !player && !legacyScreen;
   const behind = !!(showHelp || showEvent || sheet || legacySheet || breathe || crisis || paywall || player);
 
   const bannerGo = (b: NonNullable<typeof banner>) => {
