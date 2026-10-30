@@ -29,6 +29,7 @@ export async function exportAll(ctx: Ctx, userId: string) {
       letters: (await q('SELECT * FROM letters ORDER BY week_start')).map(r => ({ weekStart: r.week_start, body: d('letter', r.body_enc) })),
       safetyPlan: await (async () => { const r = (await q('SELECT data_enc FROM safety_plans'))[0]; return r ? JSON.parse(d('safety_plan', r.data_enc)!) : null; })(),
       garden: {
+        activity: await q('SELECT kind, feeling, helped, created_at FROM activity_log ORDER BY created_at'),
         plants: await q('SELECT kind, slot, picks, planted_at FROM garden_plants ORDER BY slot'),
         keepsakes: await q('SELECT kind, n, created_at FROM garden_keepsakes ORDER BY created_at'),
         rangolis: (await q('SELECT image_enc, created_at FROM garden_creations ORDER BY created_at')).map(r => ({ image: d('creation', r.image_enc), createdAt: r.created_at })),

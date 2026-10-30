@@ -27,7 +27,7 @@ const ACT_SQL = `
     UNION ALL SELECT (created_at AT TIME ZONE (SELECT z FROM tz))::date, 'create', 1 FROM jar_items
   ) t GROUP BY 1, 2`;
 
-async function days(tx: Tx, userId: string): Promise<DayActs[]> {
+export async function actDays(tx: Tx, userId: string): Promise<DayActs[]> {
   const [acts, moods] = await Promise.all([tx.query<{ day: string; kind: ActKind; n: number }>(ACT_SQL, [userId]), tx.query<{ day: string; value: number }>('SELECT day::text AS day, value FROM mood_logs')]);
   const by = new Map<string, DayActs>();
   const get = (day: string) => { let d = by.get(day); if (!d) { d = { day, mood: null, acts: {} }; by.set(day, d); } return d; };
@@ -38,7 +38,7 @@ async function days(tx: Tx, userId: string): Promise<DayActs[]> {
 
 export async function gardenIn(tx: Tx, userId: string): Promise<Garden> {
   const [ds, plantRows, keeps, flowerRows, jar, picks] = await Promise.all([
-    days(tx, userId),
+    actDays(tx, userId),
     tx.query<{ id: string; kind: string; slot: number; at_days: number; picks: number }>('SELECT id, kind, slot, at_days, picks FROM garden_plants ORDER BY slot'),
     tx.query<{ kind: string; n: number }>('SELECT kind, n FROM garden_keepsakes ORDER BY created_at, id'),
     tx.query<{ mood: number }>('SELECT mood FROM (SELECT mood, created_at FROM journal_entries ORDER BY created_at DESC LIMIT 12) x ORDER BY created_at'),

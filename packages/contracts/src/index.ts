@@ -5,3 +5,4 @@ export * from './conversation.js';
 export * from './journal.js';
 export * from './misc.js';
 export * from './garden.js';
+export * from './month.js';

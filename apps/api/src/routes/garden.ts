@@ -1,9 +1,10 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { CreationBody, JarBody, KeepsakeBody, PlantBody } from '@saathi/contracts';
+import { ActivityBody, CreationBody, JarBody, KeepsakeBody, PlantBody } from '@saathi/contracts';
 import type { Ctx } from '../context.js';
 import { parse, uid } from '../http.js';
 import { assertAdult } from '../services/users.js';
+import { getMonth, recordActivity } from '../services/month.js';
 import { addCreation, addJarItem, addKeepsake, deleteCreation, deleteJarItem, getGarden, listCreations, listJar, pickPlant, plantSomething, recordBreath } from '../services/garden.js';
 
 const Id = z.object({ id: z.string().uuid() });
@@ -22,6 +23,10 @@ export function gardenRoutes(app: FastifyInstance, ctx: Ctx) {
   app.get('/garden/creations', adult, async req => ({ items: await listCreations(ctx, uid(req)) }));
   app.delete('/garden/creations/:id', adult, async (req, reply) => { await deleteCreation(ctx, uid(req), idOf(req)); return reply.code(204).send(); });
   app.post('/breaths', slow(60), async (req, reply) => { await recordBreath(ctx, uid(req)); return reply.code(204).send(); });
+
+  // The third design's Month: the last four weeks, and the few things only they can tell us.
+  app.get('/month', adult, async req => getMonth(ctx, uid(req)));
+  app.post('/activity', slow(120), async (req, reply) => { await recordActivity(ctx, uid(req), parse(ActivityBody, req.body)); return reply.code(204).send(); });
 
   app.get('/jar', adult, async req => ({ items: await listJar(ctx, uid(req)) }));
   app.post('/jar', slow(40), async (req, reply) => reply.code(201).send(await addJarItem(ctx, uid(req), parse(JarBody, req.body).text)));
