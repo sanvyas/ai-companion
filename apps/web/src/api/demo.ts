@@ -1,5 +1,5 @@
 import type { ServerMsg } from '@saathi/contracts';
-import { analyzeJournalLocally, classify, moodIndexFor, summariseGarden, SLOTS_BY_STAGE, ISLES, PLANT_KINDS, POT_SEAMS, daysTo, type ActKind, type DayActs } from '@saathi/domain';
+import { addDays, analyzeJournalLocally, classify, kindsOfDay, monthWeeks, type MonthKind, moodIndexFor, summariseGarden, SLOTS_BY_STAGE, ISLES, PLANT_KINDS, POT_SEAMS, daysTo, type ActKind, type DayActs } from '@saathi/domain';
 import { mockCompanion } from '../providers/companion';
 import { EVENTS } from '../data/outside';
 import { SEED_JOURNAL, SEED_MEMORIES, SEED_PLAN, MOOD_SERIES, WINS, SAFETY_PLAN, TRUSTED_CONTACT } from '../data/seed';
@@ -239,6 +239,19 @@ export class DemoApi implements Api {
   async addJarItem(text: string) { const j: JarItem = { id: uuid(), text, createdAt: new Date().toISOString() }; this.jarItems.unshift(j); return j; }
   async deleteJarItem(id: string) { this.jarItems = this.jarItems.filter(j => j.id !== id); }
   async breathed() { this.act('breathe'); }
+  private said: { day: string; kind: MonthKind; feeling?: string; helped?: boolean }[] = [];
+  async month() {
+    const today = dayKey(0), from = monthWeeks(today)[0].start;
+    const days = [];
+    for (let day = from; day <= today; day = addDays(day, 1)) {
+      const d = this.log.find(x => x.day === day);
+      const kinds = kindsOfDay(d?.acts ?? {}, this.said.filter(x => x.day === day).map(x => x.kind), d?.mood != null);
+      if (kinds.length || d?.mood != null) days.push({ day, kinds, mood: (d?.mood ?? null) as 0 | 1 | 2 | 3 | 4 | null });
+    }
+    const help = this.said.filter(x => x.feeling && x.helped !== undefined).map(x => ({ feeling: x.feeling as 'anxious', kind: x.kind, helped: !!x.helped }));
+    return { today, signedUp: dayKey(-40), days, help };
+  }
+  async logActivity(b: { kind: MonthKind; feeling?: string; helped?: boolean }) { this.said.push({ day: dayKey(0), ...b }); }
 
   async events() {
     const items: OutsideEvent[] = EVENTS.map((e, i) => ({ id: e.id, city: 'Bengaluru', title: e.title, venue: e.where, startsAt: new Date(Date.now() + (i + 2) * 86_400_000).toISOString(), beginnerFriendly: true, groupSize: null, category: 'demo', price: e.price, organiser: 'Demo listing', details: { tags: e.tags, why: e.why, like: e.like, stay: e.stay, how: e.how, when: e.when, far: e.far, img: e.img, readback: e.readback }, interested: false }));

@@ -195,6 +195,8 @@ export class HttpApi implements Api {
   addJarItem = (text: string) => this.req<Awaited<ReturnType<Api['addJarItem']>>>('POST', '/jar', { text }, { idem: true });
   deleteJarItem = async (id: string) => { await this.req('DELETE', `/jar/${id}`); };
   breathed = async () => { await this.req('POST', '/breaths'); };
+  month = () => this.req<Awaited<ReturnType<Api['month']>>>('GET', '/month');
+  logActivity = async (b: Parameters<Api['logActivity']>[0]) => { await this.req('POST', '/activity', b); };
 
   // ---------------------------------------------------------------------------------------------- notifications
   prefs = () => this.req<Awaited<ReturnType<Api['prefs']>>>('GET', '/notifications/prefs');

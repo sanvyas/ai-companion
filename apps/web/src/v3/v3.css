@@ -1,0 +1,50 @@
+/* The third design. Scoped under .v3 so it can never touch the other two. Screens are drawn with inline styles; this holds
+   the tokens, the frame, the animations and the few rules that cannot be inline (focus, motion, scrollbars). */
+html,body,#root{height:100%;margin:0}
+body{background:#FAF6EF}
+.v3{
+  --bg:#FAF6EF; --ink:#1E2430; --muted:#636B78; --indigo:#2F2A5E; --card:#FFFFFF; --line:#E5DED2; --soft:#F1EDE6; --gold:#F2B33D; --help:#9A3B1E;
+  --serif:'Instrument Serif','Noto Serif Devanagari',Georgia,serif; --sans:'Figtree Variable','Noto Sans Devanagari',system-ui,sans-serif;
+  font-family:var(--sans); color:var(--ink); -webkit-font-smoothing:antialiased; height:100%;
+}
+.v3 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+.v3 button{font-family:inherit;cursor:pointer;color:inherit}
+.v3 input,.v3 textarea{font-family:inherit}
+.v3 ::-webkit-scrollbar{display:none}
+.v3 [data-scroll]{scrollbar-width:none}
+.v3 [data-scroll]>*{flex-shrink:0}
+
+/* The frame: a phone on a desk when the window is wide, the whole screen when it is a phone. */
+.v3 .stage{min-height:100%;display:grid;place-items:center;padding:24px;background:#ECE6DA}
+.v3 .app{position:relative;width:390px;max-width:100%;height:min(844px,calc(100vh - 48px));border-radius:50px;overflow:hidden;background:var(--bg);box-shadow:0 40px 80px rgba(30,36,48,.22),0 0 0 10px #1E2430;isolation:isolate}
+@media (max-width:480px){
+  .v3 .stage{padding:0;background:var(--bg);display:block;height:100%}
+  .v3 .app{width:100%;height:100%;border-radius:0;box-shadow:none}
+}
+.v3 .screen{position:absolute;inset:0}
+
+/* Headline type used across screens */
+.v3 .serif{font-family:var(--serif);font-weight:400}
+.v3 .kicker{font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+
+/* Focus that can be seen on every control */
+.v3 button:focus-visible,.v3 a:focus-visible,.v3 input:focus-visible,.v3 textarea:focus-visible,.v3 [tabindex]:focus-visible{outline:3px solid #8E86D9;outline-offset:2px}
+.v3 .dark button:focus-visible,.v3 .dark a:focus-visible{outline-color:#FFE3A0}
+.v3 .sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+@keyframes kUp{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
+@keyframes kFade{from{opacity:0}to{opacity:1}}
+@keyframes kDrop{from{transform:translateY(-130%)}to{transform:none}}
+@keyframes kSheet{from{transform:translateY(100%)}to{transform:none}}
+@keyframes kBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes kRing{0%{transform:scale(1);opacity:.55}100%{transform:scale(1.5);opacity:0}}
+@keyframes kPop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+
+/* People who ask for less movement get none of it */
+@media (prefers-reduced-motion:reduce){.v3 *{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}}
+html[data-reduce="true"] .v3 *{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+
+/* The older screens (sign-up, memory, privacy, voices) are shown as they were drawn, over this design */
+.v3 .legacy{position:absolute;inset:0;z-index:200;pointer-events:none}
+.v3 .legacy>*{pointer-events:auto}
+.v3 .legacy .screen{inset:0}
