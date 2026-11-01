@@ -20,7 +20,7 @@ _engine: Engine | None = None
 _SessionLocal: sessionmaker[Session] | None = None
 
 
-def make_engine(url: str) -> Engine:
+def make_engine(url: str, schema: str | None = None) -> Engine:
     kwargs: dict = {"pool_pre_ping": True}
     if url.startswith("sqlite"):
         kwargs["connect_args"] = {"check_same_thread": False, "timeout": 30}
@@ -31,7 +31,19 @@ def make_engine(url: str) -> Engine:
         else:
             path = url.split("sqlite:///", 1)[-1]
             Path(path).parent.mkdir(parents=True, exist_ok=True)
+    else:
+        # Postgres behind a shared pooler (e.g. Supabase): stay small so we never starve the other app on the same database
+        kwargs.update(pool_size=3, max_overflow=2, pool_recycle=300)
     engine = create_engine(url, **kwargs)
+    if schema and not url.startswith("sqlite"):
+
+        @event.listens_for(engine, "connect")
+        def _schema(dbapi_conn, _record):  # every connection works only inside our own schema
+            cur = dbapi_conn.cursor()
+            cur.execute(f'SET search_path TO "{schema}"')
+            cur.close()
+            dbapi_conn.commit()
+
     if url.startswith("sqlite"):
 
         @event.listens_for(engine, "connect")
@@ -55,7 +67,7 @@ def _alembic_config(url: str) -> Config:
 def init_db(settings: Settings) -> None:
     """Create the engine and bring the schema to the latest migration."""
     global _engine, _SessionLocal
-    _engine = make_engine(settings.database_url)
+    _engine = make_engine(settings.database_url, settings.database_schema)
     _SessionLocal = sessionmaker(bind=_engine, expire_on_commit=False, autoflush=False)
     cfg = _alembic_config(settings.database_url)
     cfg.attributes["connection"] = _engine

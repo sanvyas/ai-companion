@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -19,6 +20,7 @@ def _int(name: str, default: int) -> int:
 class Settings:
     env: str
     database_url: str
+    database_schema: str | None
     api_tokens: tuple[str, ...]
     max_concurrency: int
     max_conversations_per_run: int
@@ -51,6 +53,7 @@ def load_settings() -> Settings:
     return Settings(
         env=env,
         database_url=normalize_database_url(os.getenv("DATABASE_URL") or default_db),
+        database_schema=os.getenv("DATABASE_SCHEMA") or None,
         api_tokens=tokens,
         max_concurrency=max(1, _int("LAB_MAX_CONCURRENCY", 4)),
         max_conversations_per_run=max(1, _int("LAB_MAX_CONVERSATIONS_PER_RUN", 60)),
@@ -71,6 +74,8 @@ def validate_for_startup(settings: Settings) -> None:
         raise RuntimeError(
             "APP_ENV=production requires LAB_API_TOKENS (comma-separated secrets) to protect the testing lab."
         )
+    if settings.database_schema and not re.fullmatch(r"[a-z_][a-z0-9_]{0,62}", settings.database_schema):
+        raise RuntimeError("DATABASE_SCHEMA must be a simple lowercase identifier such as voice_lab.")
     if settings.secret_key and len(settings.secret_key) < 32:
         raise RuntimeError("LAB_SECRET_KEY must be at least 32 characters.")
     for token in settings.api_tokens:

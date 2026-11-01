@@ -42,6 +42,7 @@ def get_config(request: Request):
     return {
         "env": settings.env, "auth_required": bool(settings.api_tokens),
         # SQLite inside a container with no mounted disk is wiped on every restart/deploy
+        "database": "postgres" if not settings.database_url.startswith("sqlite") else "sqlite",
         "storage": "temporary" if settings.is_production and settings.database_url.startswith("sqlite") and not os.path.ismount("/data") else "database", "providers": providers,
         "judge": dict(zip(("provider", "model"), llm.role("judge"))),
         "simulator": dict(zip(("provider", "model"), llm.role("simulator"))),

@@ -26,7 +26,8 @@ def run_migrations_offline() -> None:
 def run_migrations_online() -> None:
     engine = config.attributes.get("connection")
     if engine is None:
-        engine = make_engine(config.get_main_option("sqlalchemy.url") or load_settings().database_url)
+        settings = load_settings()
+        engine = make_engine(config.get_main_option("sqlalchemy.url") or settings.database_url, settings.database_schema)
     with engine.connect() as connection:
         context.configure(
             connection=connection,

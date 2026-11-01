@@ -15,33 +15,47 @@ export async function render(root) {
   await load();
 
   async function load() {
-    const [cfg, providers, evalsets, active, keys, app] = await Promise.all([getConfig(true), api('/settings/providers'), api('/eval-sets'), api('/deployments/active'), api('/api-keys'), api('/settings/app')]);
-    mount(box, groqCard(providers.find((p) => p.id === 'groq')), checksCard(evalsets[0]), appCard(cfg, active, keys, app, evalsets[0]), cfg.auth_required ? signOut() : null);
+    const [cfg, providers, evalsets, active, keys, app, probe] = await Promise.all([getConfig(true), api('/settings/providers'), api('/eval-sets'), api('/deployments/active'), api('/api-keys'), api('/settings/app'),
+      api('/settings/providers/groq/test', { method: 'POST' }).catch((e) => ({ ok: false, message: e.message, models: {} }))]);
+    const groq = providers.find((p) => p.id === 'groq');
+    mount(box, statusCard(cfg, groq, probe, active), groqCard(groq, probe), checksCard(evalsets[0]), appCard(cfg, active, keys, app, evalsets[0]), cfg.auth_required ? signOut() : null);
     window.dispatchEvent(new Event('lab-config'));
   }
 
-  function groqCard(p) {
-    const key = h('input', { type: 'password', autocomplete: 'off', placeholder: p.configured ? `Connected ${p.key_hint}. Paste a new key to replace it` : 'gsk_…', id: 'groq-key' });
+  function statusCard(cfg, groq, probe, active) {
+    const row = (state, title, detail) => h('div', { class: 'statusrow' }, h('span', { class: 'dot ' + state }, state === 'pass' ? '✓' : state === 'fail' ? '✕' : '!'), h('div', { class: 'grow' }, h('div', { class: 't' }, title), h('div', { class: 'd' }, detail)));
+    const live = active.production;
+    return h('div', { class: 'card' }, h('h2', {}, 'Status'),
+      row(probe.ok ? 'pass' : 'fail', 'AI model (Groq)', probe.ok ? `${probe.message}${groq.source === 'env' ? ' Key is set on the server.' : ''}` : (groq.configured ? `Could not reach Groq: ${probe.message}` : 'Not connected. Add your key below.')),
+      row(cfg.stt_ready ? 'pass' : 'fail', 'Voice (speech to text)', cfg.stt_ready ? 'Ready. Whisper on Groq understands what people say, on any phone.' : 'Needs Groq connected.'),
+      row(cfg.storage === 'temporary' ? 'warn' : 'pass', 'Database', cfg.storage === 'temporary' ? 'Temporary: everything is lost when the server restarts. Set DATABASE_URL.' : cfg.database === 'postgres' ? 'Postgres. Everything you save is kept.' : 'Local database file.'),
+      row(live ? 'pass' : 'warn', 'Your app', live ? `Live prompt: ${live.prompt_label}` : 'Nothing published yet. Run a test, then press Publish.'));
+  }
+
+  function groqCard(p, probe) {
+    const key = h('input', { type: 'password', autocomplete: 'off', placeholder: p.has_stored_key ? `Saved ${p.key_hint}. Paste a new key to replace it` : 'gsk_…', id: 'groq-key' });
     const model = h('select', { id: 'groq-model', 'aria-label': 'Model' }, h('option', { value: p.model }, p.model));
     const msg = h('div', { class: 'small', role: 'status' });
     const fill = (models) => { if (models?.chat?.length) mount(model, ...models.chat.map((m) => h('option', { value: m, selected: m === p.model }, m))); };
-    const test = async () => { const t = await api('/settings/providers/groq/test', { method: 'POST' }); fill(t.models); msg.textContent = t.message; msg.style.color = t.ok ? 'var(--pass)' : 'var(--fail)'; return t; };
+    fill(probe.models);
     const btn = h('button', { class: 'go' }, p.configured ? 'Save' : 'Connect');
     btn.addEventListener('click', async () => {
       btn.disabled = true; msg.textContent = 'Connecting…'; msg.style.color = '';
       try {
         const body = {}; if (key.value.trim()) body.api_key = key.value; if (model.value !== p.model) body.model = model.value;
         if (Object.keys(body).length) { const r = await api('/settings/providers/groq', { method: 'PUT', body }); if (r.warning) toast(r.warning); }
-        const t = await test(); if (t.ok) { toast('Groq connected'); setTimeout(load, 700); }
+        const t = await api('/settings/providers/groq/test', { method: 'POST' }); fill(t.models); msg.textContent = t.message; msg.style.color = t.ok ? 'var(--pass)' : 'var(--fail)';
+        if (t.ok) { toast('Groq connected'); setTimeout(load, 700); }
       } catch (e) { msg.textContent = e.message; msg.style.color = 'var(--fail)'; }
       btn.disabled = false;
     });
-    if (p.configured) test().catch(() => {});
-    return h('div', { class: 'card stack' }, h('div', { class: 'row between' }, h('h2', { style: 'margin:0' }, 'Groq'), h('span', { class: 'badge ' + (p.configured ? 'pass' : 'none') }, p.configured ? 'Connected' : 'Not connected')),
+    const form = h('div', { class: 'stack' },
       p.configured ? null : h('div', { class: 'small muted' }, 'Get a key at console.groq.com/keys and paste it here. It is stored encrypted.'),
       !p.can_store && !p.configured ? h('div', { class: 'notice' }, 'This server needs LAB_SECRET_KEY set before it can store keys.') : null,
       p.stored_key_unreadable ? h('div', { class: 'notice' }, 'The saved key can no longer be read. Paste it again.') : null,
-      field('API key', key), p.configured ? field('Model', model) : null, btn, msg);
+      field('API key', key), p.configured ? field('Model', model, 'The model that talks to your callers and scores the conversations.') : null, btn, msg);
+    return h('div', { class: 'card stack' }, h('h2', { style: 'margin:0' }, p.configured ? 'Groq key and model' : 'Connect Groq'),
+      p.configured ? h('details', { class: 'more' }, h('summary', {}, 'Change key or model'), h('div', { style: 'margin-top:12px' }, form)) : form);
   }
 
   function checksCard(set) {

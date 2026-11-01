@@ -1,6 +1,7 @@
 """Wiring: lifespan, router, error handling, security headers and the static UI."""
 from __future__ import annotations
 
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -18,6 +19,19 @@ from .seed import seed_defaults
 from .service import ServiceError
 
 logger = logging.getLogger("ai_therapy.lab")
+
+
+async def self_check() -> None:
+    """Log whether each connected provider really answers, so a bad key shows up in the logs at deploy time."""
+    for name in llm.configured_providers():
+        try:
+            result = await llm.test_provider(name)
+            (logger.info if result["ok"] else logger.error)("Self-check %s: %s", name, result["message"])
+        except Exception:  # noqa: BLE001
+            logger.exception("Self-check %s crashed", name)
+    if not llm.configured_providers():
+        logger.warning("Self-check: no LLM provider is connected yet")
+
 UI_DIR = Path(__file__).resolve().parent.parent.parent / "frontend" / "lab"
 
 CSP = (
@@ -42,10 +56,12 @@ async def lab_lifespan(app: FastAPI):
         logger.warning("Stored credentials for %s cannot be decrypted (encryption key changed). Re-enter them in Settings.", ", ".join(unreadable))
     app.state.lab_runner = Runner(settings)
     await app.state.lab_runner.recover()
+    check = asyncio.create_task(self_check())
     logger.info("Testing lab ready (env=%s, auth=%s)", settings.env, "on" if settings.api_tokens else "OFF")
     try:
         yield
     finally:
+        check.cancel()
         await app.state.lab_runner.shutdown()
         await llm.close_client()
         db.dispose_db()
