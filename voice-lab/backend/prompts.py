@@ -31,5 +31,45 @@ Safety:
 """.strip()
 
 
-# How many recent messages the live app sends to the model; the lab mirrors this for fidelity.
-HISTORY_WINDOW = 16
+# --- Conversation memory -------------------------------------------------------------------------------
+# Every client (web, mobile, lab tests) builds the model's input here, so they all remember the same way.
+# The WHOLE conversation is sent. Only if it ever exceeds the budget are the middle turns dropped: the opening
+# (where people give their name and what brought them) and the most recent turns are always kept.
+HISTORY_CHAR_BUDGET = 60_000   # about 15k tokens, far below the model's context window
+PINNED_OPENING = 6             # messages always kept from the start of the conversation
+
+CONTINUITY_NOTE = (
+    "Conversation memory: this is one continuous conversation. Everything the person and you said earlier is in the "
+    "messages above. Remember it and use it naturally, like a person would: their name, the people and events they "
+    "mentioned, what you already asked and what they already answered. Never ask for something they already told you, "
+    "and never act as if the conversation is starting over."
+)
+TRIMMED_NOTE = (
+    "Note: the conversation has become very long, so some turns from the middle were left out. "
+    "The beginning and the most recent turns are included."
+)
+
+
+def fit_history(messages: list[dict], budget: int = HISTORY_CHAR_BUDGET, pinned: int = PINNED_OPENING) -> tuple[list[dict], bool]:
+    """Return (messages to send, whether the middle had to be trimmed). Normally returns everything unchanged."""
+    if sum(len(m["content"]) for m in messages) <= budget:
+        return messages, False
+    head, rest = messages[:pinned], messages[pinned:]
+    used = sum(len(m["content"]) for m in head)
+    tail: list[dict] = []
+    for m in reversed(rest):
+        if used + len(m["content"]) > budget and tail:
+            break
+        tail.append(m)
+        used += len(m["content"])
+    tail.reverse()
+    while len(tail) > 1 and tail[0]["role"] != "user":  # resume on a person's turn
+        tail.pop(0)
+    return head + tail, True
+
+
+def build_messages(system_prompt: str, history: list[dict], text: str) -> list[dict]:
+    """System prompt (+ memory instruction) followed by the full conversation and the person's new message."""
+    msgs, trimmed = fit_history([*history, {"role": "user", "content": text}])
+    system = f"{system_prompt}\n\n{CONTINUITY_NOTE}" + (f"\n{TRIMMED_NOTE}" if trimmed else "")
+    return [{"role": "system", "content": system}, *msgs]

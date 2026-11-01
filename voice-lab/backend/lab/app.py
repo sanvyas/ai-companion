@@ -31,6 +31,19 @@ async def self_check() -> None:
             logger.exception("Self-check %s crashed", name)
     if not llm.configured_providers():
         logger.warning("Self-check: no LLM provider is connected yet")
+        return
+    # Memory probe: a name given at the start of a long conversation must still be known 30 exchanges later.
+    try:
+        from prompts import build_messages
+
+        history = [{"role": "user", "content": "Hi, my name is Priya and I live in Pune."}, {"role": "assistant", "content": "Nice to meet you, Priya. How are you feeling today?"}]
+        for i in range(30):
+            history += [{"role": "user", "content": f"Update {i}: work was busy and I had chai."}, {"role": "assistant", "content": "That sounds like a full day. What stood out?"}]
+        result = await llm.chat(build_messages("You are a warm voice companion. Reply in one short sentence.", history, "Sorry, what is my name again?"), max_tokens=300, retries=1)
+        remembered = "priya" in result.reply.lower()
+        (logger.info if remembered else logger.error)("Self-check memory: %s (%s answered: %r)", "OK, remembers the opening of a 60-message conversation" if remembered else "FAILED", result.model, result.reply[:80])
+    except Exception as exc:  # noqa: BLE001
+        logger.error("Self-check memory: could not run: %s", exc)
 
 UI_DIR = Path(__file__).resolve().parent.parent.parent / "frontend" / "lab"
 

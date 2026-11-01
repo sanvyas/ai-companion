@@ -79,7 +79,7 @@ async def client_config(key: AppKey = Depends(require_app_key)):
         return {
             "environment": key.environment, "ready": dep is not None,
             "release": {"id": dep.id, "prompt": service.prompt_label(dep.prompt_version), "released_at": service.iso(dep.created_at)} if dep else None,
-            "history_window": sessions.HISTORY_WINDOW, "max_turns": sessions.MAX_TURNS,
+            "history": "full conversation", "max_turns": sessions.MAX_TURNS,
             "speech_to_text": bool(llm.configured_providers() and any(p in ("groq", "custom") for p in llm.configured_providers())),
         }
     return await run_db(work)

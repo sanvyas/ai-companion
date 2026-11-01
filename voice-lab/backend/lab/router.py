@@ -12,7 +12,6 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
 import llm
-from prompts import HISTORY_WINDOW
 from . import rules, schemas, service, sessions
 from .db import get_session
 from .models import Conversation, EvalParam, EvalSet, Prompt, PromptVersion, Scenario, TestRun, Turn, utcnow
@@ -47,7 +46,7 @@ def get_config(request: Request):
         "judge": dict(zip(("provider", "model"), llm.role("judge"))),
         "simulator": dict(zip(("provider", "model"), llm.role("simulator"))),
         "limits": {"max_conversations_per_run": settings.max_conversations_per_run, "max_concurrency": settings.max_concurrency},
-        "rule_types": rules.RULE_TYPES, "mood_suggestions": MOOD_SUGGESTIONS, "history_window": HISTORY_WINDOW,
+        "rule_types": rules.RULE_TYPES, "mood_suggestions": MOOD_SUGGESTIONS, "history": "full conversation",
         "llm_ready": bool(llm.configured_providers()), "stt_ready": bool(llm.configured_providers() and any(p in ("groq", "custom") for p in llm.configured_providers())),
     }
 

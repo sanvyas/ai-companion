@@ -13,7 +13,7 @@ from typing import Any, Callable, TypeVar
 from sqlalchemy import select, update
 
 import llm
-from prompts import HISTORY_WINDOW
+from prompts import build_messages
 from . import evaluation, simulator
 from .config import Settings
 from .db import session_scope
@@ -220,7 +220,6 @@ class Runner:
 
     async def _generate(self, ctx: dict) -> None:
         cid, scenario, gen = ctx["id"], ctx["scenario"], ctx["gen"]
-        system = {"role": "system", "content": ctx["rendered_prompt"]}
         scripted = scenario.get("scripted_turns") or []
         max_turns = scenario["max_turns"] if not scripted else min(scenario["max_turns"], 1 + len(scripted))
         turns: list[dict] = []
@@ -237,9 +236,9 @@ class Runner:
                 if user_text is None:
                     break
             user_turn = {"idx": len(turns) + 1, "role": "user", "content": user_text}
-            history = [{"role": t["role"], "content": t["content"]} for t in turns + [user_turn]][-HISTORY_WINDOW:]
+            prior = [{"role": t["role"], "content": t["content"]} for t in turns]
             reply = await llm.chat(
-                [system, *history],
+                build_messages(ctx["rendered_prompt"], prior, user_text),
                 provider=gen.get("provider"), model=gen.get("model"),
                 temperature=gen.get("temperature", 0.7), max_tokens=gen.get("max_tokens", 350),
             )

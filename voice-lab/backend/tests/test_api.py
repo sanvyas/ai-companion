@@ -76,7 +76,8 @@ def test_variables_override_defaults_in_rendered_prompt(client, seeded, fake):
     finish_run(client, run["id"])
     prompt = conv_of(client, client.get(f"{API}/runs/{run['id']}").json())["rendered_prompt"]
     assert "You are Juno, a warm and steady" in prompt and "at most 2 sentences" in prompt and "{{" not in prompt
-    assert fake.last_assistant_messages[0]["content"] == prompt
+    sent = fake.last_assistant_messages[0]["content"]
+    assert sent.startswith(prompt) and "Conversation memory" in sent  # the lab prompt, then the shared memory instruction
 
 
 def test_missing_and_unknown_variables_rejected(client, seeded):
@@ -408,7 +409,8 @@ def test_original_chat_endpoint_unchanged(client, fake):
     r = client.post("/api/chat", json={"messages": [{"role": "user", "content": "hi"}]})
     assert r.status_code == 200 and r.json() == {"reply": fake.assistant_reply(None), "provider": "Fake", "model": "fake-assistant"}
     from prompts import SYSTEM_PROMPT
-    assert fake.last_assistant_messages[0] == {"role": "system", "content": SYSTEM_PROMPT}
+    system = fake.last_assistant_messages[0]
+    assert system["role"] == "system" and system["content"].startswith(SYSTEM_PROMPT) and "Conversation memory" in system["content"]
     assert client.post("/api/chat", json={"messages": [{"role": "assistant", "content": "hi"}]}).status_code == 400
     fake.fail_assistant = True
     assert client.post("/api/chat", json={"messages": [{"role": "user", "content": "hi"}]}).status_code == 502

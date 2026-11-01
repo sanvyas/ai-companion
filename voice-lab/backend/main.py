@@ -20,7 +20,7 @@ logger = logging.getLogger("ai_therapy")
 
 import llm  # noqa: E402  (after load_dotenv so provider settings are visible)
 from lab import app as lab_app  # noqa: E402
-from prompts import HISTORY_WINDOW, SYSTEM_PROMPT  # noqa: E402
+from prompts import SYSTEM_PROMPT, build_messages  # noqa: E402
 
 app = FastAPI(title="A Space to Talk", version="0.3.0", lifespan=lab_app.lab_lifespan)
 lab_app.install(app)  # testing lab: API at /api/lab, UI at /lab
@@ -31,7 +31,7 @@ class Message(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    messages: list[Message] = Field(min_length=1, max_length=40)
+    messages: list[Message] = Field(min_length=1, max_length=400)
 
 
 async def call_model(messages: list[dict], gen: dict | None = None) -> dict:
@@ -104,14 +104,13 @@ async def ready():
 
 @app.post("/api/chat")
 async def chat(request: ChatRequest):
-    history = request.messages[-HISTORY_WINDOW:]
+    history = request.messages  # the whole conversation: the model must remember what was said at the start
     if history[-1].role != "user":
         raise HTTPException(status_code=400, detail="The latest message must be from the user.")
 
     logger.info("Incoming voice turn; history_messages=%d", len(history))
     system_prompt, gen = await production_release()
-    provider_messages = [{"role": "system", "content": system_prompt}]
-    provider_messages.extend({"role": item.role, "content": item.content} for item in history)
+    provider_messages = build_messages(system_prompt, [{"role": m.role, "content": m.content} for m in history[:-1]], history[-1].content)
 
     try:
         result = await call_model(provider_messages, gen)

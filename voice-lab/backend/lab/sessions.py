@@ -7,17 +7,12 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from prompts import HISTORY_WINDOW
+from prompts import build_messages  # noqa: F401  (shared by every client)
 from . import service
 from .models import Conversation, Turn
 from .service import ServiceError, get_or_404
 
-MAX_TURNS = 80
-
-
-def build_messages(system_prompt: str, history: list[dict], text: str) -> list[dict]:
-    recent = (history + [{"role": "user", "content": text}])[-HISTORY_WINDOW:]
-    return [{"role": "system", "content": system_prompt}, *recent]
+MAX_TURNS = 400  # messages per session (200 exchanges)
 
 
 async def reply_for(system_prompt: str, history: list[dict], text: str, gen: dict) -> llm.LLMResult:
