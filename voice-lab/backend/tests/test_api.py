@@ -1,4 +1,5 @@
 import csv
+import os
 import io
 
 import pytest
@@ -392,6 +393,8 @@ def test_production_refuses_to_start_without_tokens(env, fake):
     env.setenv("LAB_API_TOKENS", "k" * 32)
     with TestClient(main.app) as c:
         assert c.get(f"{API}/prompts", headers={"Authorization": "Bearer " + "k" * 32}).status_code == 200
+        cfg = c.get(f"{API}/config", headers={"Authorization": "Bearer " + "k" * 32}).json()
+        assert cfg["storage"] == ("database" if os.getenv("TEST_DATABASE_URL") else "temporary")  # SQLite with no mounted disk is flagged
 
 
 def test_security_headers(client):
