@@ -1,5 +1,6 @@
 import { h, mount, toast, ask, field, ago } from '../ui.js';
 import { api, getConfig, setToken, hasToken } from '../api.js';
+import { styleControls } from '../style.js';
 
 const RULES = {  // plain-language switches that map onto the engine's exact checks
   spoken_length: ['Short replies (5 sentences max)', { rule: 'max_sentences_per_reply', max: 5, allow_violations: 1 }],
@@ -18,7 +19,8 @@ export async function render(root) {
     const [cfg, providers, evalsets, active, keys, app, probe] = await Promise.all([getConfig(true), api('/settings/providers'), api('/eval-sets'), api('/deployments/active'), api('/api-keys'), api('/settings/app'),
       api('/settings/providers/groq/test', { method: 'POST' }).catch((e) => ({ ok: false, message: e.message, models: {} }))]);
     const groq = providers.find((p) => p.id === 'groq');
-    mount(box, statusCard(cfg, groq, probe, active), groqCard(groq, probe), checksCard(evalsets[0]), appCard(cfg, active, keys, app, evalsets[0]), cfg.auth_required ? signOut() : null);
+    const style = await styleControls();
+    mount(box, statusCard(cfg, groq, probe, active), groqCard(groq, probe), h('div', { class: 'card stack' }, h('h2', { style: 'margin:0' }, 'How it talks'), h('div', { class: 'small muted' }, 'Saved as you change it. Applies to every new test and talk, and to what you publish next. Already-published prompts keep their saved values until you publish again.'), style), checksCard(evalsets[0]), appCard(cfg, active, keys, app, evalsets[0]), cfg.auth_required ? signOut() : null);
     window.dispatchEvent(new Event('lab-config'));
   }
 

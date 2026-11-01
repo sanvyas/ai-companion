@@ -39,7 +39,7 @@ def get_config(request: Request):
         for pid, cfg in llm.provider_configs().items()
     ]
     return {
-        "env": settings.env, "auth_required": bool(settings.api_tokens),
+        "env": settings.env, "auth_required": bool(settings.api_tokens) and not settings.open_access, "open_access": settings.open_access,
         # SQLite inside a container with no mounted disk is wiped on every restart/deploy
         "database": "postgres" if not settings.database_url.startswith("sqlite") else "sqlite",
         "storage": "temporary" if settings.is_production and settings.database_url.startswith("sqlite") and not os.path.ismount("/data") else "database", "providers": providers,

@@ -1,6 +1,7 @@
 import { h, mount, toast, detectVariables } from '../ui.js';
 import { api, apiForm, getConfig } from '../api.js';
 import { saved, ensureVersion } from '../workspace.js';
+import { creativityWord, lengthLabel } from '../style.js';
 
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 const CAN_RECORD = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
@@ -12,6 +13,7 @@ export async function render(root) {
   const stop = { fn: null };
   const [cfg, prompts, scenarios, evalsets, open] = await Promise.all([getConfig(), api('/prompts'), api('/scenarios'), api('/eval-sets'), api('/conversations?status=live&source=live&limit=1')]);
   const ws = saved();
+  const gen = await api('/settings/generation');
   const prompt = await api(`/prompts/${prompts.some((p) => p.id === ws.promptId) ? ws.promptId : prompts[0].id}`);
   const version = prompt.versions[0];
   const text = (ws.promptId === prompt.id && ws.text) || version.content;
@@ -136,7 +138,7 @@ export async function render(root) {
     if (mode !== 'typed') again(300);
   }
 
-  mount(root, h('div', {}, h('h1', {}, 'Talk to it'), h('div', { class: 'muted' }, `Uses the prompt you are working on (${prompt.name}).`)),
+  mount(root, h('div', {}, h('h1', {}, 'Talk to it'), h('div', { class: 'muted' }, `Uses the prompt you are working on (${prompt.name}).`), h('div', { class: 'small muted' }, `${creativityWord(gen.temperature)} · ${lengthLabel(gen.max_tokens)} replies · `, h('a', { href: '#/test' }, 'change'))),
     window.isSecureContext ? null : h('div', { class: 'notice' }, 'The microphone needs an https:// address. Open the lab over https on your phone.'),
     startBtn,
     h('div', { class: 'row between' }, h('span', { class: 'small muted' }, mode === 'server' ? 'Voice: Whisper on Groq (works on iPhone and Android)' : mode === 'browser' ? 'Voice: your browser' : 'Voice off: connect Groq in Settings, or type'), lang),

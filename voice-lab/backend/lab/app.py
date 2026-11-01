@@ -70,7 +70,7 @@ async def lab_lifespan(app: FastAPI):
     app.state.lab_runner = Runner(settings)
     await app.state.lab_runner.recover()
     check = asyncio.create_task(self_check())
-    logger.info("Testing lab ready (env=%s, auth=%s)", settings.env, "on" if settings.api_tokens else "OFF")
+    logger.info("Testing lab ready (env=%s, auth=%s)", settings.env, "on" if settings.api_tokens and not settings.open_access else "OFF")
     try:
         yield
     finally:

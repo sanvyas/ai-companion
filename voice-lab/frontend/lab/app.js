@@ -44,6 +44,7 @@ async function banner(force = false) {
   try {
     const cfg = await getConfig(force);
     mount(el, cfg.llm_ready ? null : h('div', { class: 'notice' }, 'Connect Groq to start testing. ', h('a', { href: '#/settings' }, 'Open Settings')),
+      cfg.open_access ? h('div', { class: 'notice bad' }, 'Sign-in is off: anyone with this link can use your Groq key, change what your app says and read its conversations. To turn sign-in back on, set LAB_OPEN_ACCESS=false in Render.') : null,
       cfg.storage === 'temporary' ? h('div', { class: 'notice bad' }, 'Temporary storage: your data is lost whenever this server restarts. Set DATABASE_URL to a Postgres database to keep it.') : null);
   } catch (err) { if (err.status !== 401) toast(err.message, true); }
 }

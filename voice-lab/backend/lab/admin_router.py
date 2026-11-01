@@ -39,6 +39,11 @@ class AppSettingsUpdate(Strict):
     eval_set_id: str | None = None
 
 
+class GenerationUpdate(Strict):
+    temperature: float = Field(ge=0, le=2)
+    max_tokens: int = Field(ge=50, le=2000)
+
+
 class ApiKeyCreate(Strict):
     name: str = Field(min_length=1, max_length=120)
     environment: str
@@ -48,8 +53,8 @@ class DeployRequest(Strict):
     environment: str
     prompt_version_id: str
     variables: dict[str, str] = Field(default_factory=dict)
-    temperature: float = Field(default=0.7, ge=0, le=2)
-    max_tokens: int = Field(default=350, ge=50, le=2000)
+    temperature: float | None = Field(default=None, ge=0, le=2)   # None = the saved setting
+    max_tokens: int | None = Field(default=None, ge=50, le=2000)
     provider: str | None = None
     model: str | None = Field(default=None, max_length=120)
     note: str = Field(default="", max_length=500)
@@ -120,6 +125,18 @@ def put_app_settings(body: AppSettingsUpdate, session: Session = Depends(get_ses
     return {"eval_set_id": body.eval_set_id}
 
 
+# --- how the assistant talks ----------------------------------------------------
+
+@router.get("/settings/generation")
+def get_generation(session: Session = Depends(get_session)):
+    return service.generation_settings(session)
+
+
+@router.put("/settings/generation")
+def put_generation(body: GenerationUpdate, session: Session = Depends(get_session)):
+    return service.save_generation(session, body.temperature, body.max_tokens)
+
+
 # --- app API keys ----------------------------------------------------------------
 
 @router.get("/api-keys")
@@ -164,7 +181,8 @@ def deploy(body: DeployRequest, session: Session = Depends(get_session)):
         raise ServiceError("Unknown provider", 422)
     if body.model and not body.provider:
         raise ServiceError("Choose a provider to use a specific model", 422)
-    gen = {"temperature": body.temperature, "max_tokens": body.max_tokens, "provider": body.provider, "model": body.model}
+    temperature, max_tokens = service.resolve_generation(session, body.temperature, body.max_tokens)
+    gen = {"temperature": temperature, "max_tokens": max_tokens, "provider": body.provider, "model": body.model}
     dep = release.promote(session, body.environment, body.prompt_version_id, body.variables, gen, body.note, body.confirm)
     return release.deployment_out(dep)
 

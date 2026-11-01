@@ -2,10 +2,12 @@ import { h, mount, toast, ask, dialog, field, detectVariables, pct, slug } from 
 import { api, getConfig } from '../api.js';
 import { conversationRow, isPending } from '../components.js';
 import { saved, remember } from '../workspace.js';
+import { styleControls } from '../style.js';
 
 export async function render(root, { params }) {
   const [cfg, prompts, scenarios, evalsets, active] = await Promise.all([getConfig(), api('/prompts'), api('/scenarios'), api('/eval-sets'), api('/deployments/active')]);
   const ws = saved();
+  const styleBox = await styleControls();
   let timer = null; let gone = false;
   const st = { prompt: null, version: null, values: {}, selected: new Set(ws.moods || scenarios.map((s) => s.id)), evalId: evalsets[0]?.id };
   if (!prompts.length) { root.append(h('div', { class: 'card empty' }, h('p', {}, 'Create your first prompt to start.'), h('button', { class: 'go', style: 'width:auto', onclick: () => newPrompt() }, 'New prompt'))); return; }
@@ -154,7 +156,8 @@ export async function render(root, { params }) {
         live ? h('span', { class: 'pill ok' }, `Live in app: ${live.prompt_label}`) : h('span', { class: 'pill' }, 'Nothing published to your app yet'))),
     h('div', { class: 'card stack' }, h('div', { class: 'step', style: 'margin:0' }, h('i', {}, '1'), 'Your prompt'),
       h('div', { class: 'row', style: 'flex-wrap:nowrap' }, sel, h('button', { onclick: newPrompt }, '+ New')),
-      h('div', { class: 'savebar' }, verSel, stateChip, h('span', { class: 'grow' }), saveBtn), text, varsBox, hint),
+      h('div', { class: 'savebar' }, verSel, stateChip, h('span', { class: 'grow' }), saveBtn), text, varsBox, hint,
+      h('details', { class: 'more' }, h('summary', {}, 'Creativity and reply length'), h('div', { style: 'margin-top:12px' }, styleBox))),
     h('div', { class: 'card stack' }, h('div', { class: 'step', style: 'margin:0' }, h('i', {}, '2'), 'Moods to test'), h('div', { class: 'small muted' }, 'Each mood is a simulated caller. Hover a mood to read who it plays.'), moodsBox, moodTools),
     h('div', { class: 'runbar' }, runBtn), out);
   await loadPrompt(prompts.some((p) => p.id === ws.promptId) ? ws.promptId : prompts[0].id);

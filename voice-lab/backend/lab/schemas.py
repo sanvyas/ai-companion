@@ -201,8 +201,8 @@ class EvalSetIn(Strict):
 # --- runs & conversations --------------------------------------------------------
 
 class GenOptions(Strict):
-    temperature: float = Field(default=0.7, ge=0, le=2)
-    max_tokens: int = Field(default=350, ge=50, le=2000)
+    temperature: float | None = Field(default=None, ge=0, le=2)   # None = use the saved setting
+    max_tokens: int | None = Field(default=None, ge=50, le=2000)  # None = use the saved setting
     provider: ProviderName | None = None
     model: str | None = Field(default=None, max_length=120)
 

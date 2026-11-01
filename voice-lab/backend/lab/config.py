@@ -22,6 +22,7 @@ class Settings:
     database_url: str
     database_schema: str | None
     api_tokens: tuple[str, ...]
+    open_access: bool
     max_concurrency: int
     max_conversations_per_run: int
     judge_provider: str | None
@@ -55,6 +56,7 @@ def load_settings() -> Settings:
         database_url=normalize_database_url(os.getenv("DATABASE_URL") or default_db),
         database_schema=os.getenv("DATABASE_SCHEMA") or None,
         api_tokens=tokens,
+        open_access=os.getenv("LAB_OPEN_ACCESS", "").strip().lower() in {"1", "true", "yes"},
         max_concurrency=max(1, _int("LAB_MAX_CONCURRENCY", 4)),
         max_conversations_per_run=max(1, _int("LAB_MAX_CONVERSATIONS_PER_RUN", 60)),
         judge_provider=os.getenv("JUDGE_PROVIDER") or None,
@@ -70,9 +72,10 @@ def load_settings() -> Settings:
 
 def validate_for_startup(settings: Settings) -> None:
     """Fail fast on unsafe production configuration."""
-    if settings.is_production and not settings.api_tokens:
+    if settings.is_production and not settings.api_tokens and not settings.open_access:
         raise RuntimeError(
-            "APP_ENV=production requires LAB_API_TOKENS (comma-separated secrets) to protect the testing lab."
+            "APP_ENV=production requires LAB_API_TOKENS (comma-separated secrets) to protect the testing lab, "
+            "or LAB_OPEN_ACCESS=true to run it without sign-in on purpose."
         )
     if settings.database_schema and not re.fullmatch(r"[a-z_][a-z0-9_]{0,62}", settings.database_schema):
         raise RuntimeError("DATABASE_SCHEMA must be a simple lowercase identifier such as voice_lab.")

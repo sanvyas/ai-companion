@@ -22,7 +22,7 @@ def reset_throttle() -> None:
 
 def require_auth(request: Request) -> None:
     settings = request.app.state.lab_settings
-    if not settings.api_tokens:  # development only; production refuses to start without tokens
+    if settings.open_access or not settings.api_tokens:  # sign-in switched off on purpose (LAB_OPEN_ACCESS) or local development
         return
     who = _client(request)
     now = time.monotonic()

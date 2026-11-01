@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from . import schemas
 from .config import Settings
 from .models import (
-    Conversation, EvalParam, EvalSet, Prompt, PromptVersion, Scenario, TestRun, Turn,
+    Conversation, EvalParam, EvalSet, Prompt, PromptVersion, Scenario, Setting, TestRun, Turn,
 )
 from .templating import TemplateError, extract_variables, merge_values, render
 
@@ -215,6 +215,34 @@ def prompt_label(version: PromptVersion) -> str:
     return f"{version.prompt.name} v{version.version}"
 
 
+# --- how the assistant talks: creativity and reply length, one setting for tests, Talk and releases --------
+
+GENERATION_DEFAULTS = {"temperature": 0.7, "max_tokens": 350}
+
+
+def generation_settings(session: Session) -> dict:
+    row = session.get(Setting, "generation")
+    stored = (row.value if row else {}) or {}
+    return {k: stored.get(k, v) for k, v in GENERATION_DEFAULTS.items()}
+
+
+def save_generation(session: Session, temperature: float, max_tokens: int) -> dict:
+    value = {"temperature": float(temperature), "max_tokens": int(max_tokens)}
+    row = session.get(Setting, "generation")
+    if row is None:
+        session.add(Setting(key="generation", value=value))
+    else:
+        row.value = value
+    session.flush()
+    return value
+
+
+def resolve_generation(session: Session, temperature, max_tokens) -> tuple[float, int]:
+    """Explicit request values win; otherwise the saved setting."""
+    saved = generation_settings(session)
+    return (saved["temperature"] if temperature is None else temperature), (saved["max_tokens"] if max_tokens is None else max_tokens)
+
+
 # --- creation --------------------------------------------------------------------
 
 def create_run(session: Session, req: schemas.RunCreate, settings: Settings) -> tuple[TestRun, list[str]]:
@@ -231,9 +259,8 @@ def create_run(session: Session, req: schemas.RunCreate, settings: Settings) -> 
     for sid in dict.fromkeys(req.scenario_ids):
         scenarios.append(get_or_404(session, Scenario, sid, "Scenario"))
     label = prompt_label(version)
-    gen = {
-        "temperature": req.temperature, "max_tokens": req.max_tokens, "provider": req.provider, "model": req.model,
-    }
+    temperature, max_tokens = resolve_generation(session, req.temperature, req.max_tokens)
+    gen = {"temperature": temperature, "max_tokens": max_tokens, "provider": req.provider, "model": req.model}
     run = TestRun(
         name=req.name or f"{label} · {len(scenarios)} scenario{'s' if len(scenarios) != 1 else ''}",
         status="queued", prompt_version_id=version.id, eval_set_id=evalset.id,
@@ -271,7 +298,7 @@ def create_live(session: Session, req: schemas.LiveCreate) -> Conversation:
         mood=mood, prompt_version_id=version.id, scenario_id=scenario.id if scenario else None,
         prompt_label=prompt_label(version), rendered_prompt=rendered, variables=values,
         scenario_snapshot=snapshot_scenario(scenario) if scenario else {}, evalset_snapshot={},
-        gen_config={"temperature": req.temperature, "max_tokens": req.max_tokens, "provider": req.provider, "model": req.model},
+        gen_config=dict(zip(("temperature", "max_tokens"), resolve_generation(session, req.temperature, req.max_tokens))) | {"provider": req.provider, "model": req.model},
         generated=True,
     )
     session.add(conv)
