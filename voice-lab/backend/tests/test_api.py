@@ -426,3 +426,9 @@ def test_seed_runs_once(env, fake):
     for _ in range(2):
         with TestClient(main.app) as c:
             assert len(c.get(f"{API}/scenarios").json()) == 8 and len(c.get(f"{API}/prompts").json()) == 2
+
+
+def test_site_root_opens_the_lab_and_original_page_lives_at_app(client):
+    r = client.get("/", follow_redirects=False)
+    assert r.status_code == 307 and r.headers["location"] == "/lab/"
+    assert "A space to talk" in client.get("/app").text

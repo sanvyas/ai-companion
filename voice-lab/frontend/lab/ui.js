@@ -26,10 +26,10 @@ export function toast(message, bad = false) {
   setTimeout(() => t.remove(), bad ? 7000 : 3000);
 }
 
-export function dialog(title, body) {
+export function dialog(title, body, { locked = false } = {}) {
   const close = () => { back.remove(); document.removeEventListener('keydown', onKey); };
-  const onKey = (e) => { if (e.key === 'Escape') close(); };
-  const back = h('div', { class: 'overlay', onmousedown: (e) => { if (e.target === back) close(); } },
+  const onKey = (e) => { if (e.key === 'Escape' && !locked) close(); };
+  const back = h('div', { class: 'overlay', onmousedown: (e) => { if (e.target === back && !locked) close(); } },
     h('div', { class: 'dialog', role: 'dialog', 'aria-modal': 'true', 'aria-label': title }, h('h2', { style: 'margin:0' }, title), body));
   document.getElementById('modal-root').append(back);
   document.addEventListener('keydown', onKey);

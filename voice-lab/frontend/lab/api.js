@@ -28,7 +28,7 @@ function askForToken() {
     const save = () => { setToken(input.value.trim()); close(); resolve(); };
     const close = dialog('Sign in', h('form', { class: 'stack', onsubmit: (e) => { e.preventDefault(); save(); } },
       h('p', { class: 'muted', style: 'margin:0' }, 'Enter your access token (LAB_API_TOKENS on the server).'),
-      field('Token', input), h('button', { class: 'go', type: 'submit' }, 'Continue')));
+      field('Token', input), h('button', { class: 'go', type: 'submit' }, 'Continue')), { locked: true });
   }).finally(() => { loginPromise = null; });
   return loginPromise;
 }

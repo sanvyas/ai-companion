@@ -66,7 +66,15 @@ async def production_release() -> tuple[str, dict]:
         return SYSTEM_PROMPT, {}
 
 
-@app.get("/")
+@app.get("/", include_in_schema=False)
+async def root():
+    """The bare address opens the testing lab."""
+    from fastapi.responses import RedirectResponse
+
+    return RedirectResponse("/lab/")
+
+
+@app.get("/app")
 async def home():
     index_file = PROJECT_DIR / "frontend" / "index.html"
     if not index_file.exists():

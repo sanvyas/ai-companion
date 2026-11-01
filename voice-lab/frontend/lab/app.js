@@ -15,10 +15,14 @@ function parse() {
   return { name: loaders[name] ? name : 'test', params: rest, query: new URLSearchParams(query) };
 }
 
+function drawNav(active) {
+  mount(document.getElementById('nav'), ...TABS.map(([id, label]) => h('a', { href: `#/${id}`, class: id === active ? 'on' : '', 'aria-current': id === active ? 'page' : null }, label)));
+}
+
 async function route() {
   const mine = ++token;
   const { name, params, query } = parse();
-  mount(document.getElementById('nav'), ...TABS.map(([id, label]) => h('a', { href: `#/${id}`, class: id === name ? 'on' : '', 'aria-current': id === name ? 'page' : null }, label)));
+  drawNav(name);
   if (cleanup) { try { cleanup(); } catch { /* ignore */ } cleanup = null; }
   mount(view, h('div', { class: 'empty' }, 'Loading…'));
   try {
@@ -46,4 +50,6 @@ async function banner(force = false) {
 
 window.addEventListener('hashchange', () => { route(); banner(true); });
 window.addEventListener('lab-config', () => banner(false));
-banner().then(route);
+drawNav(parse().name);  // tabs are visible even before sign-in
+banner();
+route();
