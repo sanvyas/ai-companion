@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import type { MonthMode } from '@saathi/domain';
+import { DEFAULT_PALETTE } from './palette';
 
 // State that belongs only to the third design: which of its own screens is open, the sheet and banner, and the choices that
 // only change how things are shown. What someone said, wrote or did lives in the shared store and on the server.
@@ -50,7 +51,7 @@ export function whenWords(at: number, now = new Date()): string {
 
 const PAL = 'saathi.v3.palette';
 function startPalette(): string {
-  try { const q = new URLSearchParams(location.search).get('palette'); if (q) { localStorage.setItem(PAL, q); return q; } return localStorage.getItem(PAL) ?? 'dusk'; } catch { return 'dusk'; }
+  try { const q = new URLSearchParams(location.search).get('palette'); if (q) { localStorage.setItem(PAL, q); return q; } return localStorage.getItem(PAL) ?? DEFAULT_PALETTE; } catch { return DEFAULT_PALETTE; }
 }
 
 let state: V3State = { palette: startPalette(), over: null, why: [], sheet: null, banner: null, bannerShown: false, game: null, feel: 'All', view: null, jtab: 'today', from: null };

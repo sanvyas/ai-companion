@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PALETTES, paletteById } from './palette';
+import { DEFAULT_PALETTE, PALETTES, paletteById } from './palette';
 import { themeFor } from './theme';
 
 const lin = (c: number) => { const v = c / 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
@@ -34,8 +34,10 @@ describe('the colour palettes', () => {
       if (p.dark) expect(l, `${p.id} ${h} ${m}`).toBeLessThan(0.15); else expect(l, `${p.id} ${h} ${m}`).toBeGreaterThan(0.45);
     }
   });
-  it('falls back to the first palette for anything it does not know', () => {
-    expect(paletteById('nope').id).toBe('dusk');
-    expect(paletteById(null).id).toBe('dusk');
+  it('is Garden Teal until someone chooses, and for anything it does not know', () => {
+    expect(DEFAULT_PALETTE).toBe('teal');
+    expect(paletteById('nope').id).toBe('teal');
+    expect(paletteById(null).id).toBe('teal');
+    expect(paletteById('midnight').id).toBe('midnight');
   });
 });

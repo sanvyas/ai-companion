@@ -59,7 +59,9 @@ export const PALETTES: Palette[] = [
     tints: { morning: '#3B2822', afternoon: '#36292A', evening: '#432A25', night: '#291D1D' } },
 ];
 
-export const paletteById = (id: string | null | undefined): Palette => PALETTES.find(p => p.id === id) ?? PALETTES[0];
+/** What people see until they choose: Garden Teal. */
+export const DEFAULT_PALETTE = 'teal';
+export const paletteById = (id: string | null | undefined): Palette => PALETTES.find(p => p.id === id) ?? PALETTES.find(p => p.id === DEFAULT_PALETTE)!;
 
 /** The page behind a screen: the time-of-day tint at the top, then either a wash to a second and third colour, or a fade into the paper. */
 export const pageOf = (p: Palette, tint: string) => (p.wash ? `linear-gradient(172deg,${tint} 0%,${p.wash[0]} 52%,${p.wash[1]} 100%)` : `linear-gradient(180deg,${tint} 0px,${p.bg} 440px)`);

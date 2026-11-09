@@ -15,7 +15,7 @@ const mix = (a: string, b: string, t: number) => { const x = hex(a), y = hex(b);
 export type Part = 'morning' | 'afternoon' | 'evening' | 'night';
 export const partOf = (h: number): Part => (h >= 5 && h < 11 ? 'morning' : h >= 11 && h < 16 ? 'afternoon' : h >= 16 && h < 20 ? 'evening' : 'night');
 
-export const DEFAULT_TINTS: Record<Part, string> = { morning: '#FBE3D0', afternoon: '#DDEBEF', evening: '#F3D8CC', night: '#E8DFF2' };
+export const DEFAULT_TINTS: Record<Part, string> = { morning: '#F9DFCB', afternoon: '#D3E8EA', evening: '#F1D9C6', night: '#DCE7E8' };
 /** What each mood leans toward. Heavy and flat days get warmth and light; steady and good days get something fresh. */
 const BY_MOOD = ['#FADAB9', '#FBDDBD', '#FBE7C2', '#E8F2DC', '#FCECC6'];
 /** How far the mood pulls the colour. The heaviest days pull the most, and never all the way. */

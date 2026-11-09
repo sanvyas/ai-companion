@@ -1,11 +1,11 @@
 /* The third design. Scoped under .v3 so it can never touch the other two. Screens are drawn with inline styles; this holds
    the tokens, the frame, the animations and the few rules that cannot be inline (focus, motion, scrollbars). */
 html,body,#root{height:100%;margin:0}
-body{background:#FAF6EF}
+body{background:#FBF7F0}
 .v3{
-  --bg:#FAF6EF; --ink:#1E2430; --muted:#5C6472; --indigo:#2F2A5E; --card:#FFFFFF; --line:#E5DED2; --soft:#F1EDE6; --gold:#F2B33D; --help:#9A3B1E;
-  --accent:#2F2A5E; --accent-ink:#2F2A5E; --accent2:#6F6BB8; --t1:#E6E4F5; --hero1:#5B57A6; --bg2:#F4EEE3;
-  --p-rose:#FBE4DA; --p-mint:#E0EFE5; --p-butter:#FCEFCF; --p-sky:#D5E6F2; --page:linear-gradient(180deg,#F1EAF8 0px,#FAF6EF 440px);
+  --bg:#FBF7F0; --ink:#1E2430; --muted:#5C6472; --indigo:#245A52; --card:#FFFFFF; --line:#E3DCCD; --soft:#F1EBE0; --gold:#F0A860; --help:#9A3B1E;
+  --accent:#245A52; --accent-ink:#245A52; --accent2:#4F9488; --t1:#DCEBE6; --hero1:#2F7A6D; --bg2:#F1EBE0;
+  --p-rose:#FBE4DA; --p-mint:#E0EFE5; --p-butter:#FCEFCF; --p-sky:#D5E6F2; --page:linear-gradient(180deg,#F9DFCB 0px,#FBF7F0 440px);
   --tint:#F1EAF8; --wash:#F7F2FB;
   --serif:'Fraunces Variable','Noto Serif Devanagari',Georgia,serif; --sans:'Plus Jakarta Sans Variable','Noto Sans Devanagari',system-ui,sans-serif;
   font-family:var(--sans); color:var(--ink); -webkit-font-smoothing:antialiased; height:100%;
