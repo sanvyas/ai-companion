@@ -22,6 +22,8 @@ function forced(): Which | null {
 async function pick(): Promise<Which> {
   const f = forced();
   if (f) return f;
+  // The shareable demo build has no server to ask, and shows the newest design.
+  if (import.meta.env.VITE_DEMO === '1') return '3';
   const ask = api.publicConfig().then(c => (c.uiV3 ? '3' : c.uiV2 ? '2' : '1') as Which);
   const last = read(LAST);
   // Repeat visits start at once on the design last used and learn the current answer in the background.
