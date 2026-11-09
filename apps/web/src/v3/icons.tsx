@@ -13,10 +13,10 @@ export const I = {
 } as const;
 
 export function Svg({ d, size = 24, sw = 1.8, stroke = 'currentColor', fill = 'none', style }: { d: string; size?: number; sw?: number; stroke?: string; fill?: string; style?: React.CSSProperties }) {
-  return <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke={stroke} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false" style={style}><path d={d} /></svg>;
+  return <svg width={size} height={size} viewBox="0 0 24 24" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false" style={{ fill, stroke, ...style }}><path d={d} /></svg>;
 }
 
 /** The ring-and-cross life buoy the Help button wears. */
-export function Buoy({ size = 18, color = '#9A3B1E' }: { size?: number; color?: string }) {
-  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4" /><path d="M5.6 5.6l3.6 3.6M14.8 14.8l3.6 3.6M18.4 5.6l-3.6 3.6M9.2 14.8l-3.6 3.6" /></svg>;
+export function Buoy({ size = 18, color = 'var(--help)' }: { size?: number; color?: string }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" strokeWidth={1.8} strokeLinecap="round" aria-hidden="true" focusable="false" style={{ stroke: color }}><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4" /><path d="M5.6 5.6l3.6 3.6M14.8 14.8l3.6 3.6M18.4 5.6l-3.6 3.6M9.2 14.8l-3.6 3.6" /></svg>;
 }

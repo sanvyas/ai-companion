@@ -62,14 +62,14 @@ export function Relax() {
   const empty = !showBreathe && !quick.length && !longer.length && !stories.length && !games.length;
 
   return (
-    <div className="screen" data-scroll="1" style={{ ...s('overflow:auto;background:linear-gradient(180deg,var(--tint) 0px,var(--bg) 380px);display:flex;flex-direction:column;padding:56px 24px 128px;gap:16px') }}>
+    <div className="screen" data-scroll="1" style={{ ...s('overflow:auto;background:var(--page);display:flex;flex-direction:column;padding:56px 24px 128px;gap:16px') }}>
       <Head title="Relax" />
       <div role="group" aria-label="How do you want to feel?" style={s('display:flex;gap:8px;overflow-x:auto;margin:0 -24px;padding:0 24px')}>
-        {FEELS.map(f => <button key={f.v} aria-pressed={feel === f.v} onClick={() => setV3({ feel: f.v })} style={s(`flex:none;height:44px;padding:0 18px;border-radius:22px;border:none;background:${feel === f.v ? 'var(--accent)' : '#FFFFFF'};color:${feel === f.v ? '#FFFFFF' : '#1E2430'};font-size:15px;font-weight:600`)}>{f.label}</button>)}
+        {FEELS.map(f => <button key={f.v} aria-pressed={feel === f.v} onClick={() => setV3({ feel: f.v })} style={s(`flex:none;height:44px;padding:0 18px;border-radius:22px;border:none;background:${feel === f.v ? 'var(--accent)' : 'var(--card)'};color:${feel === f.v ? '#FFFFFF' : 'var(--ink)'};font-size:15px;font-weight:600`)}>{f.label}</button>)}
       </div>
 
       {pickItem && pick && (
-        <section aria-label="Picked for you" style={s(`border-radius:28px;padding:22px;background:linear-gradient(145deg,${pickItem.tint},#FFFFFF 135%);display:flex;flex-direction:column;gap:10px;box-shadow:0 14px 32px rgba(30,36,48,.1);position:relative;overflow:hidden`)}>
+        <section aria-label="Picked for you" style={s(`border-radius:28px;padding:22px;color:#1E2430;background:linear-gradient(145deg,${pickItem.tint},#FFFFFF 135%);display:flex;flex-direction:column;gap:10px;box-shadow:0 14px 32px rgba(30,36,48,.1);position:relative;overflow:hidden`)}>
           <span aria-hidden="true" style={s('position:absolute;right:-34px;top:-34px;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,.4)')} />
           <span style={s('display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;position:relative')}>{M && <Face mood={mood!} size={24} />}{M ? `Picked for feeling ${M.label.toLowerCase()}` : 'Picked for you'}</span>
           <span className="serif" style={s('font-size:32px;line-height:1.1;position:relative;max-width:260px')}>{pickItem.title}</span>
@@ -83,13 +83,13 @@ export function Relax() {
           <Label sub="A few minutes, right where you are">Quick resets</Label>
           <Row>
             {showBreathe && (
-              <button onClick={() => openBreathe()} data-track="relax.breathe" aria-label="Breathe, 1 minute" style={s('flex:none;width:156px;height:140px;text-align:left;border:none;border-radius:24px;padding:16px;background:#D5E6F2;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 8px 22px rgba(30,36,48,.06)')}>
+              <button onClick={() => openBreathe()} data-track="relax.breathe" aria-label="Breathe, 1 minute" style={s('flex:none;width:156px;height:140px;text-align:left;border:none;border-radius:24px;padding:16px;color:#1E2430;background:var(--p-sky);display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 8px 22px rgba(30,36,48,.06)')}>
                 <span aria-hidden="true" style={s('width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.7);display:grid;place-items:center')}><Svg d={I.breathe} size={20} /></span>
                 <span><b style={s('display:block;font-size:17px')}>Breathe</b><span style={s('font-size:15px;color:#3E4654')}>1 min · follow the circle</span></span>
               </button>
             )}
             {quick.map(c => (
-              <button key={c.id} onClick={() => open(c)} aria-label={`${c.title}, ${c.mins} minutes`} style={s(`flex:none;width:156px;height:140px;text-align:left;border:none;border-radius:24px;padding:16px;background:${c.tint};display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 8px 22px rgba(30,36,48,.06)`)}>
+              <button key={c.id} onClick={() => open(c)} aria-label={`${c.title}, ${c.mins} minutes`} style={s(`flex:none;width:156px;height:140px;text-align:left;border:none;border-radius:24px;padding:16px;color:#1E2430;background:${c.tint};display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 8px 22px rgba(30,36,48,.06)`)}>
                 <span aria-hidden="true" style={s('width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.7);display:grid;place-items:center')}><Svg d={I.play} size={14} fill="#1E2430" stroke="#1E2430" sw={0} /></span>
                 <span><b style={s('display:block;font-size:17px;line-height:1.2')}>{c.title}</b><span style={s('font-size:15px;color:#3E4654')}>{c.mins} min</span></span>
               </button>
@@ -101,12 +101,12 @@ export function Relax() {
       {longer.length > 0 && (
         <>
           <Label sub="Guided, a little longer">Meditations</Label>
-          <div style={s('background:#FFFFFF;border-radius:28px;padding:6px 18px;display:flex;flex-direction:column;box-shadow:0 8px 22px rgba(30,36,48,.05)')}>
+          <div style={s('background:var(--card);border-radius:28px;padding:6px 18px;display:flex;flex-direction:column;box-shadow:0 8px 22px rgba(30,36,48,.05)')}>
             {longer.map((m, i) => (
               <button key={m.id} onClick={() => open(m)} aria-label={`${m.title}, ${m.mins} minutes`} style={s(`display:flex;align-items:center;gap:16px;text-align:left;border:none;background:none;padding:14px 0;border-bottom:${i < longer.length - 1 ? '1px solid var(--soft)' : 'none'};min-height:72px`)}>
-                <span aria-hidden="true" style={s(`flex:none;width:52px;height:52px;border-radius:18px;background:${m.tint};display:grid;place-items:center`)}><Svg d={I.lotus} size={24} /></span>
+                <span aria-hidden="true" style={s(`flex:none;width:52px;height:52px;border-radius:18px;background:${m.tint};display:grid;place-items:center;color:#1E2430`)}><Svg d={I.lotus} size={24} /></span>
                 <span style={s('flex:1;display:flex;flex-direction:column;gap:2px')}><span style={s('font-size:17px;font-weight:600')}>{m.title}</span><span style={s('font-size:15px;color:var(--muted)')}>{m.desc} · {m.mins} min</span></span>
-                <Svg d={I.chev} size={16} sw={2} stroke="#636B78" />
+                <Svg d={I.chev} size={16} sw={2} stroke="var(--muted)" />
               </button>
             ))}
           </div>
@@ -128,10 +128,10 @@ export function Relax() {
       )}
 
       {(feel === 'All' || feel === 'Sleep') && (
-        <section aria-label="A tale made for tonight" style={s('background:#FFFFFF;border-radius:28px;padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 8px 22px rgba(30,36,48,.05)')}>
+        <section aria-label="A tale made for tonight" style={s('background:var(--card);border-radius:28px;padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 8px 22px rgba(30,36,48,.05)')}>
           <div style={s('display:flex;flex-direction:column;gap:2px')}><h2 className="serif" style={s('font-size:26px;line-height:1.15;margin:0')}>A tale made for tonight</h2><span style={s('font-size:15px;line-height:1.4;color:var(--muted)')}>Pick a place and Saathi writes a new, quiet story, just for you.</span></div>
           <div style={s('display:flex;flex-wrap:wrap;gap:8px')}>
-            {STORY_THEMES.map(t => <button key={t.id} disabled={busy} onClick={() => void playStory(t.id)} style={s('height:48px;padding:0 20px;border-radius:24px;border:1.5px solid #D9D2C5;background:var(--bg);font-size:15px;font-weight:600')}>{t.label}</button>)}
+            {STORY_THEMES.map(t => <button key={t.id} disabled={busy} onClick={() => void playStory(t.id)} style={s('height:48px;padding:0 20px;border-radius:24px;border:1.5px solid var(--line);background:var(--bg);font-size:15px;font-weight:600')}>{t.label}</button>)}
           </div>
           {busy && <span role="status" style={s('font-size:15px;color:var(--muted)')}>Writing it now…</span>}
         </section>
@@ -153,7 +153,7 @@ export function Relax() {
                   </button>
                   {rest.length > 0 && (
                     <div role="group" aria-label="More games" style={s('display:flex;gap:8px;flex-wrap:wrap')}>
-                      {rest.map(g => <button key={g.id} onClick={() => openGame(g.id)} data-track={`relax.${g.id}`} style={s('height:48px;padding:0 18px;border-radius:24px;border:none;background:#FFFFFF;font-size:15px;font-weight:600;box-shadow:0 6px 16px rgba(30,36,48,.05)')}>{g.title}</button>)}
+                      {rest.map(g => <button key={g.id} onClick={() => openGame(g.id)} data-track={`relax.${g.id}`} style={s('height:48px;padding:0 18px;border-radius:24px;border:none;background:var(--card);font-size:15px;font-weight:600;box-shadow:0 6px 16px rgba(30,36,48,.05)')}>{g.title}</button>)}
                     </div>
                   )}
                 </>

@@ -20,7 +20,7 @@ export function TalkTab() {
   const modes: [string, string, () => void, boolean][] = [['Voice', I.mic, () => void startCall('voice'), true], ['Video', I.video, () => void startCall('video'), false], ['Text', I.chat, () => void openChat(), false]];
   const be: [string, string, string, string, () => void, React.ReactNode][] = [['Sit with me', 'Quiet company', I.sit, 'var(--hero1)', () => void startCall('sit'), <SitArt key="sit" />], ['Walk with me', 'In your ear', I.walk, '#3A7A49', () => void startWalkFlow(), <WalkArt key="walk" />]];
   return (
-    <div className="screen" data-scroll="1" style={{ ...s('overflow:auto;background:linear-gradient(180deg,var(--tint) 0%,var(--bg) 55%);display:flex;flex-direction:column;padding:56px 24px 128px;gap:16px') }}>
+    <div className="screen" data-scroll="1" style={{ ...s('overflow:auto;background:var(--page);display:flex;flex-direction:column;padding:56px 24px 128px;gap:16px') }}>
       <Head title="Talk" />
       <div style={s('display:flex;flex-direction:column;align-items:center;gap:6px')}>
         <TalkHero look={look} />
@@ -28,8 +28,8 @@ export function TalkTab() {
       </div>
       <div style={s('display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px')}>
         {modes.map(([label, icon, run, primary]) => (
-          <button key={label} onClick={run} data-track={`talk.${label.toLowerCase()}`} style={s(`border:none;border-radius:26px;padding:16px 8px 14px;background:${primary ? 'linear-gradient(160deg,var(--accent2),var(--accent))' : '#FFFFFF'};color:${primary ? '#FFFFFF' : '#1E2430'};display:flex;flex-direction:column;align-items:center;gap:10px;box-shadow:0 10px 24px rgba(30,36,48,.08);min-height:104px`)}>
-            <span aria-hidden="true" style={s(`width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:${primary ? 'rgba(255,255,255,.2)' : label === 'Video' ? '#FBE4DA' : '#DDF0E6'}`)}><Svg d={icon} size={24} stroke={primary ? '#FFFFFF' : '#1E2430'} /></span>
+          <button key={label} onClick={run} data-track={`talk.${label.toLowerCase()}`} style={s(`border:none;border-radius:26px;padding:16px 8px 14px;background:${primary ? 'linear-gradient(160deg,var(--accent2),var(--accent))' : 'var(--card)'};color:${primary ? '#FFFFFF' : 'var(--ink)'};display:flex;flex-direction:column;align-items:center;gap:10px;box-shadow:0 10px 24px rgba(30,36,48,.08);min-height:104px`)}>
+            <span aria-hidden="true" style={s(`width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:${primary ? 'rgba(255,255,255,.2)' : label === 'Video' ? 'var(--p-rose)' : 'var(--p-mint)'}`)}><Svg d={icon} size={24} stroke={primary ? '#FFFFFF' : 'var(--ink)'} /></span>
             <span style={s('font-size:17px;font-weight:700')}>{label}</span>
           </button>
         ))}
@@ -44,7 +44,7 @@ export function TalkTab() {
           </button>
         ))}
       </div>
-      <div style={s('display:flex;gap:8px;align-items:center;justify-content:center;font-size:15px;color:#636B78;margin-top:8px')}><Svg d={I.lock} size={14} sw={2} stroke="#636B78" />Private. {comp} is an AI, not a therapist.</div>
+      <div style={s('display:flex;gap:8px;align-items:center;justify-content:center;font-size:15px;color:var(--muted);margin-top:8px')}><Svg d={I.lock} size={14} sw={2} stroke="var(--muted)" />Private. {comp} is an AI, not a therapist.</div>
     </div>
   );
 }
@@ -78,14 +78,14 @@ export function CallScreen() {
   if (sit) {
     return (
       <div className="screen dark" role="main" aria-label="Sitting together" style={{ ...s('background:linear-gradient(180deg,#2B2858 0%,#463F7E 60%,#7A6BA8 100%);color:#FFFFFF;display:flex;flex-direction:column;align-items:center;padding:70px 24px 40px') }}>
-        <span style={s('font-size:14px;color:#D6D3EE;font-weight:600')}>Sitting together · {mmss(secs)}</span>
+        <span style={s('font-size:14px;color:#F0EEFF;font-weight:600')}>Sitting together · {mmss(secs)}</span>
         <div style={s('flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px')}>
           <div style={s('width:230px;height:230px;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 50% 40%,rgba(255,255,255,.25),rgba(255,255,255,.05));display:flex;justify-content:center;align-items:flex-end')}><Companion look={figureLook} size={230} mode="listening" /></div>
           <p className="serif" role="status" aria-live="polite" style={s('font-size:30px;line-height:1.15;text-align:center;min-height:70px;margin:0')}>{sitLine}</p>
         </div>
         <div style={s('display:flex;gap:10px;align-self:stretch')}>
           <button onClick={() => void startCall('voice')} style={s('flex:1;height:56px;border-radius:28px;border:none;background:rgba(255,255,255,.14);color:#FFFFFF;font-size:16px;font-weight:700')}>Talk to me</button>
-          <button onClick={() => void endCall()} data-track="sit.end" style={s('flex:1;height:56px;border-radius:28px;border:none;background:#FFFFFF;color:#2B2858;font-size:16px;font-weight:700')}>I’m okay now</button>
+          <button onClick={() => void endCall()} data-track="sit.end" style={s('flex:1;height:56px;border-radius:28px;border:none;background:var(--card);color:#2B2858;font-size:16px;font-weight:700')}>I’m okay now</button>
         </div>
         {ended && <ClosingSheet />}
       </div>
@@ -93,8 +93,8 @@ export function CallScreen() {
   }
 
   const ctl = (aria: string, icon: string, on: boolean, tap: () => void, text: string) => (
-    <button onClick={tap} aria-pressed={on} aria-label={aria} style={s('background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:6px;color:#C9C6EA;width:76px')}>
-      <span style={s(`width:56px;height:56px;border-radius:50%;background:${on ? '#FFFFFF' : 'rgba(255,255,255,.12)'};color:${on ? 'var(--accent)' : '#FFFFFF'};display:grid;place-items:center`)}><Svg d={icon} size={22} /></span>
+    <button onClick={tap} aria-pressed={on} aria-label={aria} style={s('background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:6px;color:#F0EEFF;width:76px')}>
+      <span style={s(`width:56px;height:56px;border-radius:50%;background:${on ? 'var(--card)' : 'rgba(255,255,255,.12)'};color:${on ? 'var(--accent-ink)' : 'var(--card)'};display:grid;place-items:center`)}><Svg d={icon} size={22} /></span>
       <span style={s('font-size:13px')}>{text}</span>
     </button>
   );
@@ -102,7 +102,7 @@ export function CallScreen() {
   return (
     <div className="screen dark" role="main" aria-label="Conversation" style={{ ...s('background:radial-gradient(120% 70% at 50% 30%,#3B3577 0%,#221F45 55%,#15132C 100%);color:#FFFFFF;display:flex;flex-direction:column;padding:56px 20px 36px') }}>
       <div style={s('display:flex;align-items:center;justify-content:space-between')}>
-        <span style={s('font-size:14px;color:#D6D3EE;font-weight:600')}>{video ? 'Video call' : mode === 'checkin' ? 'Check-in' : 'Voice call'} · {mmss(secs)}</span>
+        <span style={s('font-size:14px;color:#F0EEFF;font-weight:600')}>{video ? 'Video call' : mode === 'checkin' ? 'Check-in' : 'Voice call'} · {mmss(secs)}</span>
         <HelpButton dark />
       </div>
       <div style={s('flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px')}>
@@ -110,7 +110,7 @@ export function CallScreen() {
           {!video && phase === 'speaking' && <span aria-hidden="true" style={s('position:absolute;inset:0;border-radius:50%;border:2px solid #B7B1E6;animation:kRing 1.6s ease-out infinite')} />}
           <div style={s(`position:relative;width:100%;height:100%;border-radius:${video ? '32px' : '50%'};overflow:hidden;background:radial-gradient(circle at 50% 40%,#5A54A0,var(--accent));display:flex;justify-content:center;align-items:flex-end`)}><Companion look={figureLook} size={video ? 300 : 210} mode={avatar} /></div>
         </div>
-        <div role="status" aria-live="polite" style={s('font-size:14px;color:#D6D3EE;font-weight:600;min-height:20px')}>{label}</div>
+        <div role="status" aria-live="polite" style={s('font-size:14px;color:#F0EEFF;font-weight:600;min-height:20px')}>{label}</div>
         {captions && (
           <div style={s('min-height:96px;display:flex;flex-direction:column;gap:8px;align-items:center;text-align:center;padding:0 8px')}>
             <span style={s('font-size:19px;line-height:1.4;text-wrap:pretty')}>{ai}</span>
@@ -137,9 +137,9 @@ function FeelingSheet({ onPick }: { onPick: (f?: 'better' | 'same' | 'worse') =>
     <Sheet label="How are you feeling" onClose={() => onPick(undefined)}>
       <h2 className="serif" style={s('font-size:30px;line-height:1.1;margin:0')}>How are you feeling now?</h2>
       {([['better', 'A bit better'], ['same', 'About the same'], ['worse', 'A bit heavier']] as const).map(([k, label]) => (
-        <button key={k} onClick={() => onPick(k)} style={s('height:56px;border-radius:18px;border:none;background:#FFFFFF;font-size:16px;font-weight:600;text-align:left;padding:0 18px')}>{label}</button>
+        <button key={k} onClick={() => onPick(k)} style={s('height:56px;border-radius:18px;border:none;background:var(--card);font-size:16px;font-weight:600;text-align:left;padding:0 18px')}>{label}</button>
       ))}
-      <button onClick={() => onPick(undefined)} style={s('height:48px;border:none;background:none;color:#636B78;font-size:15px;font-weight:600')}>Skip</button>
+      <button onClick={() => onPick(undefined)} style={s('height:48px;border:none;background:none;color:var(--muted);font-size:15px;font-weight:600')}>Skip</button>
     </Sheet>
   );
 }
@@ -158,28 +158,28 @@ function ClosingSheet() {
   const leave = async (msg?: string) => { if (kept.length) await saveProposedMemories(kept.map(i => proposed[i]), 'call'); go('today', { firstRun: false }); if (msg) set({ toast: msg }); };
   const addStep = async (label: string) => { await addPlanItem(label, 'checkin'); await leave('Added to your tiny steps.'); };
   const title = busy ? 'One moment…' : firstRun ? 'Nice to meet you' : checkin ? 'Thanks for checking in.' : sit ? 'Glad you stayed a while.' : 'Before you go';
-  const btn = (primary: boolean) => s(`height:56px;border-radius:28px;border:none;background:${primary ? 'var(--accent)' : '#FFFFFF'};color:${primary ? '#FFFFFF' : '#1E2430'};font-size:16px;font-weight:700`);
+  const btn = (primary: boolean) => s(`height:56px;border-radius:28px;border:none;background:${primary ? 'var(--accent)' : 'var(--card)'};color:${primary ? '#FFFFFF' : 'var(--ink)'};font-size:16px;font-weight:700`);
   return (
     <Sheet label={title} onClose={() => void leave()}>
       <h2 className="serif" style={s('font-size:30px;line-height:1.1;margin:0')}>{title}</h2>
-      {busy ? <p role="status" style={s('color:#636B78;margin:0')}>Saving our conversation…</p> : (
+      {busy ? <p role="status" style={s('color:var(--muted);margin:0')}>Saving our conversation…</p> : (
         <>
           {checkin && out?.checkinResult && (
-            <div style={s('background:#FFFFFF;border-radius:20px;padding:14px 16px;display:grid;gap:8px')}>
+            <div style={s('background:var(--card);border-radius:20px;padding:14px 16px;display:grid;gap:8px')}>
               {([['Sleep', out.checkinResult.sleep], ['Food', out.checkinResult.food], ['People', out.checkinResult.people], ['Okay thing', out.checkinResult.okayThing]] as const).filter(([, v]) => v).map(([k, v]) => (
-                <div key={k} style={s('display:flex;gap:10px;font-size:14px;align-items:baseline')}><span style={s('color:#636B78;width:72px;flex:none')}>{k}</span><span>{v}</span></div>
+                <div key={k} style={s('display:flex;gap:10px;font-size:14px;align-items:baseline')}><span style={s('color:var(--muted);width:72px;flex:none')}>{k}</span><span>{v}</span></div>
               ))}
             </div>
           )}
-          {!checkin && !sit && out?.summary && <p style={s('color:#636B78;margin:0;font-size:15px;line-height:1.5')}>{out.summary}</p>}
-          {sit && <p style={s('color:#636B78;margin:0')}>Come back any time you want some quiet company.</p>}
+          {!checkin && !sit && out?.summary && <p style={s('color:var(--muted);margin:0;font-size:15px;line-height:1.5')}>{out.summary}</p>}
+          {sit && <p style={s('color:var(--muted);margin:0')}>Come back any time you want some quiet company.</p>}
           {proposed.length > 0 && (
             <fieldset style={s('border:0;padding:0;margin:0;display:grid;gap:8px')}>
-              <legend style={s('color:#636B78;font-size:13px;margin-bottom:6px')}>Want me to remember these? Untick anything.</legend>
+              <legend style={s('color:var(--muted);font-size:13px;margin-bottom:6px')}>Want me to remember these? Untick anything.</legend>
               {proposed.map((m, i) => (
-                <button key={i} role="checkbox" aria-checked={kept.includes(i)} onClick={() => toggle(i)} style={s(`display:flex;align-items:center;gap:12px;border:none;border-radius:18px;background:${kept.includes(i) ? '#E0EFE5' : '#FFFFFF'};padding:12px 14px;text-align:left;font-size:15px;line-height:1.35`)}>
-                  <span style={s(`flex:none;width:26px;height:26px;border-radius:50%;border:2px solid #1E2430;background:${kept.includes(i) ? '#1E2430' : 'transparent'};display:grid;place-items:center`)}><Svg d={I.check} size={13} stroke="#FFFFFF" sw={3} style={{ opacity: kept.includes(i) ? 1 : 0 }} /></span>
-                  <span>{m.text}{m.sensitive && <span style={s('color:#636B78')}> · sensitive</span>}</span>
+                <button key={i} role="checkbox" aria-checked={kept.includes(i)} onClick={() => toggle(i)} style={s(`display:flex;align-items:center;gap:12px;border:none;border-radius:18px;background:${kept.includes(i) ? 'var(--p-mint)' : 'var(--card)'};padding:12px 14px;text-align:left;font-size:15px;line-height:1.35`)}>
+                  <span style={s(`flex:none;width:26px;height:26px;border-radius:50%;border:2px solid var(--ink);background:${kept.includes(i) ? 'var(--accent)' : 'transparent'};display:grid;place-items:center`)}><Svg d={I.check} size={13} stroke="#FFFFFF" sw={3} style={{ opacity: kept.includes(i) ? 1 : 0 }} /></span>
+                  <span>{m.text}{m.sensitive && <span style={s('color:var(--muted)')}> · sensitive</span>}</span>
                 </button>
               ))}
             </fieldset>
@@ -188,20 +188,20 @@ function ClosingSheet() {
             <>
               <p style={s('margin:0')}>One small thing for tomorrow, if you like:</p>
               {out.checkinResult.intentions.map(label => <button key={label} onClick={() => void addStep(label)} style={btn(false)}>{label}</button>)}
-              <button onClick={() => void leave()} style={s('height:48px;border:none;background:none;color:#636B78;font-size:15px;font-weight:600')}>Neither, thanks</button>
+              <button onClick={() => void leave()} style={s('height:48px;border:none;background:none;color:var(--muted);font-size:15px;font-weight:600')}>Neither, thanks</button>
             </>
           )}
           {firstRun && !checkin && (
             <>
-              <p style={s('color:#636B78;margin:0')}>I can check in on you each evening, around nine. You can change or stop that any time.</p>
+              <p style={s('color:var(--muted);margin:0')}>I can check in on you each evening, around nine. You can change or stop that any time.</p>
               <button onClick={async () => { await updatePrefs({ checkinTime: 'evening' }); await leave('Okay. Tomorrow at 9 p.m., gently.'); }} style={btn(true)}>Yes, check in tomorrow</button>
-              <button onClick={() => void leave()} style={s('height:48px;border:none;background:none;color:#636B78;font-size:15px;font-weight:600')}>Not now</button>
+              <button onClick={() => void leave()} style={s('height:48px;border:none;background:none;color:var(--muted);font-size:15px;font-weight:600')}>Not now</button>
             </>
           )}
           {!checkin && !firstRun && (
             <>
               <button onClick={() => void leave()} style={btn(true)}>{sit ? 'Done' : 'Back to Home'}</button>
-              {!sit && <button onClick={() => void startCall('voice')} style={s('height:48px;border:none;background:none;color:var(--accent);font-size:15px;font-weight:700')}>Keep talking</button>}
+              {!sit && <button onClick={() => void startCall('voice')} style={s('height:48px;border:none;background:none;color:var(--accent-ink);font-size:15px;font-weight:700')}>Keep talking</button>}
             </>
           )}
           {checkin && !(out?.checkinResult?.intentions.length) && <button onClick={() => void leave()} style={btn(true)}>Done</button>}
@@ -228,21 +228,21 @@ export function ChatScreen() {
   const say = (t: string) => { set({ draft: t }); sendChat(); };
   return (
     <div className="screen" role="main" aria-label="Text conversation" style={{ ...s('background:var(--bg);display:flex;flex-direction:column') }}>
-      <div style={s('display:flex;align-items:center;gap:10px;padding:52px 16px 12px;background:#FFFFFF;box-shadow:0 1px 0 #EEE8DE')}>
-        <button onClick={() => go('talk')} aria-label="Back" style={s('width:40px;height:44px;border:none;background:none;display:grid;place-items:center')}><Svg d={I.back} size={22} stroke="#1E2430" /></button>
+      <div style={s('display:flex;align-items:center;gap:10px;padding:52px 16px 12px;background:var(--card);box-shadow:0 1px 0 var(--line)')}>
+        <button onClick={() => go('talk')} aria-label="Back" style={s('width:40px;height:44px;border:none;background:none;display:grid;place-items:center')}><Svg d={I.back} size={22} stroke="var(--ink)" /></button>
         <div style={s('width:40px;height:40px;border-radius:50%;overflow:hidden;background:#F3EEFA;display:grid;place-items:center')}><Companion look={look} size={40} /></div>
         <div style={s('flex:1;display:flex;flex-direction:column')}><span style={s('font-size:16px;font-weight:700')}>{comp}</span><span style={s('font-size:12px;color:#2F6B3C;font-weight:600')}>{typing ? 'typing…' : conv ? 'Always here' : 'Connecting…'}</span></div>
-        <button onClick={() => void startCall('voice')} aria-label="Switch to a voice call" style={s('width:44px;height:44px;border-radius:50%;border:none;background:var(--soft);display:grid;place-items:center')}><Svg d={I.phone} size={20} stroke="#1E2430" /></button>
+        <button onClick={() => void startCall('voice')} aria-label="Switch to a voice call" style={s('width:44px;height:44px;border-radius:50%;border:none;background:var(--soft);display:grid;place-items:center')}><Svg d={I.phone} size={20} stroke="var(--ink)" /></button>
         <HelpButton small />
       </div>
       <div ref={ref} role="log" aria-live="polite" aria-label="Conversation" data-scroll="1" style={s('flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:8px')}>
-        <span style={s('align-self:center;font-size:12px;color:#636B78;background:var(--soft);border-radius:12px;padding:4px 10px')}>Private · you can say anything</span>
+        <span style={s('align-self:center;font-size:12px;color:var(--muted);background:var(--soft);border-radius:12px;padding:4px 10px')}>Private · you can say anything</span>
         {msgs.map((m, i) => (
-          <div key={i} style={s(`align-self:${m.who === 'me' ? 'flex-end' : 'flex-start'};max-width:82%;background:${m.who === 'me' ? 'var(--accent)' : '#FFFFFF'};color:${m.who === 'me' ? '#FFFFFF' : '#1E2430'};border-radius:${m.who === 'me' ? '20px 20px 6px 20px' : '20px 20px 20px 6px'};padding:12px 14px;font-size:16px;line-height:1.45;animation:kUp 300ms`)}>
+          <div key={i} style={s(`align-self:${m.who === 'me' ? 'flex-end' : 'flex-start'};max-width:82%;background:${m.who === 'me' ? 'var(--accent)' : 'var(--card)'};color:${m.who === 'me' ? '#FFFFFF' : 'var(--ink)'};border-radius:${m.who === 'me' ? '20px 20px 6px 20px' : '20px 20px 20px 6px'};padding:12px 14px;font-size:16px;line-height:1.45;animation:kUp 300ms`)}>
             <span className="sr">{m.who === 'ai' ? `${comp} says: ` : 'You said: '}</span>{m.text}
           </div>
         ))}
-        {typing && <div role="status" style={s('align-self:flex-start;background:#FFFFFF;border-radius:18px 18px 18px 6px;padding:12px 16px;font-size:16px;color:#636B78')}><span className="sr">{comp} is typing</span>…</div>}
+        {typing && <div role="status" style={s('align-self:flex-start;background:var(--card);border-radius:18px 18px 18px 6px;padding:12px 16px;font-size:16px;color:var(--muted)')}><span className="sr">{comp} is typing</span>…</div>}
         {careCard && (
           <section aria-label="Support" style={s('background:#FFF1E8;border:1px solid #F0B79C;border-radius:20px;padding:14px;display:flex;flex-direction:column;gap:10px;max-width:92%')}>
             <span style={s('font-size:15px;line-height:1.4')}>You matter. Talking to a real person can help right now. It’s free, any time.</span>
@@ -251,17 +251,17 @@ export function ChatScreen() {
         )}
       </div>
       {!conv && !busy && (
-        <div role="alert" style={s('margin:0 16px 8px;background:#FFFFFF;border-radius:18px;padding:12px 14px;font-size:14px;display:grid;gap:8px')}>
+        <div role="alert" style={s('margin:0 16px 8px;background:var(--card);border-radius:18px;padding:12px 14px;font-size:14px;display:grid;gap:8px')}>
           I’m not connected right now. Your words aren’t lost, and help is always one tap away.
           <button onClick={() => void openChat()} style={s('height:40px;border-radius:20px;border:none;background:var(--accent);color:#FFFFFF;font-weight:700')}>Try again</button>
         </div>
       )}
       {mine < 2 && conv && (
         <div style={s('display:flex;gap:6px;overflow-x:auto;padding:0 16px 8px')}>
-          {quick.map(q => <button key={q} onClick={() => say(q)} style={s('flex:none;height:44px;padding:0 14px;border-radius:22px;border:1.5px solid #D9D2C5;background:#FFFFFF;font-size:14px;font-weight:600')}>{q}</button>)}
+          {quick.map(q => <button key={q} onClick={() => say(q)} style={s('flex:none;height:44px;padding:0 14px;border-radius:22px;border:1.5px solid var(--line);background:var(--card);font-size:14px;font-weight:600')}>{q}</button>)}
         </div>
       )}
-      <form onSubmit={e => { e.preventDefault(); sendChat(); }} style={s('display:flex;gap:8px;align-items:center;padding:8px 12px 34px;background:#FFFFFF;box-shadow:0 -1px 0 #EEE8DE')}>
+      <form onSubmit={e => { e.preventDefault(); sendChat(); }} style={s('display:flex;gap:8px;align-items:center;padding:8px 12px 34px;background:var(--card);box-shadow:0 -1px 0 var(--line)')}>
         <input type="text" aria-label="Message" disabled={!conv} value={draft} onChange={e => set({ draft: e.target.value })} placeholder="Say anything…" autoComplete="off" style={s('flex:1;height:44px;border-radius:22px;border:none;background:var(--soft);padding:0 16px;font-size:16px;outline:none')} />
         <button type="submit" aria-label="Send" style={s('flex:none;width:44px;height:44px;border-radius:50%;border:none;background:var(--accent);display:grid;place-items:center')}><Svg d={I.send} size={18} stroke="#FFFFFF" sw={2} /></button>
       </form>
@@ -286,12 +286,12 @@ export function WalkScreen() {
         <>
           <span style={s('font-size:14px;color:#2E4A35;font-weight:700')}>Walking with {comp} · {mmss(tick)}</span>
           <div style={s('flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;align-self:stretch')}>
-            <div style={s('position:relative;width:220px;height:220px;border-radius:50%;background:#FFFFFF;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 16px 40px rgba(46,74,53,.15)')}>
+            <div style={s('position:relative;width:220px;height:220px;border-radius:50%;background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 16px 40px rgba(46,74,53,.15)')}>
               <span aria-hidden="true" style={s('position:absolute;inset:-10px;border-radius:50%;border:3px solid #93C48A;animation:kRing 3s ease-out infinite')} />
               <span style={s('font-size:52px;font-weight:700;line-height:1')}>{Math.max(1, Math.floor(tick / 60))}</span>
-              <span style={s('font-size:14px;color:#636B78;font-weight:600')}>{tick < 120 ? 'minute so far' : 'minutes so far'}</span>
+              <span style={s('font-size:14px;color:var(--muted);font-weight:600')}>{tick < 120 ? 'minute so far' : 'minutes so far'}</span>
             </div>
-            <div role="status" aria-live="polite" style={s('align-self:stretch;background:#FFFFFF;border-radius:24px;padding:18px;display:flex;gap:12px;align-items:center;animation:kUp 500ms')}>
+            <div role="status" aria-live="polite" style={s('align-self:stretch;background:var(--card);border-radius:24px;padding:18px;display:flex;gap:12px;align-items:center;animation:kUp 500ms')}>
               <div style={s('flex:none;width:44px;height:44px;border-radius:50%;overflow:hidden;background:#EEF5EC;display:grid;place-items:center')}><Companion look={look} size={44} /></div>
               <span style={s('font-size:17px;line-height:1.4')}>{prompt}</span>
             </div>

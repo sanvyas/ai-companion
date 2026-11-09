@@ -3,8 +3,9 @@
 html,body,#root{height:100%;margin:0}
 body{background:#FAF6EF}
 .v3{
-  --bg:#FAF6EF; --ink:#1E2430; --muted:#636B78; --indigo:#2F2A5E; --card:#FFFFFF; --line:#E5DED2; --soft:#F1EDE6; --gold:#F2B33D; --help:#9A3B1E;
-  --accent:#2F2A5E; --accent2:#6F6BB8; --t1:#E6E4F5; --hero1:#5B57A6;
+  --bg:#FAF6EF; --ink:#1E2430; --muted:#5C6472; --indigo:#2F2A5E; --card:#FFFFFF; --line:#E5DED2; --soft:#F1EDE6; --gold:#F2B33D; --help:#9A3B1E;
+  --accent:#2F2A5E; --accent-ink:#2F2A5E; --accent2:#6F6BB8; --t1:#E6E4F5; --hero1:#5B57A6; --bg2:#F4EEE3;
+  --p-rose:#FBE4DA; --p-mint:#E0EFE5; --p-butter:#FCEFCF; --p-sky:#D5E6F2; --page:linear-gradient(180deg,#F1EAF8 0px,#FAF6EF 440px);
   --tint:#F1EAF8; --wash:#F7F2FB;
   --serif:'Fraunces Variable','Noto Serif Devanagari',Georgia,serif; --sans:'Plus Jakarta Sans Variable','Noto Sans Devanagari',system-ui,sans-serif;
   font-family:var(--sans); color:var(--ink); -webkit-font-smoothing:antialiased; height:100%;

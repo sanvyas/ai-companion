@@ -7,20 +7,32 @@ const L = (h: string) => { const [r, g, b] = [1, 3, 5].map(i => parseInt(h.slice
 const ratio = (a: string, b: string) => { const [x, y] = [L(a), L(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
 
 describe('the colour palettes', () => {
-  it('has six, each with its own name and id', () => {
-    expect(PALETTES).toHaveLength(6);
-    expect(new Set(PALETTES.map(p => p.id)).size).toBe(6);
-    expect(new Set(PALETTES.map(p => p.name)).size).toBe(6);
+  it('has at least ten, each with its own name and id', () => {
+    expect(PALETTES.length).toBeGreaterThanOrEqual(10);
+    expect(new Set(PALETTES.map(p => p.id)).size).toBe(PALETTES.length);
+    expect(new Set(PALETTES.map(p => p.name)).size).toBe(PALETTES.length);
   });
-  it('keeps white text readable on the main colour, on the Talk card and on the lighter one', () => {
+  it('keeps every pair that carries words readable', () => {
     for (const p of PALETTES) {
-      expect(ratio('#FFFFFF', p.accent), `${p.id} accent`).toBeGreaterThanOrEqual(7);
-      expect(ratio('#FFFFFF', p.hero1), `${p.id} talk card`).toBeGreaterThanOrEqual(4.5);
-      expect(ratio('#1E2430', p.bg), `${p.id} paper`).toBeGreaterThanOrEqual(12);
+      expect(ratio('#FFFFFF', p.accent), `${p.id} white on main`).toBeGreaterThanOrEqual(4.5);
+      expect(ratio('#FFFFFF', p.hero1), `${p.id} white on Talk card`).toBeGreaterThanOrEqual(4.5);
+      expect(ratio(p.accentInk, p.bg), `${p.id} main as text on paper`).toBeGreaterThanOrEqual(4.5);
+      expect(ratio(p.accentInk, p.card), `${p.id} main as text on card`).toBeGreaterThanOrEqual(4.5);
+      expect(ratio(p.ink, p.bg), `${p.id} ink on paper`).toBeGreaterThanOrEqual(10);
+      expect(ratio(p.ink, p.card), `${p.id} ink on card`).toBeGreaterThanOrEqual(10);
+      expect(ratio(p.muted, p.bg), `${p.id} quiet ink on paper`).toBeGreaterThanOrEqual(4.5);
+      expect(ratio(p.muted, p.card), `${p.id} quiet ink on card`).toBeGreaterThanOrEqual(4.5);
+      expect(ratio(p.muted, p.soft), `${p.id} quiet ink on fields`).toBeGreaterThanOrEqual(4.5);
+      for (const t of Object.values(p.tints)) expect(ratio(p.ink, t), `${p.id} ink on its top tint`).toBeGreaterThanOrEqual(7);
+      if (p.wash) for (const w of p.wash) expect(ratio(p.ink, w), `${p.id} ink on its wash`).toBeGreaterThanOrEqual(7);
     }
   });
-  it('stays light at every hour and mood in every palette', () => {
-    for (const p of PALETTES) for (let h = 0; h < 24; h += 3) for (const m of [null, 0, 2, 4]) expect(L(themeFor(h, m, p.tints).tint)).toBeGreaterThan(0.6);
+  it('has dark ones and light ones, and the top tint matches', () => {
+    expect(PALETTES.some(p => p.dark)).toBe(true);
+    for (const p of PALETTES) for (let h = 0; h < 24; h += 3) for (const m of [null, 0, 2, 4]) {
+      const l = L(themeFor(h, m, p.tints, !!p.dark).tint);
+      if (p.dark) expect(l, `${p.id} ${h} ${m}`).toBeLessThan(0.15); else expect(l, `${p.id} ${h} ${m}`).toBeGreaterThan(0.45);
+    }
   });
   it('falls back to the first palette for anything it does not know', () => {
     expect(paletteById('nope').id).toBe('dusk');

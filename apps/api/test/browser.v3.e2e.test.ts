@@ -188,6 +188,12 @@ describe('the third design', () => {
     problems.push(...await scan(page, 'colours'));
     await page.keyboard.press('Escape');
     problems.push(...await scan(page, 'you in sage'));
+    await page.getByRole('button', { name: /^Colours/ }).click();
+    await page.getByRole('radio', { name: /Midnight Indigo/ }).click();
+    expect(await page.evaluate(() => getComputedStyle(document.querySelector('.v3')!).colorScheme)).toBe('dark');
+    problems.push(...await scan(page, 'colours in midnight'));
+    await page.getByRole('radio', { name: /Indigo Dusk/ }).click();
+    await page.keyboard.press('Escape');
 
     await ctx.close();
     expect(errors).toEqual([]);
@@ -289,6 +295,28 @@ describe('the third design', () => {
     expect(await here.page.getByRole('heading', { level: 1 }).filter({ hasText: 'How are you' }).count()).toBe(0);
     await here.ctx.close();
   });
+
+  // Every palette, light, washed and dark, on the screens people use most: words must stay readable whatever the colours.
+  for (const id of ['dusk', 'teal', 'terracotta', 'plum', 'ocean', 'sage', 'sorbet', 'sky', 'mango', 'aurora', 'midnight', 'forest', 'ember']) {
+    run(`stays readable in the ${id} colours`, async () => {
+      const { page, ctx, errors } = await open(await person(), `?ui=3&palette=${id}`);
+      const problems: string[] = [];
+      const tab = (name: string) => page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name }).click();
+      await page.getByRole('heading', { level: 1 }).filter({ hasText: 'How are you' }).waitFor();
+      problems.push(...await scan(page, `${id} mood`));
+      await page.getByRole('button', { name: 'Not now' }).click();
+      await page.getByRole('heading', { level: 1 }).filter({ hasText: 'Aarav' }).waitFor();
+      problems.push(...await scan(page, `${id} home`));
+      for (const [name, heading] of [['Relax', 'Relax'], ['Talk', 'Talk'], ['Journal', 'Journal'], ['Month', 'Letters']] as const) {
+        await tab(name);
+        await page.getByRole('heading', { level: 1 }).filter({ hasText: heading }).waitFor();
+        problems.push(...await scan(page, `${id} ${name}`));
+      }
+      await ctx.close();
+      expect(errors).toEqual([]);
+      expect(problems).toEqual([]);
+    });
+  }
 
   run('opens for everyone once its switch is on, and ?ui=1 or ?ui=2 still bring back the others', async () => {
     const user = await person();

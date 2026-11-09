@@ -15,20 +15,20 @@ const clock12 = (hhmm: string) => { const [h, m] = hhmm.split(':').map(Number); 
 function Toggle({ on, label, onTap, desc }: { on: boolean; label: string; onTap: () => void; desc?: string }) {
   return (
     <div style={s('display:flex;align-items:center;gap:12px;padding:14px 0')}>
-      <span style={s('flex:1;display:flex;flex-direction:column;gap:2px')}><span style={s('font-size:15px')}>{label}</span>{desc && <span style={s('font-size:13px;color:#636B78;line-height:1.35')}>{desc}</span>}</span>
-      <button role="switch" aria-checked={on} aria-label={label} onClick={onTap} style={s(`flex:none;width:48px;height:30px;border-radius:15px;border:none;background:${on ? 'var(--accent)' : '#D9D2C5'};position:relative;padding:0;transition:background 300ms`)}>
-        <span style={s(`position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#FFFFFF;transform:${on ? 'translateX(18px)' : 'none'};transition:transform 300ms`)} />
+      <span style={s('flex:1;display:flex;flex-direction:column;gap:2px')}><span style={s('font-size:15px')}>{label}</span>{desc && <span style={s('font-size:13px;color:var(--muted);line-height:1.35')}>{desc}</span>}</span>
+      <button role="switch" aria-checked={on} aria-label={label} onClick={onTap} style={s(`flex:none;width:48px;height:30px;border-radius:15px;border:none;background:${on ? 'var(--accent)' : 'var(--line)'};position:relative;padding:0;transition:background 300ms`)}>
+        <span style={s(`position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:var(--card);transform:${on ? 'translateX(18px)' : 'none'};transition:transform 300ms`)} />
       </button>
     </div>
   );
 }
-const Group = ({ children }: { children: React.ReactNode }) => <div style={s('background:#FFFFFF;border-radius:24px;padding:4px 16px;display:flex;flex-direction:column')}>{children}</div>;
+const Group = ({ children }: { children: React.ReactNode }) => <div style={s('background:var(--card);border-radius:24px;padding:4px 16px;display:flex;flex-direction:column')}>{children}</div>;
 const Sep = () => <div aria-hidden="true" style={s('height:1px;background:var(--soft)')} />;
 const Link = ({ label, sub, value, onTap }: { label: string; sub?: string; value?: string; onTap: () => void }) => (
   <button onClick={onTap} style={s('display:flex;align-items:center;gap:12px;text-align:left;border:none;background:none;padding:14px 0;min-height:56px;width:100%')}>
-    <span style={s('flex:1;display:flex;flex-direction:column;gap:2px')}><span style={s('font-size:15px;font-weight:600')}>{label}</span>{sub && <span style={s('font-size:13px;color:#636B78;line-height:1.35')}>{sub}</span>}</span>
-    {value && <span style={s('font-size:13px;color:#636B78')}>{value}</span>}
-    <Svg d={I.chev} size={16} sw={2} stroke="#636B78" />
+    <span style={s('flex:1;display:flex;flex-direction:column;gap:2px')}><span style={s('font-size:15px;font-weight:600')}>{label}</span>{sub && <span style={s('font-size:13px;color:var(--muted);line-height:1.35')}>{sub}</span>}</span>
+    {value && <span style={s('font-size:13px;color:var(--muted)')}>{value}</span>}
+    <Svg d={I.chev} size={16} sw={2} stroke="var(--muted)" />
   </button>
 );
 
@@ -52,7 +52,7 @@ export function YouTab() {
   return (
     <div className="screen" data-scroll="1" style={{ ...s('overflow:auto;background:var(--bg);display:flex;flex-direction:column;padding:52px 20px 120px;gap:14px') }}>
       <Head title={nick || 'You'} back={() => go('today')} />
-      <section aria-label="Your companion" style={s('background:#FFFFFF;border-radius:28px;padding:18px;display:flex;flex-direction:column;gap:14px;align-items:center;box-shadow:0 8px 22px rgba(30,36,48,.05)')}>
+      <section aria-label="Your companion" style={s('background:var(--card);border-radius:28px;padding:18px;display:flex;flex-direction:column;gap:14px;align-items:center;box-shadow:0 8px 22px rgba(30,36,48,.05)')}>
         <div style={s('width:150px;height:150px;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 50% 40%,#FFFFFF,#E6E2F6);display:flex;justify-content:center;align-items:flex-end')}><Companion look={look} size={150} /></div>
         <h2 className="kicker" style={s('margin:0')}>A face for {comp}</h2>
         <div role="radiogroup" aria-label="Face" style={s('display:flex;gap:10px;flex-wrap:wrap;justify-content:center')}>
@@ -63,7 +63,7 @@ export function YouTab() {
             </button>
           ))}
         </div>
-        <button onClick={() => go('studio')} style={s('align-self:stretch;height:48px;border-radius:24px;border:1.5px solid var(--accent);background:none;color:var(--accent);font-size:15px;font-weight:700')}>Choose a voice and hear it</button>
+        <button onClick={() => go('studio')} style={s('align-self:stretch;height:48px;border-radius:24px;border:1.5px solid var(--accent);background:none;color:var(--accent-ink);font-size:15px;font-weight:700')}>Choose a voice and hear it</button>
       </section>
 
       <h2 className="kicker" style={s('margin:6px 0 0')}>Check-ins</h2>
@@ -71,7 +71,7 @@ export function YouTab() {
         <div style={s('padding:14px 0;display:flex;flex-direction:column;gap:10px')}>
           <span style={s('font-size:15px')}>When should I check in?</span>
           <div role="radiogroup" aria-label="Check-in time" style={s('display:flex;gap:4px;background:var(--soft);border-radius:22px;padding:4px')}>
-            {(['morning', 'evening', 'off'] as const).map(v => <button key={v} role="radio" aria-checked={prefs?.checkinTime === v} onClick={() => void updatePrefs({ checkinTime: v })} style={s(`flex:1;height:40px;border-radius:18px;border:none;background:${prefs?.checkinTime === v ? '#FFFFFF' : 'transparent'};font-size:14px;font-weight:700;box-shadow:${prefs?.checkinTime === v ? '0 2px 8px rgba(30,36,48,.08)' : 'none'}`)}>{v === 'off' ? 'Not now' : v[0].toUpperCase() + v.slice(1)}</button>)}
+            {(['morning', 'evening', 'off'] as const).map(v => <button key={v} role="radio" aria-checked={prefs?.checkinTime === v} onClick={() => void updatePrefs({ checkinTime: v })} style={s(`flex:1;height:40px;border-radius:18px;border:none;background:${prefs?.checkinTime === v ? 'var(--card)' : 'transparent'};font-size:14px;font-weight:700;box-shadow:${prefs?.checkinTime === v ? '0 2px 8px rgba(30,36,48,.08)' : 'none'}`)}>{v === 'off' ? 'Not now' : v[0].toUpperCase() + v.slice(1)}</button>)}
           </div>
         </div>
         <Sep />
@@ -81,9 +81,9 @@ export function YouTab() {
         <Sep />
         <Toggle on={!!prefs?.sundayLetter} label="A letter on Sundays" desc="A few kind lines about your week." onTap={() => void updatePrefs({ sundayLetter: !prefs?.sundayLetter })} />
         <Sep />
-        <button onClick={() => void startCheckin()} style={s('display:flex;align-items:center;gap:12px;text-align:left;border:none;background:none;padding:14px 0;min-height:56px;width:100%')}><span style={s('flex:1;font-size:15px;font-weight:600')}>Try a check-in now</span><Svg d={I.chev} size={16} sw={2} stroke="#636B78" /></button>
+        <button onClick={() => void startCheckin()} style={s('display:flex;align-items:center;gap:12px;text-align:left;border:none;background:none;padding:14px 0;min-height:56px;width:100%')}><span style={s('flex:1;font-size:15px;font-weight:600')}>Try a check-in now</span><Svg d={I.chev} size={16} sw={2} stroke="var(--muted)" /></button>
       </Group>
-      <span style={s('font-size:13px;color:#636B78;line-height:1.45;padding:0 4px')}>Two a day at most. Quiet from {quiet}. Ignore one and I’ll ease off.</span>
+      <span style={s('font-size:13px;color:var(--muted);line-height:1.45;padding:0 4px')}>Two a day at most. Quiet from {quiet}. Ignore one and I’ll ease off.</span>
 
       <h2 className="kicker" style={s('margin:6px 0 0')}>Privacy</h2>
       <Group>
@@ -112,9 +112,9 @@ export function YouTab() {
         <Sep />
         <Link label="Subscription" value={me?.subscription === 'plus' ? 'Plus' : 'Basic'} onTap={openPaywall} />
       </Group>
-      <button onClick={() => setV3({ sheet: { id: 'help' } })} style={s('height:56px;border-radius:28px;border:none;background:#FFE6D9;color:#9A3B1E;font-size:16px;font-weight:700;margin-top:6px')}>Helplines and support</button>
-      <button onClick={() => void signOutNow()} style={s('height:48px;border:none;background:none;color:#636B78;font-size:15px;font-weight:600')}>Sign out</button>
-      <p style={s('margin:0;text-align:center;font-size:13px;color:#636B78')}>{comp} is an AI companion, not a doctor or therapist.</p>
+      <button onClick={() => setV3({ sheet: { id: 'help' } })} style={s('height:56px;border-radius:28px;border:none;background:#FFE6D9;color:var(--help);font-size:16px;font-weight:700;margin-top:6px')}>Helplines and support</button>
+      <button onClick={() => void signOutNow()} style={s('height:48px;border:none;background:none;color:var(--muted);font-size:15px;font-weight:600')}>Sign out</button>
+      <p style={s('margin:0;text-align:center;font-size:13px;color:var(--muted)')}>{comp} is an AI companion, not a doctor or therapist.</p>
     </div>
   );
 }

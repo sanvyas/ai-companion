@@ -7,7 +7,7 @@ describe('the colour of the day', () => {
   it('splits the day into four parts', () => {
     expect([4, 5, 10, 11, 15, 16, 19, 20, 23].map(partOf)).toEqual(['night', 'morning', 'morning', 'afternoon', 'afternoon', 'evening', 'evening', 'night', 'night']);
   });
-  it('never goes dark, at any hour or mood', () => {
+  it('never goes dark in the light palettes, at any hour or mood', () => {
     for (let h = 0; h < 24; h++) for (const m of [null, 0, 1, 2, 3, 4]) expect(lum(themeFor(h, m as number | null).tint)).toBeGreaterThan(0.82);
   });
   it('leans warmer when the day is heavy, without leaving the time of day behind', () => {
