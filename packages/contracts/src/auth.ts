@@ -6,6 +6,8 @@ export const OtpStartBody = z.object({
   phone: PhoneInput,
   /** The age gate is asked before sign-in (PRD 8.1). A false never reaches the server as an account. */
   ageConfirmed18: z.boolean(),
+  /** Someone signing back in to an account they already have: the age question was answered when it was made, so it is not asked again. */
+  returning: z.boolean().optional(),
 });
 export const OtpStartResponse = z.object({
   challengeId: z.string().uuid(),
@@ -20,6 +22,8 @@ export const OtpVerifyBody = z.object({
   code: z.string().regex(/^\d{6}$/),
   challengeId: z.string().uuid().optional(),
   ageConfirmed18: z.boolean(),
+  /** With `returning`, an account is never created: if there is none the answer is `no_account` and the app offers sign-up instead. */
+  returning: z.boolean().optional(),
   nickname: z.string().trim().min(1).max(24).optional(),
   deviceLabel: z.string().max(80).optional(),
 });
@@ -27,6 +31,7 @@ export const OtpVerifyBody = z.object({
 export const GoogleBody = z.object({
   idToken: z.string().min(20),
   ageConfirmed18: z.boolean(),
+  returning: z.boolean().optional(),
   nickname: z.string().trim().min(1).max(24).optional(),
   deviceLabel: z.string().max(80).optional(),
 });

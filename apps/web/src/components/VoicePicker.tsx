@@ -13,7 +13,7 @@ import { flex } from './ui';
 const SAMPLE_LANG = { en: 'English', hinglish: 'English', hi: 'हिन्दी' } as const;
 const LINE = { en: 'Hi. I’m here whenever you want to talk.', hinglish: 'Hi, main yahan hoon, jab bhi aap baat karna chahein.', hi: 'नमस्ते। मैं यहाँ हूँ, जब भी आप बात करना चाहें।' } as const;
 
-export function VoicePicker({ value, onPick }: { value: string; onPick: (id: string) => void }) {
+export function VoicePicker({ value, onPick, accent = C.teal, soft = C.tealSoft }: { value: string; onPick: (id: string) => void; accent?: string; soft?: string }) {
   const language = useStore(s => s.language);
   const previewing = useStore(s => s.previewing);
   const speakingNow = useStore(s => s.speakingNow);
@@ -60,7 +60,7 @@ export function VoicePicker({ value, onPick }: { value: string; onPick: (id: str
   const row = (v: VoiceItem) => {
     const on = value === v.id;
     return (
-      <div key={v.id} style={{ ...flex('row', 4), alignItems: 'center', padding: '4px 10px 4px 0', borderRadius: 24, border: `1.5px solid ${on ? C.teal : 'transparent'}`, background: on ? C.tealSoft : C.white }}>
+      <div key={v.id} style={{ ...flex('row', 4), alignItems: 'center', padding: '4px 10px 4px 0', borderRadius: 24, border: `1.5px solid ${on ? accent : 'transparent'}`, background: on ? soft : C.white }}>
         <button type="button" role="radio" aria-checked={on} onClick={() => onPick(v.id)} style={{ flex: 1, minHeight: 52, textAlign: 'left', padding: '0 0 0 20px', border: 'none', background: 'none', fontSize: 17, fontWeight: 600, ...flex('column', 0), justifyContent: 'center' }}>
           {v.label}
           {v.gender && <span style={{ fontSize: 13, fontWeight: 400, color: C.muted }}>{v.gender === 'female' ? 'Woman’s voice' : 'Man’s voice'}</span>}

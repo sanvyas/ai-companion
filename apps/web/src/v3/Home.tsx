@@ -7,6 +7,10 @@ import { playCalm } from './calm';
 import { s } from './css';
 import { I, Svg } from './icons';
 import { HelpButton } from './Chrome';
+import { Face } from './faces';
+import { BellButton } from './Inbox';
+import { Living } from './Living';
+import { partOf, type Part } from './theme';
 import { CHECKIN_HERO, HEROES, MOODS, NOTE_BG, NOTE_ROT, checkLine, greetFor, type Hero, type SuggestId } from './moods';
 import { loadMonthData, useMonthData } from './month-data';
 import { setV3 } from './ui';
@@ -36,6 +40,8 @@ function suggestions(events: { id: string; title: string }[]): Record<SuggestId,
 const Label = ({ children, right }: { children: string; right?: React.ReactNode }) => (
   <div style={s('display:flex;justify-content:space-between;align-items:baseline;margin-top:8px')}><h2 className="kicker" style={s('margin:0')}>{children}</h2>{right}</div>
 );
+
+const LINE: Record<Part, string> = { morning: 'No rush this morning.', afternoon: 'The day can be a quiet one.', evening: 'A slow evening is fine.', night: 'Late nights are okay too. I’m here.' };
 
 export function Home() {
   const nick = useStore(x => x.nick);
@@ -74,85 +80,103 @@ export function Home() {
   const showToday = today.length ? today : (month?.days.at(-1)?.kinds ?? []);
   const line = checkLine(mood, nick);
 
+  const doneN = plan.filter(p => p.done).length;
+  const pct = plan.length ? Math.round((doneN / plan.length) * 100) : 0;
+  const part = partOf(new Date().getHours());
+
   return (
-    <div className="screen" data-scroll="1" style={{ ...s(`overflow:auto;background:linear-gradient(180deg,${M?.tint ?? '#ECE8F8'} 0px,#FAF6EF 380px);display:flex;flex-direction:column;padding:58px 20px 120px;gap:14px`) }}>
-      <header style={s('display:flex;align-items:center;gap:12px')}>
-        <button onClick={() => go('you')} aria-label="You" data-track="nav.you" style={s('width:44px;height:44px;border-radius:50%;border:none;background:#FFFFFF;overflow:hidden;display:grid;place-items:center;padding:0')}><Companion look={look} size={44} /></button>
-        <div style={s('flex:1;display:flex;flex-direction:column')}><span style={s('font-size:13px;color:#636B78;font-weight:600')}>{greet}</span><span style={s('font-size:19px;font-weight:700')}>{nick || 'Friend'}</span></div>
-        <HelpButton />
+    <div className="screen" data-scroll="1" style={{ ...s('overflow:auto;background:linear-gradient(180deg,var(--tint) 0px,var(--bg) 440px);display:flex;flex-direction:column;padding:56px 24px 128px;gap:16px') }}>
+      <header style={s('display:flex;align-items:center;justify-content:space-between')}>
+        <button onClick={() => go('you')} aria-label="You" data-track="nav.you" style={s('display:flex;align-items:center;gap:10px;border:none;background:none;padding:0;min-height:44px')}>
+          <span style={s('width:40px;height:40px;border-radius:50%;background:#FFFFFF;overflow:hidden;display:grid;place-items:center')}><Companion look={look} size={40} /></span>
+          <span className="serif" style={s('font-size:24px')}>Saathi</span>
+        </button>
+        <div style={s('display:flex;align-items:center;gap:8px')}><BellButton /><HelpButton /></div>
       </header>
 
-      <button onClick={() => setV3({ over: 'mood' })} aria-label={M ? `Feeling ${M.label.toLowerCase()}. Change` : 'Not checked in. Check in'} style={s('align-self:flex-start;height:44px;padding:0 14px 0 8px;border-radius:22px;border:none;background:rgba(255,255,255,.75);display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600')}>
-        <span aria-hidden="true" style={s(`width:20px;height:20px;border-radius:${M?.shape ?? '50%'};background:${M?.color ?? '#D9D2C5'}`)} />{M ? `Feeling ${M.label.toLowerCase()}` : 'Not checked in'}<span style={s('color:#636B78;font-weight:500')}>· change</span>
-      </button>
+      <div style={s('display:flex;flex-direction:column;gap:6px;margin-top:4px')}>
+        <h1 className="serif" style={s('font-size:36px;line-height:1.1;margin:0')}>{greet}{nick ? `, ${nick}` : ''}.</h1>
+        <div style={s('font-size:17px;color:var(--muted)')}>{LINE[part]}</div>
+        <button onClick={() => setV3({ over: 'mood' })} aria-label={M ? `Feeling ${M.label.toLowerCase()}. Change` : 'Not checked in. Check in'} style={s('align-self:flex-start;margin-top:8px;height:44px;padding:0 16px 0 8px;border-radius:22px;border:none;background:rgba(255,255,255,.78);display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600')}>
+          <Face mood={mood ?? 2} size={28} />{M ? `Feeling ${M.label.toLowerCase()}` : 'How are you today?'}<span style={s('color:var(--muted);font-weight:500')}>· {M ? 'change' : 'tell me'}</span>
+        </button>
+      </div>
 
-      <section aria-label="Saathi checking on you" style={s('background:#FFFFFF;border-radius:28px;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 10px 28px rgba(30,36,48,.06);animation:kUp 600ms')}>
-        <div style={s('display:flex;gap:12px;align-items:flex-start')}>
-          <div style={s('flex:none;width:44px;height:44px;border-radius:50%;overflow:hidden;background:#F3EEFA;display:grid;place-items:center')}><Companion look={look} size={44} /></div>
-          <div style={s('flex:1;display:flex;flex-direction:column;gap:2px')}><span style={s('font-size:13px;color:#636B78;font-weight:600')}>{comp} · checking on you</span><span style={s('font-size:17px;line-height:1.4')}>{line}</span></div>
+      <Living />
+
+      <section aria-label="Saathi checking on you" style={s('background:#FFFFFF;border-radius:28px;padding:20px;display:flex;flex-direction:column;gap:14px;box-shadow:0 10px 28px rgba(30,36,48,.06)')}>
+        <div style={s('display:flex;gap:14px;align-items:flex-start')}>
+          <div style={s('flex:none;width:48px;height:48px;border-radius:50%;overflow:hidden;background:#F3EEFA;display:grid;place-items:center')}><Companion look={look} size={48} /></div>
+          <div style={s('flex:1;display:flex;flex-direction:column;gap:2px')}><span style={s('font-size:15px;color:var(--muted);font-weight:600')}>{comp} · checking on you</span><span style={s('font-size:17px;line-height:1.45')}>{line}</span></div>
         </div>
-        <div style={s('display:flex;gap:8px')}>
-          <button onClick={() => void startCall('voice')} data-track="home.say" style={s('flex:1;height:44px;border-radius:22px;border:none;background:#2F2A5E;color:#FFFFFF;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px')}><Svg d={I.mic} size={16} stroke="#FFFFFF" sw={2} />Say it</button>
-          <button onClick={() => void openChat()} data-track="home.type" style={s('flex:1;height:44px;border-radius:22px;border:none;background:#F1EDE6;font-size:15px;font-weight:600')}>Type</button>
+        <div style={s('display:flex;gap:10px')}>
+          <button onClick={() => void startCall('voice')} data-track="home.say" style={s('flex:1.3;height:52px;border-radius:26px;border:none;background:#2F2A5E;color:#FFFFFF;font-size:17px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px')}><Svg d={I.mic} size={18} stroke="#FFFFFF" />Say it</button>
+          <button onClick={() => void openChat()} data-track="home.type" style={s('flex:1;height:52px;border-radius:26px;border:none;background:#F1EDE6;font-size:17px;font-weight:600')}>Type</button>
         </div>
       </section>
 
       <Label>For you right now</Label>
-      <button onClick={run} data-track="home.hero" style={s(`text-align:left;border:none;border-radius:30px;padding:22px;background:${hero.bg};color:${hero.fg};display:flex;flex-direction:column;gap:6px;box-shadow:0 16px 34px rgba(30,36,48,.14);position:relative;overflow:hidden;animation:kUp 700ms`)}>
+      <button onClick={run} data-track="home.hero" style={s(`text-align:left;border:none;border-radius:28px;padding:24px;background:${hero.bg};color:${hero.fg};display:flex;flex-direction:column;gap:8px;box-shadow:0 16px 34px rgba(30,36,48,.12);position:relative;overflow:hidden`)}>
         <span aria-hidden="true" style={s('position:absolute;right:-30px;top:-30px;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,.16)')} />
-        <span aria-hidden="true" style={s('position:absolute;right:40px;top:50px;width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,.14)')} />
-        <span className="serif" style={s('font-size:32px;line-height:1.05;position:relative;max-width:260px')}>{hero.title}</span>
-        <span style={s('font-size:15px;position:relative')}>{hero.sub}</span>
-        <span style={s(`margin-top:10px;align-self:flex-start;height:44px;padding:0 20px;border-radius:22px;background:${hero.fg === '#FFFFFF' ? '#FFFFFF' : '#1E2430'};color:${hero.fg === '#FFFFFF' ? hero.bg : '#FFFFFF'};display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;position:relative`)}>{hero.cta}</span>
+        <span aria-hidden="true" style={s('position:absolute;right:44px;top:56px;width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.14)')} />
+        <span className="serif" style={s('font-size:32px;line-height:1.1;position:relative;max-width:250px')}>{hero.title}</span>
+        <span style={s('font-size:17px;line-height:1.4;position:relative')}>{hero.sub}</span>
+        <span style={s(`margin-top:10px;align-self:flex-start;height:48px;padding:0 24px;border-radius:24px;background:${hero.fg === '#FFFFFF' ? '#FFFFFF' : '#1E2430'};color:${hero.fg === '#FFFFFF' ? hero.bg : '#FFFFFF'};display:flex;align-items:center;gap:8px;font-size:17px;font-weight:600;position:relative`)}>{hero.cta}</span>
       </button>
-      <div style={s('display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px')}>
+      <div role="group" aria-label="Other things to try" style={s('display:flex;gap:8px;overflow-x:auto;margin:0 -24px;padding:0 24px 2px')}>
         {hero.more.map(k => (
-          <button key={k} onClick={sg[k].run} data-track={`home.more.${k}`} style={s('text-align:left;border:none;border-radius:22px;padding:14px 12px;background:#FFFFFF;display:flex;flex-direction:column;gap:8px;box-shadow:0 8px 22px rgba(30,36,48,.05);min-height:112px')}>
-            <span style={s(`width:36px;height:36px;border-radius:50%;background:${sg[k].tint};display:grid;place-items:center`)}><Svg d={sg[k].icon} size={18} stroke="#1E2430" /></span>
-            <span style={s('font-size:15px;font-weight:600;line-height:1.2')}>{sg[k].label}</span>
-            <span style={s('font-size:12px;color:#636B78')}>{sg[k].meta}</span>
+          <button key={k} onClick={sg[k].run} data-track={`home.more.${k}`} style={s('flex:none;height:48px;padding:0 18px 0 8px;border-radius:24px;border:none;background:#FFFFFF;display:flex;align-items:center;gap:10px;box-shadow:0 6px 18px rgba(30,36,48,.05);font-size:15px;font-weight:600')}>
+            <span style={s(`width:32px;height:32px;border-radius:50%;background:${sg[k].tint};display:grid;place-items:center`)}><Svg d={sg[k].icon} size={16} stroke="#1E2430" /></span>{sg[k].label}
           </button>
         ))}
       </div>
 
-      <Label right={<button onClick={() => go('journey')} style={s('border:none;background:none;font-size:14px;font-weight:600;color:#2F2A5E;padding:0;min-height:44px')}>All steps</button>}>Tiny steps today</Label>
-      {notes.length === 0 ? (
-        <button onClick={() => { void addPlanItem('Drink a glass of water'); }} style={s('border:1.5px dashed #D6CDBE;background:none;border-radius:18px;height:56px;text-align:left;padding:0 16px;font-size:15px;font-weight:600;color:#636B78')}>+ Add a tiny step. Try “Drink a glass of water”</button>
-      ) : (
-        <div style={s('display:flex;gap:10px;overflow-x:auto;margin:0 -20px;padding:4px 20px 8px')}>
-          {notes.map((p, i) => (
-            <button key={p.id} onClick={() => void togglePlan(p.id)} role="checkbox" aria-checked={p.done} aria-label={p.label} data-track="home.step" style={{ ...s(`flex:none;width:132px;height:124px;border:none;border-radius:6px 6px 18px 6px;background:${NOTE_BG[i % 4]};padding:14px;text-align:left;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 6px 14px rgba(30,36,48,.08)`), transform: `rotate(${NOTE_ROT[i % 4]})` }}>
-              <span style={s(`font-size:15px;font-weight:600;line-height:1.3;text-decoration:${p.done ? 'line-through' : 'none'};opacity:${p.done ? 0.65 : 1}`)}>{p.label}</span>
-              <span style={s(`width:28px;height:28px;border-radius:50%;border:2px solid #1E2430;background:${p.done ? '#1E2430' : 'transparent'};display:grid;place-items:center`)}><Svg d={I.check} size={14} stroke="#FFFFFF" sw={3} style={{ opacity: p.done ? 1 : 0 }} /></span>
-            </button>
-          ))}
-        </div>
-      )}
+      <Label right={<button onClick={() => go('journey')} style={s('border:none;background:none;font-size:15px;font-weight:600;color:#2F2A5E;padding:0;min-height:44px')}>All steps</button>}>Tiny steps today</Label>
+      <section aria-label="Tiny steps today" style={s('background:#FFFFFF;border-radius:28px;padding:20px 0 16px;display:flex;flex-direction:column;gap:14px;box-shadow:0 10px 28px rgba(30,36,48,.05)')}>
+        {plan.length > 0 && (
+          <div style={s('padding:0 20px;display:flex;flex-direction:column;gap:8px')}>
+            <div style={s('display:flex;justify-content:space-between;font-size:15px')}><span style={s('font-weight:600')}>{doneN === plan.length ? 'All done. That counts.' : doneN ? 'Nicely going' : 'Whenever you’re ready'}</span><span style={s('color:var(--muted)')}>{doneN} of {plan.length}</span></div>
+            <div role="progressbar" aria-label="Tiny steps done today" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} style={s('height:10px;border-radius:5px;background:#EFE9DD;overflow:hidden')}><div style={s(`height:100%;width:${Math.max(pct, 4)}%;border-radius:5px;background:linear-gradient(90deg,#6F6BB8,#F2B33D);transition:width 600ms cubic-bezier(.22,.61,.36,1)`)} /></div>
+          </div>
+        )}
+        {notes.length === 0 ? (
+          <button onClick={() => { void addPlanItem('Drink a glass of water'); }} style={s('margin:0 20px;border:1.5px dashed #D6CDBE;background:none;border-radius:18px;height:56px;text-align:left;padding:0 16px;font-size:17px;font-weight:600;color:var(--muted)')}>+ Add a tiny step</button>
+        ) : (
+          <div style={s('display:flex;gap:10px;overflow-x:auto;padding:4px 20px 6px')}>
+            {notes.map((p, i) => (
+              <button key={p.id} onClick={() => void togglePlan(p.id)} role="checkbox" aria-checked={p.done} aria-label={p.label} data-track="home.step" style={{ ...s(`flex:none;width:140px;height:124px;border:none;border-radius:8px 8px 20px 8px;background:${NOTE_BG[i % NOTE_BG.length]};padding:14px;display:flex;flex-direction:column;justify-content:space-between;text-align:left;box-shadow:0 6px 14px rgba(30,36,48,.08)`), transform: `rotate(${NOTE_ROT[i % NOTE_ROT.length]}deg)` }}>
+                <span style={s(`font-size:15px;font-weight:600;line-height:1.3;text-decoration:${p.done ? 'line-through' : 'none'};opacity:${p.done ? 0.65 : 1}`)}>{p.label}</span>
+                <span style={s(`width:28px;height:28px;border-radius:50%;border:2px solid #1E2430;background:${p.done ? '#1E2430' : 'transparent'};display:grid;place-items:center`)}><Svg d={I.check} size={14} stroke="#FFFFFF" sw={3} style={{ opacity: p.done ? 1 : 0 }} /></span>
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
 
       {events.length > 0 && (
         <>
-          <Label right={<span style={s('font-size:13px;color:#636B78')}>{city ?? ''}</span>}>Out this week</Label>
-          <div style={s('display:flex;gap:10px;overflow-x:auto;margin:0 -20px;padding:0 20px 4px')}>
+          <Label right={<span style={s('font-size:15px;color:var(--muted)')}>{city ?? ''}</span>}>Out this week</Label>
+          <div style={s('display:flex;gap:10px;overflow-x:auto;margin:0 -24px;padding:0 24px 4px')}>
             {events.map((e, i) => (
-              <button key={e.id} onClick={() => setV3({ sheet: { id: 'event', eventId: e.id } })} data-track="home.event" style={s('flex:none;width:210px;border:none;border-radius:24px;overflow:hidden;background:#FFFFFF;text-align:left;padding:0;display:flex;flex-direction:column;box-shadow:0 8px 22px rgba(30,36,48,.06)')}>
+              <button key={e.id} onClick={() => setV3({ sheet: { id: 'event', eventId: e.id } })} data-track="home.event" style={s('flex:none;width:220px;border:none;border-radius:24px;overflow:hidden;background:#FFFFFF;text-align:left;padding:0;display:flex;flex-direction:column;box-shadow:0 8px 22px rgba(30,36,48,.06)')}>
                 <div style={s(`height:84px;background:${EVENT_BG[i % 3]};position:relative;padding:12px`)}>
-                  <span style={s('background:rgba(255,255,255,.92);border-radius:12px;padding:4px 10px;font-size:12px;font-weight:700')}>{dayOf(e.startsAt)}</span>
-                  {e.interested && <span style={s('position:absolute;right:12px;top:12px;background:#2F2A5E;color:#FFFFFF;border-radius:12px;padding:4px 10px;font-size:12px;font-weight:700')}>Going</span>}
+                  <span style={s('background:rgba(255,255,255,.92);border-radius:12px;padding:4px 10px;font-size:13px;font-weight:700')}>{dayOf(e.startsAt)}</span>
+                  {e.interested && <span style={s('position:absolute;right:12px;top:12px;background:#2F2A5E;color:#FFFFFF;border-radius:12px;padding:4px 10px;font-size:13px;font-weight:700')}>Going</span>}
                 </div>
-                <div style={s('padding:12px 14px 14px;display:flex;flex-direction:column;gap:2px')}><span style={s('font-size:16px;font-weight:700')}>{e.title}</span><span style={s('font-size:13px;color:#636B78')}>{e.venue}</span></div>
+                <div style={s('padding:12px 16px 16px;display:flex;flex-direction:column;gap:2px')}><span style={s('font-size:17px;font-weight:700')}>{e.title}</span><span style={s('font-size:15px;color:var(--muted)')}>{e.venue}</span></div>
               </button>
             ))}
           </div>
         </>
       )}
 
-      <button onClick={() => go('journey')} data-track="home.month" style={s('margin-top:8px;border:none;border-radius:24px;padding:14px 16px;background:#E0EFE5;display:flex;align-items:center;gap:14px;text-align:left')}>
-        <div aria-hidden="true" style={s('flex:none;display:flex;gap:3px;align-items:flex-end;height:40px')}>
-          {SONG_ROWS.map((row, i) => { const on = showToday.some(k => row.kinds.includes(k)); return <span key={row.label} style={s(`width:8px;height:${on ? 22 + (i % 3) * 7 : 8}px;border-radius:4px;background:${row.color}`)} />; })}
+      <button onClick={() => go('journey')} data-track="home.month" style={s('margin-top:4px;border:none;border-radius:28px;padding:18px 20px;background:#E0EFE5;display:flex;align-items:center;gap:16px;text-align:left')}>
+        <div aria-hidden="true" style={s('flex:none;display:flex;gap:3px;align-items:flex-end;height:44px')}>
+          {SONG_ROWS.map((row, i) => { const on = showToday.some(k => row.kinds.includes(k)); return <span key={row.label} style={s(`width:8px;height:${on ? 24 + (i % 3) * 7 : 8}px;border-radius:4px;background:${row.color}`)} />; })}
         </div>
         <div style={s('flex:1;display:flex;flex-direction:column;gap:2px')}>
-          <span style={s('font-size:15px;font-weight:700')}>This month</span>
-          <span style={s('font-size:13px;opacity:.8')}>{today.length ? `Today added ${today.length} thing${today.length > 1 ? 's' : ''} to it.` : 'Nothing yet today. One small thing adds to it.'}</span>
+          <span style={s('font-size:17px;font-weight:700')}>This month</span>
+          <span style={s('font-size:15px;opacity:.8')}>{today.length ? `Today added ${today.length} thing${today.length > 1 ? 's' : ''} to it.` : 'Nothing yet today. One small thing adds to it.'}</span>
         </div>
         <Svg d={I.chev} size={16} sw={2} />
       </button>

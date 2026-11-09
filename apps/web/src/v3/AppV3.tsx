@@ -2,10 +2,11 @@ import { Suspense, lazy, useEffect, useRef } from 'react';
 import { startCheckin, dismissCard, go, loadToday, closeSheet as closeStoreSheet } from '../state/actions';
 import { useAppLifecycle } from '../state/lifecycle';
 import { getState, useStore, type Screen } from '../state/store';
-import { getV3, moodSkipped, setV3, useV3 } from './ui';
-import { setV2, useV2 } from '../v2/ui';
+import { getV3, setV3, shouldAskMood, useV3 } from './ui';
+import { useTheme } from './theme';
 import { BannerView, HelpSheet, TabBar, Toast } from './Chrome';
 import { Home } from './Home';
+import { AgeV3, CompanionV3, ConsentV3, SignInV3, UnderV3, WelcomeV3 } from './Onboard';
 import { MoodScreen, WhyScreen } from './Mood';
 import { V3Sheets, EventSheet } from './Sheets';
 import { MonthTab } from './Month';
@@ -30,6 +31,16 @@ const LEGACY_SHEETS = ['plan', 'planedit', 'trusted', 'letter', 'jread', 'mic', 
 const TAB_SCREENS: Partial<Record<Screen, () => JSX.Element>> = { today: Home, calm: Relax, talk: TalkTab, journal: JournalTab, journey: MonthTab, you: YouTab };
 const FULL_SCREENS: Partial<Record<Screen, () => JSX.Element>> = { call: CallScreen, chat: ChatScreen, walk: WalkScreen, jcompose: Compose };
 
+/** One component for name and otp, so the code box opens on the same screen the number was typed on. */
+function OnboardingV3({ screen }: { screen: Screen }) {
+  if (screen === 'welcome') return <WelcomeV3 />;
+  if (screen === 'under') return <UnderV3 />;
+  if (screen === 'companion') return <CompanionV3 />;
+  if (screen === 'consent') return <ConsentV3 />;
+  if (screen === 'name' || screen === 'otp' || screen === 'lang') return <SignInV3 step={screen === 'otp' ? 'otp' : 'name'} />;
+  return <AgeV3 />;
+}
+
 function Splash() {
   return <div role="status" aria-live="polite" style={s('position:absolute;inset:0;display:grid;place-items:center;text-align:center;background:#FAF6EF')}><div><div className="serif" style={s('font-size:44px')}>Saathi</div><div style={s('color:#636B78;margin-top:6px')}>One moment…</div></div></div>;
 }
@@ -51,28 +62,34 @@ export function AppV3() {
   const sheet = useV3(x => x.sheet);
   const banner = useV3(x => x.banner);
   const asked = useRef(false);
+  const theme = useTheme();
 
   useEffect(() => { document.documentElement.dataset.reduce = reduce ? 'true' : ''; }, [reduce]);
   useEffect(() => { document.title = discreet ? 'Calm' : 'Saathi'; }, [discreet]);
 
-  // The first thing, once a day: how are you? Skipping is fine, and it is not asked again until tomorrow.
+  // The first thing when they come back after a few hours away: how are you? Skipping is fine, and it is not asked again until the next time.
+  // It waits for a quiet moment (a tab, nothing open over it), so it never lands in the middle of a call or a breath.
+  const askIfAway = () => {
+    const g = getState(), v = getV3();
+    if (g.phase !== 'in' || v.over || v.sheet || g.crisis || g.breathe || g.player || g.sheet || !(g.screen in TAB_SCREENS) || !shouldAskMood()) return;
+    setV3({ over: 'mood', banner: null, bannerShown: true });
+  };
   useEffect(() => {
     if (phase !== 'in') { asked.current = false; return; }
-    if (asked.current) return;
-    asked.current = true;
-    void loadToday().then(() => { if (getState().mood === null && !moodSkipped()) setV3({ over: 'mood' }); });
-  }, [phase]);
+    if (!asked.current) { asked.current = true; void loadToday(); }
+    askIfAway();
+  }, [phase, screen]);
+  useEffect(() => {
+    const on = () => { if (document.visibilityState === 'visible') askIfAway(); };
+    document.addEventListener('visibilitychange', on);
+    return () => document.removeEventListener('visibilitychange', on);
+  }, []);
 
   // A real card from the app (a quiet check-in the person asked for) arrives as a banner, never a pop-up that blocks anything.
   useEffect(() => {
     const c = cards.find(x => x.kind === 'checkin');
-    if (phase === 'in' && c && !getV3().bannerShown && !getState().crisis) setV3({ bannerShown: true, banner: { text: 'A quiet moment for you? Your check-in is here whenever you are.', go: 'checkin' } });
-  }, [cards, phase]);
-
-  // The last step of sign-up leaves the screen where it was, and the older design then shows its own next step. Here, they arrive.
-  // (The older sign-up marks that moment by asking for a first seed, which this design does not have.)
-  const signedUpJustNow = useV2(x => x.seed);
-  useEffect(() => { if (signedUpJustNow) { setV2({ seed: false }); go('today'); } }, [signedUpJustNow]);
+    if (phase === 'in' && c && !over && !getV3().bannerShown && !getState().crisis) setV3({ bannerShown: true, banner: { text: 'A quiet moment for you? Your check-in is here whenever you are.', go: 'checkin' } });
+  }, [cards, phase, over]);
 
   const onboarding = ONBOARDING.includes(screen);
   const inApp = phase === 'in' && !onboarding;
@@ -92,13 +109,14 @@ export function AppV3() {
   };
 
   return (
-    <div className="v3">
+    <div className="v3" style={{ '--tint': theme.tint, '--wash': theme.wash } as React.CSSProperties}>
       <div className="stage">
         <div className="app">
           <div style={{ position: 'absolute', inset: 0 }} {...(behind ? { inert: '' as unknown as boolean, 'aria-hidden': true } : {})}>
             {phase === 'booting' && <Splash />}
-            {onboarding && phase !== 'booting' && lazyLegacy('onboarding', screen)}
-            {inApp && Tab && <Tab key={screen} />}
+            {onboarding && phase !== 'booting' && <OnboardingV3 screen={screen} />}
+            {/* While the first question is up, Home is not behind it: there is one screen, one heading, nothing to land on by mistake. */}
+            {inApp && Tab && over !== 'mood' && over !== 'why' && <Tab key={screen} />}
             {inApp && !Tab && !Full && !legacyScreen && screen === 'outside' && <Redirect to="today" />}
             {inApp && Full && <Full />}
             {inApp && legacyScreen && lazyLegacy('screen', screen)}

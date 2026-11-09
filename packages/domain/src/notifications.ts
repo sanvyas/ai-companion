@@ -70,20 +70,50 @@ export interface NotifContent { title: string; body: string; route: string; tag:
 
 const GENERIC = 'A quiet moment for you?';
 
+/** What the app knows that makes a nudge about them and not about the app. All of it is optional; every line reads well without it. */
+export interface NotifContext {
+  nick?: string;
+  /** How they said they were the last time they did, on an earlier day (0 heaviest, 4 lightest). */
+  lastMood?: number | null;
+  /** The hour where they are, 0-23. */
+  hour?: number;
+  /** A tiny step they have for today and have not done yet. */
+  stepLabel?: string;
+  /** Something they said helped them the last time they felt low. */
+  helped?: 'breathe' | 'walk' | 'talk' | 'journal' | 'play' | 'friend' | 'sleep' | 'out' | null;
+}
+
+const HELPED_LINE: Record<NonNullable<NotifContext['helped']>, string> = {
+  breathe: 'A slow breath helped last time.', walk: 'A walk helped last time.', talk: 'Talking it through helped last time.', journal: 'Writing it down helped last time.',
+  play: 'A little play helped last time.', friend: 'Calling a friend helped last time.', sleep: 'A proper rest helped last time.', out: 'Getting out helped last time.',
+};
+
 /**
  * Lock-screen copy. With previews off every message is the same generic line, and discreet mode drops the app name
- * (PRD 8.8). Event details are only shown when previews are on.
+ * (PRD 8.8). Event details and anything personal are only shown when previews are on. Each line is something a friend could say:
+ * it names the person, mentions what they told us, and offers one thing to tap. Never a streak, never guilt.
  */
-export function buildContent(kind: NotifKind, o: { previews: boolean; discreet: boolean; companionName: string; eventTitle?: string; eventTime?: string }): NotifContent {
+export function buildContent(kind: NotifKind, o: { previews: boolean; discreet: boolean; companionName: string; eventTitle?: string; eventTime?: string; ctx?: NotifContext }): NotifContent {
   const title = o.discreet ? 'Calm' : o.previews ? o.companionName : 'Saathi';
   const base = { title, tag: kind, timeSensitive: kind === 'leave' };
+  const c = o.ctx ?? {};
+  const you = c.nick?.trim() ? `${c.nick.trim()}, ` : '';
+  const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+  const heavy = c.lastMood !== undefined && c.lastMood !== null && c.lastMood <= 1;
+  const morning = c.hour !== undefined && c.hour < 12;
+  const help = heavy && c.helped ? ` ${HELPED_LINE[c.helped]}` : '';
+  const checkinBody = heavy ? `${cap(you)}yesterday felt heavy. How are you today?${help}`
+    : morning ? `${cap(you)}how’s your morning going? Two minutes, whenever suits.` : 'Ready for your evening check-in? Two minutes, whenever suits.';
+  const checkinActions = heavy && c.helped === 'breathe'
+    ? [{ action: 'breathe', title: 'Breathe' }, { action: 'talk', title: 'Talk now' }, { action: 'later', title: 'Later' }]
+    : [{ action: 'talk', title: 'Talk now' }, { action: 'type', title: 'Type' }, { action: 'later', title: 'Later' }];
   const rich: Record<NotifKind, { body: string; route: string; actions: { action: string; title: string }[] }> = {
-    checkin: { body: 'Ready for your evening check-in? Two minutes, whenever suits.', route: 'checkin', actions: [{ action: 'talk', title: 'Talk now' }, { action: 'type', title: 'Type' }, { action: 'later', title: 'Later' }] },
-    plan: { body: 'The 10-minute walk you picked. Whenever you’re ready.', route: 'plan', actions: [{ action: 'walk', title: 'Walk with me' }, { action: 'done', title: 'Did it' }, { action: 'skip', title: 'Not today' }] },
-    leave: { body: `${o.eventTitle ?? 'Your plan'}${o.eventTime ? ` at ${o.eventTime}` : ''}. Leave in ten minutes? I can keep you company.`, route: 'walk', actions: [{ action: 'company', title: 'Keep me company' }, { action: 'onway', title: 'On my way' }, { action: 'skip', title: 'Skip it' }] },
-    followup: { body: 'Thinking of you after yesterday. Want to talk?', route: 'talk', actions: [{ action: 'talk', title: 'Talk' }, { action: 'later', title: 'Not now' }] },
-    quietweek: { body: 'No pressure. I’m here when you want.', route: 'today', actions: [{ action: 'open', title: 'Open Saathi' }] },
-    letter: { body: 'Your Sunday letter is here.', route: 'letter', actions: [{ action: 'open', title: 'Open' }] },
+    checkin: { body: checkinBody, route: 'checkin', actions: checkinActions },
+    plan: { body: c.stepLabel ? `A small one for today: “${c.stepLabel}”. Want company while you do it?` : 'The 10-minute walk you picked. Whenever you’re ready.', route: 'plan', actions: [{ action: 'walk', title: 'Walk with me' }, { action: 'done', title: 'Did it' }, { action: 'skip', title: 'Not today' }] },
+    leave: { body: `${o.eventTitle ?? 'Your plan'}${o.eventTime ? ` at ${o.eventTime}` : ''}. Leave in ten minutes? I can keep you company.`, route: 'walk', actions: [{ action: 'company', title: 'Keep me company' }, { action: 'later', title: 'I’m fine' }] },
+    followup: { body: `${cap(you)}thinking of you after yesterday. Want to talk, or just breathe for a minute?`, route: 'talk', actions: [{ action: 'talk', title: 'Talk' }, { action: 'breathe', title: 'Breathe' }, { action: 'later', title: 'Not now' }] },
+    quietweek: { body: `${cap(you)}no pressure. Your little garden is still here, and so am I.`, route: 'today', actions: [{ action: 'open', title: 'Open Saathi' }] },
+    letter: { body: `${cap(you)}your Sunday letter is here. A few kind lines about your week.`, route: 'letter', actions: [{ action: 'open', title: 'Open' }] },
   };
   const r = rich[kind];
   return { ...base, body: o.previews ? r.body : GENERIC, route: r.route, actions: o.previews ? r.actions : [] };

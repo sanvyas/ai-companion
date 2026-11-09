@@ -319,6 +319,8 @@ export function bindUi() {
 export function handleNotificationOpen(route: string, _kind: string, action: string) {
   void _kind;
   if (action === 'later' || action === 'skip') return;
+  // A button on the notification itself goes straight to the thing it offered.
+  if (action === 'breathe') { openBreathe(); return; }
   switch (route) {
     case 'checkin': if (action === 'type') void openChat(); else void startCheckin(); return;
     case 'walk': if (action === 'company') void startWalkFlow(); else go('outside'); return;

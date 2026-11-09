@@ -73,6 +73,27 @@ describe('phone OTP sign-in', () => {
     expect(after.rows[0].n).toBe(before.rows[0].n);
   });
 
+  it('does not ask a returning person their age again, and never makes an account for them', async () => {
+    const known = newPhone();
+    await signIn(t, known, 'Meera');
+    await withSystem(t.ctx.db, tx => tx.query('DELETE FROM otp_challenges WHERE target_hash = $1', [t.ctx.crypto.lookupHash('phone', `+91${known}`)])); // the resend wait is not what this checks
+    const start = await t.app.inject({ method: 'POST', url: '/auth/otp/start', payload: { phone: `+91${known}`, ageConfirmed18: false, returning: true } });
+    expect(start.statusCode).toBe(200);
+    const { challengeId, devCode } = start.json();
+    const back = await t.app.inject({ method: 'POST', url: '/auth/otp/verify', payload: { phone: `+91${known}`, code: devCode, challengeId, ageConfirmed18: false, returning: true } });
+    expect(back.statusCode).toBe(200);
+    expect(back.json().isNewUser).toBe(false);
+
+    // Someone who says they have an account and does not is sent to sign-up. Nothing is created.
+    const stranger = newPhone();
+    const s2 = await t.app.inject({ method: 'POST', url: '/auth/otp/start', payload: { phone: `+91${stranger}`, ageConfirmed18: false, returning: true } });
+    const v2 = await t.app.inject({ method: 'POST', url: '/auth/otp/verify', payload: { phone: `+91${stranger}`, code: s2.json().devCode, challengeId: s2.json().challengeId, ageConfirmed18: false, returning: true } });
+    expect(v2.statusCode).toBe(403);
+    expect(v2.json().error.code).toBe('no_account');
+    const made = await withSystem(t.ctx.db, tx => tx.query('SELECT 1 FROM users WHERE phone_hash = $1', [t.ctx.crypto.lookupHash('phone', `+91${stranger}`)]));
+    expect(made.rowCount).toBe(0);
+  });
+
   it('rejects malformed phone numbers and bodies', async () => {
     expect((await t.app.inject({ method: 'POST', url: '/auth/otp/start', payload: { phone: '12345678', ageConfirmed18: true } })).json().error.code).toBe('invalid_phone');
     expect((await t.app.inject({ method: 'POST', url: '/auth/otp/start', payload: {} })).json().error.code).toBe('validation_failed');

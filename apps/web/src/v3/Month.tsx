@@ -10,11 +10,10 @@ import { logActivity } from './actions';
 import { s } from './css';
 import { I, Svg } from './icons';
 import { loadMonthData, useMonthData } from './month-data';
-import { NOTE_BG, NOTE_ROT } from './moods';
 import { setV3, useV3 } from './ui';
 
 const MODE_INFO: Record<MonthMode, { label: string; name: string; desc: string; bg: string; fg: string; dark: boolean }> = {
-  song: { label: 'Song', name: 'Your month as a song', desc: 'Each day adds a sound and a lyric. Four weeks, one album.', bg: 'linear-gradient(180deg,#1C1838 0%,#2F2A5E 100%)', fg: '#FFFFFF', dark: true },
+  song: { label: 'Song', name: 'Your month as a song', desc: 'Each day adds a sound and a lyric. Four weeks, one album.', bg: 'linear-gradient(180deg,#3A3278 0%,#5547A0 100%)', fg: '#FFFFFF', dark: true },
   letters: { label: 'Letters', name: 'Letters, day by day', desc: 'A stamp a day in a weekly envelope. A letter every Sunday.', bg: '#F4EEE3', fg: '#1E2430', dark: false },
   future: { label: 'Future you', name: 'Future you comes into focus', desc: 'A year-from-now you gets clearer with each small thing.', bg: '#FBF1E8', fg: '#1E2430', dark: false },
   guide: { label: 'What works', name: 'Your what-works guide', desc: 'Saathi learns what lifts your mood and writes it down.', bg: '#FAF6EF', fg: '#1E2430', dark: false },
@@ -38,6 +37,7 @@ export function MonthTab() {
   const nick = useStore(x => x.nick);
   const letter = useStore(x => x.letter);
   const [newStep, setNewStep] = useState('');
+  const [more, setMore] = useState(false);
   useEffect(() => { void loadMonthData(); void loadToday(); }, []);
 
   const today = month?.today ?? new Date().toLocaleDateString('en-CA');
@@ -52,24 +52,22 @@ export function MonthTab() {
   const next = MODE_INFO[ORDER[(ORDER.indexOf(own) + 1) % 4]];
 
   return (
-    <div className="screen" data-scroll="1" style={{ ...s(`overflow:auto;background:${info.bg};color:${info.fg};display:flex;flex-direction:column;padding:58px 20px 120px;gap:14px;transition:background 600ms`) }}>
-      <header style={s('display:flex;align-items:flex-start;justify-content:space-between;gap:10px')}>
-        <div style={s('display:flex;flex-direction:column;gap:4px')}>
-          <span style={s('font-size:13px;font-weight:700;opacity:.8;letter-spacing:.06em;text-transform:uppercase')}>{mode === own ? 'This month' : 'Another way to see it'} · {info.label}</span>
-          <h1 className="serif" style={s('font-size:38px;line-height:1;margin:0')}>{info.name}</h1>
-          <p style={s('font-size:15px;opacity:.85;line-height:1.4;margin:0')}>{info.desc}</p>
-        </div>
+    <div className="screen" data-scroll="1" style={{ ...s(`overflow:auto;background:${info.bg};color:${info.fg};display:flex;flex-direction:column;padding:56px 24px 128px;gap:16px;transition:background 600ms`) }}>
+      <header style={s('display:flex;flex-direction:column;gap:6px')}>
+        <span style={s('font-size:13px;font-weight:700;opacity:.8;letter-spacing:.06em;text-transform:uppercase')}>{mode === own ? 'This month' : 'Another way to see it'} · {info.label}</span>
+        <h1 className="serif" style={s('font-size:36px;line-height:1.1;margin:0')}>{info.name}</h1>
+        <p style={s('font-size:17px;opacity:.85;line-height:1.45;margin:0')}>{info.desc}</p>
       </header>
-
-      <div role="tablist" aria-label="Ways to see this month" style={s('display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px')}>
-        {ORDER.map(m => {
-          const on = m === mode;
-          return (
-            <button key={m} role="tab" aria-selected={on} onClick={() => { stopSpeech(); setV3({ view: m === own ? null : m }); }} style={s(`border:none;border-radius:16px;padding:8px 4px;min-height:48px;background:${on ? (info.dark ? '#F2B33D' : '#2F2A5E') : (info.dark ? 'rgba(255,255,255,.12)' : '#FFFFFF')};color:${on ? (info.dark ? '#1C1838' : '#FFFFFF') : 'inherit'};display:flex;flex-direction:column;align-items:center;gap:2px`)}>
-              <span style={s('font-size:11px;font-weight:700;opacity:.8')}>{m === own ? 'This month' : 'Try'}</span><span style={s('font-size:13px;font-weight:700')}>{MODE_INFO[m].label}</span>
-            </button>
-          );
-        })}
+      <div style={s('display:flex;flex-direction:column;gap:10px')}>
+        <button onClick={() => { stopSpeech(); if (mode !== own) { setV3({ view: null }); setMore(false); } else setMore(m => !m); }} aria-expanded={mode === own ? more : undefined} style={s('align-self:flex-start;min-height:44px;padding:0 4px;border:none;background:none;font-size:15px;font-weight:700;text-decoration:underline;text-underline-offset:4px')}>{mode !== own ? `Back to ${MODE_INFO[own].label.toLowerCase()}` : more ? 'Hide other ways' : 'See your month another way'}</button>
+        {more && mode === own && (
+          <div role="tablist" aria-label="Ways to see this month" style={s('display:flex;gap:8px;flex-wrap:wrap')}>
+            {ORDER.filter(m => m !== own).map(m => (
+              <button key={m} role="tab" aria-selected={false} onClick={() => { stopSpeech(); setV3({ view: m }); }} style={s(`height:48px;padding:0 20px;border-radius:24px;border:none;background:${info.dark ? 'rgba(255,255,255,.14)' : '#FFFFFF'};color:inherit;font-size:15px;font-weight:700`)}>{MODE_INFO[m].label}</button>
+            ))}
+            <span style={s('flex-basis:100%;font-size:15px;opacity:.8')}>Next month it becomes {next.name.toLowerCase()}.</span>
+          </div>
+        )}
       </div>
 
       {mode === 'song' && <SongView weeks={weeks} kindsOn={kindsOn} today={today} />}
@@ -77,7 +75,7 @@ export function MonthTab() {
       {mode === 'future' && <FutureView points={total} />}
       {mode === 'guide' && <GuideView help={month?.help ?? []} />}
 
-      <div style={s('display:flex;justify-content:space-between;align-items:baseline;margin-top:6px')}><h2 style={s('font-size:12px;font-weight:700;opacity:.8;letter-spacing:.06em;text-transform:uppercase;margin:0')}>Add something you did today</h2></div>
+      <div style={s('margin-top:8px')}><h2 style={s('font-size:13px;font-weight:700;opacity:.8;letter-spacing:.06em;text-transform:uppercase;margin:0')}>Add something you did today</h2></div>
       <div style={s('display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px')}>
         {ADD.map(k => {
           const done = todayKinds.includes(k);
@@ -89,25 +87,19 @@ export function MonthTab() {
         })}
       </div>
 
-      <div style={s(`border-radius:22px;padding:14px 16px;background:${info.dark ? 'rgba(255,255,255,.08)' : '#FFFFFF'}`)}>
-        <span style={s('font-size:12px;font-weight:700;opacity:.8')}>COMING NEXT MONTH</span><br />
-        <span style={s('font-size:16px;font-weight:700')}>{next.name}</span><br />
-        <span style={s('font-size:13px;opacity:.85')}>Your month changes shape, so it never gets old.</span>
-      </div>
-
-      <h2 style={s('font-size:12px;font-weight:700;opacity:.8;letter-spacing:.06em;text-transform:uppercase;margin:6px 0 0')}>Tiny steps</h2>
-      <form onSubmit={e => { e.preventDefault(); const t = newStep.trim(); if (t) { void addPlanItem(t); setNewStep(''); } }} style={s('display:flex;gap:8px')}>
-        <input aria-label="A tiny step" value={newStep} onChange={e => setNewStep(e.target.value)} placeholder="Add a tiny step…" maxLength={120} style={s('flex:1;height:52px;border-radius:26px;border:none;background:#FFFFFF;color:#1E2430;padding:0 20px;font-size:16px;outline:none')} />
-        <button type="submit" aria-label="Add step" style={s('flex:none;width:52px;height:52px;border-radius:50%;border:none;background:#F2B33D;display:grid;place-items:center')}><Svg d={I.plus} size={20} stroke="#1C1838" sw={2.2} /></button>
-      </form>
-      <div style={s('display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding-top:4px;color:#1E2430')}>
-        {[...plan].sort((a, b) => Number(a.done) - Number(b.done)).map((p, i) => (
-          <button key={p.id} role="checkbox" aria-checked={p.done} onClick={() => void togglePlan(p.id)} style={{ ...s(`border:none;border-radius:6px 6px 18px 6px;background:${NOTE_BG[i % 4]};padding:14px;text-align:left;min-height:100px;display:flex;flex-direction:column;justify-content:space-between;gap:10px;color:#1E2430`), transform: `rotate(${NOTE_ROT[i % 4]})` }}>
-            <span style={s(`font-size:15px;font-weight:600;line-height:1.3;text-decoration:${p.done ? 'line-through' : 'none'};opacity:${p.done ? 0.65 : 1}`)}>{p.label}</span>
-            <span style={s('display:flex;justify-content:space-between;align-items:center')}><span style={s('font-size:12px;color:#4A4F5A')}>{{ ai: 'Suggested', user: 'You added', journal: 'From journal', checkin: 'From a check-in' }[p.source]}</span><span aria-hidden="true" style={s(`width:26px;height:26px;border-radius:50%;border:2px solid #1E2430;background:${p.done ? '#1E2430' : 'transparent'};display:grid;place-items:center`)}><Svg d={I.check} size={13} stroke="#FFFFFF" sw={3} style={{ opacity: p.done ? 1 : 0 }} /></span></span>
+      <h2 style={s('font-size:13px;font-weight:700;opacity:.8;letter-spacing:.06em;text-transform:uppercase;margin:8px 0 0')}>Tiny steps</h2>
+      <section aria-label="Tiny steps" style={s('background:#FFFFFF;color:#1E2430;border-radius:28px;padding:8px 18px 18px;display:flex;flex-direction:column')}>
+        {[...plan].sort((a, b) => Number(a.done) - Number(b.done)).map((p, i, all) => (
+          <button key={p.id} role="checkbox" aria-checked={p.done} onClick={() => void togglePlan(p.id)} style={s(`display:flex;align-items:center;gap:14px;text-align:left;border:none;background:none;padding:14px 0;min-height:60px;border-bottom:${i < all.length - 1 ? '1px solid #F1EDE6' : 'none'}`)}>
+            <span aria-hidden="true" style={s(`flex:none;width:28px;height:28px;border-radius:50%;border:2px solid #1E2430;background:${p.done ? '#1E2430' : 'transparent'};display:grid;place-items:center`)}><Svg d={I.check} size={14} stroke="#FFFFFF" sw={3} style={{ opacity: p.done ? 1 : 0 }} /></span>
+            <span style={s('flex:1;display:flex;flex-direction:column;gap:2px')}><span style={s(`font-size:17px;text-decoration:${p.done ? 'line-through' : 'none'};opacity:${p.done ? 0.65 : 1}`)}>{p.label}</span><span style={s('font-size:13px;color:#4A4F5A')}>{{ ai: 'Suggested', user: 'You added', journal: 'From journal', checkin: 'From a check-in' }[p.source]}</span></span>
           </button>
         ))}
-      </div>
+        <form onSubmit={e => { e.preventDefault(); const t = newStep.trim(); if (t) { void addPlanItem(t); setNewStep(''); } }} style={s('display:flex;gap:8px;margin-top:10px')}>
+          <input aria-label="A tiny step" value={newStep} onChange={e => setNewStep(e.target.value)} placeholder="Add a tiny step…" maxLength={120} style={s('flex:1;min-width:0;height:52px;border-radius:26px;border:none;background:#F1EDE6;color:#1E2430;padding:0 20px;font-size:17px;outline:none')} />
+          <button type="submit" aria-label="Add step" style={s('flex:none;width:52px;height:52px;border-radius:50%;border:none;background:#2F2A5E;display:grid;place-items:center')}><Svg d={I.plus} size={20} stroke="#FFFFFF" sw={2.2} /></button>
+        </form>
+      </section>
     </div>
   );
 }
@@ -175,7 +167,7 @@ function SongView({ weeks, kindsOn, today }: { weeks: ReturnType<typeof monthWee
       <div style={s('background:rgba(255,255,255,.07);border-radius:24px;padding:16px 14px;display:flex;flex-direction:column;gap:12px')}>
         <div style={s('display:flex;align-items:center;gap:10px')}>
           <input aria-label="Song title" value={title} onChange={e => save({ ...song, titles: { ...song.titles, [week.start]: e.target.value } })} style={s('flex:1;min-width:0;background:transparent;border:none;border-bottom:1px dashed rgba(255,255,255,.3);color:#FFFFFF;font-family:var(--serif);font-size:26px;padding:2px 0;outline:none')} />
-          <span style={s('font-size:12px;font-weight:700;color:#D6D3F0')}>{sounds} sounds · {style}</span>
+          <span style={s('font-size:12px;font-weight:700;color:#D6D3F0')}>{sounds} {sounds === 1 ? 'sound' : 'sounds'} · {style}</span>
         </div>
         <div role="group" aria-label="Style" style={s('display:flex;gap:6px;overflow-x:auto;margin:0 -14px;padding:0 14px')}>
           {STYLES.map(st => <button key={st} aria-pressed={style === st} onClick={() => save({ ...song, styles: { ...song.styles, [week.start]: st } })} style={s(`flex:none;min-height:44px;padding:0 14px;border-radius:22px;border:none;background:${style === st ? '#F2B33D' : 'rgba(255,255,255,.1)'};color:${style === st ? '#1C1838' : '#FFFFFF'};font-size:13px;font-weight:700`)}>{st}</button>)}

@@ -2,6 +2,7 @@ import { useStore, dayOf } from '../state/store';
 import { addPlanItem, confirmEvent, startWalkFlow } from '../state/actions';
 import { s } from './css';
 import { Sheet } from './Chrome';
+import { InboxSheet } from './Inbox';
 import { MOODS } from './moods';
 import { closeSheet, useV3 } from './ui';
 import type { JournalEntry } from '../api';
@@ -64,5 +65,6 @@ export function V3Sheets() {
   if (!sheet) return null;
   if (sheet.id === 'event') return <EventSheet id={sheet.eventId} />;
   if (sheet.id === 'day') return <DaySheet entryId={sheet.entryId} />;
+  if (sheet.id === 'inbox') return <InboxSheet />;
   return null;
 }

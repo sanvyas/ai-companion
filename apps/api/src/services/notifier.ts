@@ -1,4 +1,4 @@
-import { buildContent, decide, ignoredStreak, type Channel, type NotifKind } from '@saathi/domain';
+import { buildContent, decide, ignoredStreak, type Channel, type NotifContext, type NotifKind } from '@saathi/domain';
 import type { Ctx } from '../context.js';
 import { withSystem } from '../db/pool.js';
 
@@ -41,6 +41,27 @@ async function loadFacts(ctx: Ctx, userId: string, now: Date): Promise<Facts | n
   });
 }
 
+/** What makes the message about this person: their name, how they were, a step they set, and what helped. Read only once a send is allowed. */
+async function personalContext(ctx: Ctx, userId: string, f: Facts, dek: Buffer): Promise<NotifContext> {
+  return withSystem(ctx.db, async tx => {
+    const tz = f.user.timezone;
+    const u = (await tx.query<{ nickname: string }>('SELECT nickname FROM users WHERE id = $1', [userId])).rows[0];
+    const mood = (await tx.query<{ value: number }>(
+      `SELECT value FROM mood_logs WHERE user_id = $1 AND day < ($2::timestamptz AT TIME ZONE $3)::date AND day >= ($2::timestamptz AT TIME ZONE $3)::date - 2 ORDER BY day DESC LIMIT 1`, [userId, new Date(), tz])).rows[0];
+    const step = (await tx.query<{ label_enc: Buffer }>(
+      `SELECT label_enc FROM plan_items WHERE user_id = $1 AND day = ($2::timestamptz AT TIME ZONE $3)::date AND NOT done ORDER BY created_at LIMIT 1`, [userId, new Date(), tz])).rows[0];
+    const helped = (await tx.query<{ kind: NonNullable<NotifContext['helped']> }>(
+      `SELECT kind FROM activity_log WHERE user_id = $1 AND helped = true AND kind IN ('breathe','walk','talk','journal','play','friend','sleep','out') AND created_at > now() - interval '90 days' GROUP BY kind ORDER BY count(*) DESC, max(created_at) DESC LIMIT 1`, [userId])).rows[0];
+    return {
+      nick: u?.nickname || undefined,
+      lastMood: mood?.value ?? null,
+      hour: Math.floor(f.localMinutes / 60),
+      stepLabel: step ? ctx.crypto.decrypt(dek, userId, 'plan', step.label_enc) : undefined,
+      helped: helped?.kind ?? null,
+    };
+  });
+}
+
 const log = (ctx: Ctx, userId: string, kind: string, channel: 'push' | 'call' | 'card', outcome: string, at: Date) =>
   withSystem(ctx.db, tx => tx.query('INSERT INTO notification_log (user_id, kind, channel, outcome, created_at) VALUES ($1,$2,$3,$4,$5)', [userId, kind, channel, outcome, at]));
 
@@ -60,12 +81,13 @@ export async function notify(ctx: Ctx, userId: string, kind: NotifKind, now: Dat
 
   if (!ctx.push.enabled) { await log(ctx, userId, kind, 'push', 'failed', now); return { sent: false, reason: 'push_not_configured' }; }
 
-  const content = buildContent(kind, { previews: f.privacy.previews, discreet: f.privacy.discreet, companionName: f.user.companionName, eventTitle: extra.eventTitle, eventTime: extra.eventTime });
   const devices = await withSystem(ctx.db, tx => tx.query<{ id: string; token_enc: Buffer }>(`SELECT id, token_enc FROM devices WHERE user_id = $1 AND platform = 'web'`, [userId]));
   if (!devices.rowCount) { await log(ctx, userId, kind, 'push', 'failed', now); return { sent: false, reason: 'no_devices' }; }
 
   const { getDek } = await import('./users.js');
   const dek = await getDek(ctx, userId);
+  // Nothing personal is read unless it could be shown: with previews off the message is the same generic line for everyone.
+  const content = buildContent(kind, { previews: f.privacy.previews, discreet: f.privacy.discreet, companionName: f.user.companionName, eventTitle: extra.eventTitle, eventTime: extra.eventTime, ctx: f.privacy.previews ? await personalContext(ctx, userId, f, dek) : undefined });
   let delivered = 0;
   for (const dev of devices.rows) {
     try {

@@ -91,14 +91,14 @@ export class HttpApi implements Api {
 
   // ---------------------------------------------------------------------------------------------- session
   async restoreSession() { if (!readRt()) return false; return this.refresh(); }
-  otpStart = (phone: string, age18: boolean) => this.req<Awaited<ReturnType<Api['otpStart']>>>('POST', '/auth/otp/start', { phone, ageConfirmed18: age18 }, { auth: false });
+  otpStart = (phone: string, age18: boolean, returning?: boolean) => this.req<Awaited<ReturnType<Api['otpStart']>>>('POST', '/auth/otp/start', { phone, ageConfirmed18: age18, returning }, { auth: false });
   async otpVerify(b: Parameters<Api['otpVerify']>[0]) {
-    const s = await this.req<{ accessToken: string; refreshToken: string; isNewUser: boolean; pendingDeletion: boolean }>('POST', '/auth/otp/verify', { phone: b.phone, code: b.code, challengeId: b.challengeId, ageConfirmed18: b.age18, nickname: b.nickname, deviceLabel: navigator.userAgent.slice(0, 80) }, { auth: false });
+    const s = await this.req<{ accessToken: string; refreshToken: string; isNewUser: boolean; pendingDeletion: boolean }>('POST', '/auth/otp/verify', { phone: b.phone, code: b.code, challengeId: b.challengeId, ageConfirmed18: b.age18, returning: b.returning, nickname: b.nickname, deviceLabel: navigator.userAgent.slice(0, 80) }, { auth: false });
     this.take(s);
     return { isNewUser: s.isNewUser, pendingDeletion: s.pendingDeletion };
   }
   async googleSignIn(b: Parameters<Api['googleSignIn']>[0]) {
-    const s = await this.req<{ accessToken: string; refreshToken: string; isNewUser: boolean; pendingDeletion: boolean }>('POST', '/auth/google', { idToken: b.idToken, ageConfirmed18: b.age18, nickname: b.nickname, deviceLabel: navigator.userAgent.slice(0, 80) }, { auth: false });
+    const s = await this.req<{ accessToken: string; refreshToken: string; isNewUser: boolean; pendingDeletion: boolean }>('POST', '/auth/google', { idToken: b.idToken, ageConfirmed18: b.age18, returning: b.returning, nickname: b.nickname, deviceLabel: navigator.userAgent.slice(0, 80) }, { auth: false });
     this.take(s);
     return { isNewUser: s.isNewUser, pendingDeletion: s.pendingDeletion };
   }

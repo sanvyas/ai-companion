@@ -4,6 +4,7 @@ html,body,#root{height:100%;margin:0}
 body{background:#FAF6EF}
 .v3{
   --bg:#FAF6EF; --ink:#1E2430; --muted:#636B78; --indigo:#2F2A5E; --card:#FFFFFF; --line:#E5DED2; --soft:#F1EDE6; --gold:#F2B33D; --help:#9A3B1E;
+  --tint:#F1EAF8; --wash:#F7F2FB;
   --serif:'Instrument Serif','Noto Serif Devanagari',Georgia,serif; --sans:'Figtree Variable','Noto Sans Devanagari',system-ui,sans-serif;
   font-family:var(--sans); color:var(--ink); -webkit-font-smoothing:antialiased; height:100%;
 }
@@ -48,3 +49,23 @@ html[data-reduce="true"] .v3 *{animation-duration:.001ms!important;animation-ite
 .v3 .legacy{position:absolute;inset:0;z-index:200;pointer-events:none}
 .v3 .legacy>*{pointer-events:auto}
 .v3 .legacy .screen{inset:0}
+
+/* The living garden on Home: everything moves slowly, and nothing moves at all for people who ask for that (rule above). */
+.v3 .v3-sway{transform-box:fill-box;transform-origin:50% 100%;animation:kSway 4s ease-in-out infinite}
+@keyframes kSway{0%,100%{transform:rotate(-3.5deg)}50%{transform:rotate(3.5deg)}}
+.v3 .v3-drift{animation:kDrift 70s linear infinite}
+.v3 .v3-drift2{animation:kDrift 95s linear infinite reverse}
+@keyframes kDrift{from{transform:translateX(-60px)}to{transform:translateX(330px)}}
+.v3 .v3-glow{animation:kGlow 6s ease-in-out infinite}
+@keyframes kGlow{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+.v3 .v3-twinkle{animation:kTwinkle 3.4s ease-in-out infinite}
+@keyframes kTwinkle{0%,100%{opacity:.3}50%{opacity:1}}
+.v3 .v3-fly{animation:kFly 24s ease-in-out infinite}
+.v3 .v3-fly2{animation-duration:31s;animation-delay:-11s}
+@keyframes kFly{0%{transform:translate(20px,120px)}20%{transform:translate(110px,84px)}40%{transform:translate(200px,112px)}60%{transform:translate(290px,70px)}80%{transform:translate(180px,90px)}100%{transform:translate(20px,120px)}}
+.v3 .v3-wing{transform-box:fill-box;animation:kFlap .5s ease-in-out infinite alternate}
+.v3 .v3-wing:first-child{transform-origin:100% 50%}
+.v3 .v3-wing:nth-child(2){transform-origin:0% 50%}
+@keyframes kFlap{from{transform:scaleX(1)}to{transform:scaleX(.35)}}
+.v3 .v3-petal{position:absolute;left:0;bottom:0;width:10px;height:10px;border-radius:50% 0 50% 50%;opacity:0;animation:kPetal 1.4s ease-out forwards}
+@keyframes kPetal{0%{transform:translate(0,0) rotate(0);opacity:0}15%{opacity:1}100%{transform:translate(var(--dx),-70px) rotate(220deg);opacity:0}}

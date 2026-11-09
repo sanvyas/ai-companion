@@ -11,13 +11,13 @@ export function authRoutes(app: FastifyInstance, ctx: Ctx) {
   const lim = (max: number) => max * ctx.cfg.RATE_LIMIT_SCALE;
   app.post('/auth/otp/start', { config: { rateLimit: { max: lim(10), timeWindow: '1 hour' } } }, async req => {
     const b = parse(OtpStartBody, req.body);
-    return startOtp(ctx, b.phone, b.ageConfirmed18, req.ip);
+    return startOtp(ctx, b.phone, b.ageConfirmed18 || !!b.returning, req.ip);
   });
 
   app.post('/auth/otp/verify', { config: { rateLimit: { max: lim(30), timeWindow: '1 hour' } } }, async req => {
     const b = parse(OtpVerifyBody, req.body);
     const phone = await verifyOtp(ctx, b.phone, b.code, b.challengeId);
-    const u = await resolveUser(ctx, { kind: 'phone', value: phone }, { ageConfirmed18: b.ageConfirmed18, nickname: b.nickname });
+    const u = await resolveUser(ctx, { kind: 'phone', value: phone }, { ageConfirmed18: b.ageConfirmed18, existingOnly: b.returning, nickname: b.nickname });
     const s = await issueSession(ctx, u.userId, { deviceLabel: b.deviceLabel });
     return { ...s, isNewUser: u.isNew, pendingDeletion: u.pendingDeletion };
   });
@@ -25,7 +25,7 @@ export function authRoutes(app: FastifyInstance, ctx: Ctx) {
   app.post('/auth/google', { config: { rateLimit: { max: lim(30), timeWindow: '1 hour' } } }, async req => {
     const b = parse(GoogleBody, req.body);
     const g = await verifyGoogleIdToken({ GOOGLE_CLIENT_ID: ctx.rt.secrets.get('google', 'client_id') }, b.idToken);
-    const u = await resolveUser(ctx, { kind: 'google', value: g.sub }, { ageConfirmed18: b.ageConfirmed18, nickname: b.nickname });
+    const u = await resolveUser(ctx, { kind: 'google', value: g.sub }, { ageConfirmed18: b.ageConfirmed18, existingOnly: b.returning, nickname: b.nickname });
     const s = await issueSession(ctx, u.userId, { deviceLabel: b.deviceLabel });
     return { ...s, isNewUser: u.isNew, pendingDeletion: u.pendingDeletion };
   });

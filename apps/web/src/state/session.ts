@@ -60,13 +60,21 @@ export async function enterApp(fresh: boolean) {
 // ------------------------------------------------------------------------------------------------ sign-in
 const digits = (s: string) => s.replace(/\D/g, '');
 
+const isNoAccount = (e: unknown) => (e as { code?: string })?.code === 'no_account';
+/** They said they had an account and there is none: sign-up, where the age question is asked, takes over. Nothing was created. */
+function noAccount() {
+  set({ authBusy: false, returning: false, age18: false, otpCode: '', devCode: null, authError: null });
+  toastFn('I couldn’t find an account for that number. Let’s set you up.');
+  navigateFn('age');
+}
+
 export async function sendCode(): Promise<boolean> {
   const s = getState();
   if (digits(s.phone).length < 10) { set({ authError: 'Enter your 10-digit mobile number.' }); return false; }
   if (!s.returning && !s.nick.trim()) { set({ authError: 'A nickname helps me say hello. Anything works.' }); return false; }
   set({ authBusy: true, authError: null });
   try {
-    const r = await api.otpStart(s.phone.trim(), s.age18);
+    const r = await api.otpStart(s.phone.trim(), s.age18, s.returning);
     set({ challengeId: r.challengeId, devCode: r.devCode ?? null, otpCode: '', authBusy: false });
     navigateFn('otp');
     return true;
@@ -81,11 +89,12 @@ export async function verifyCode(): Promise<boolean> {
   if (!/^\d{6}$/.test(s.otpCode)) { set({ authError: 'Enter the 6-digit code.' }); return false; }
   set({ authBusy: true, authError: null });
   try {
-    const r = await api.otpVerify({ phone: s.phone.trim(), code: s.otpCode, challengeId: s.challengeId ?? undefined, age18: s.age18, nickname: s.returning ? undefined : s.nick.trim() });
+    const r = await api.otpVerify({ phone: s.phone.trim(), code: s.otpCode, challengeId: s.challengeId ?? undefined, age18: s.age18, returning: s.returning, nickname: s.returning ? undefined : s.nick.trim() });
     set({ authBusy: false, otpCode: '', devCode: null });
     await enterApp(r.isNewUser);
     return true;
   } catch (e) {
+    if (isNoAccount(e)) { noAccount(); return false; }
     set({ authBusy: false, authError: errMsg(e) });
     return false;
   }
@@ -95,10 +104,11 @@ export async function signInWithGoogle(idToken: string): Promise<void> {
   const s = getState();
   set({ authBusy: true, authError: null });
   try {
-    const r = await api.googleSignIn({ idToken, age18: s.age18, nickname: s.nick.trim() || undefined });
+    const r = await api.googleSignIn({ idToken, age18: s.age18, returning: s.returning, nickname: s.nick.trim() || undefined });
     set({ authBusy: false });
     await enterApp(r.isNewUser);
   } catch (e) {
+    if (isNoAccount(e)) { noAccount(); return; }
     set({ authBusy: false, authError: errMsg(e) });
   }
 }

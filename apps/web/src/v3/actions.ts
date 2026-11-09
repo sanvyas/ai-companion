@@ -3,17 +3,18 @@ import { api } from '../api';
 import { errMsg } from '../state/session';
 import { getState, set } from '../state/store';
 import { toast } from '../state/actions';
-import { getV3, skipMood } from './ui';
+import { getV3, markAsked, rememberMood } from './ui';
 
 /** Say how they are. Tapping the same mood again keeps it (unlike the older designs, which let it be cleared). */
 export async function setMood(i: number) {
   const was = getState().mood;
   set({ mood: i });
+  rememberMood(i); markAsked();
   try { await api.logMood(i, 'tap'); } catch (e) { set({ mood: was }); toast(errMsg(e)); }
 }
 
-/** They chose not to say today. Nothing is asked again until tomorrow. */
-export const skipCheckin = () => skipMood();
+/** They chose not to say right now. It is not asked again until they have been away a few hours. */
+export const skipCheckin = () => markAsked();
 
 /** Tell Month about something only they can tell us (a friend they called, a game they played). Quiet if it fails. */
 export function logActivity(kind: MonthKind, helped?: boolean) {

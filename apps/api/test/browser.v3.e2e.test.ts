@@ -6,7 +6,8 @@ import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { chromium, type Browser, type BrowserContext, type Page } from 'playwright';
-import { makeApp, signIn, type Auth, type TestApp } from './app-helpers.js';
+import { withSystem } from '../src/db/pool.js';
+import { makeApp, newPhone, signIn, type Auth, type TestApp } from './app-helpers.js';
 import { listen } from './ws-helpers.js';
 
 // The third design, built the way production builds it, served by the real API and driven in a real browser. It checks what the unit tests
@@ -38,9 +39,9 @@ async function person(): Promise<Auth> {
 }
 const get = async (user: Auth, url: string) => (await t.app.inject({ method: 'GET', url, headers: user.headers })).json();
 
-async function open(user: Auth | null, query = '?ui=3'): Promise<{ page: Page; ctx: BrowserContext; errors: string[] }> {
+async function open(user: Auth | null, query = '?ui=3', asked: number | null = null): Promise<{ page: Page; ctx: BrowserContext; errors: string[] }> {
   const ctx = await browser!.newContext({ viewport: { width: 390, height: 844 } });
-  await ctx.addInitScript(rt => { try { if (rt) localStorage.setItem('saathi.rt', rt); localStorage.setItem('saathi.v2.tour', '1'); } catch { /* blocked */ } }, user?.refreshToken ?? '');
+  await ctx.addInitScript(([rt, at]) => { try { if (rt) localStorage.setItem('saathi.rt', String(rt)); localStorage.setItem('saathi.v2.tour', '1'); if (at !== null) localStorage.setItem('saathi.v3.asked', String(at)); } catch { /* blocked */ } }, [user?.refreshToken ?? '', asked] as const);
   const page = await ctx.newPage();
   page.setDefaultTimeout(10_000);
   const errors: string[] = [];
@@ -80,7 +81,7 @@ describe('the third design', () => {
     await page.getByRole('heading', { level: 1 }).filter({ hasText: 'How are you' }).waitFor();
     problems.push(...await scan(page, 'mood'));
     await page.getByRole('button', { name: /^Anxious/ }).click();
-    await page.getByRole('heading', { level: 1 }).filter({ hasText: 'What’s it about' }).waitFor();
+    await page.getByRole('heading', { level: 1 }).filter({ hasText: 'What’s making it feel anxious' }).waitFor();
     problems.push(...await scan(page, 'why'));
     await page.getByRole('button', { name: 'Work', exact: true }).click();
     await page.getByRole('button', { name: 'Continue', exact: true }).click();
@@ -88,11 +89,11 @@ describe('the third design', () => {
     expect((await monthToday()).mood).toBe(1);
     problems.push(...await scan(page, 'home'));
 
-    // A tiny step, from the paper notes on Home.
+    // A tiny step, from the notes under the progress bar on Home.
     await page.getByRole('button', { name: /Add a tiny step/ }).click().catch(() => undefined);
     await page.getByRole('checkbox').first().waitFor({ timeout: 8000 });
     await page.getByRole('checkbox').first().click();
-    expect((await get(user, '/plan/today')).items.some((p: { done: boolean }) => p.done)).toBe(true);
+    await expect.poll(async () => (await get(user, '/plan/today')).items.some((p: { done: boolean }) => p.done)).toBe(true);
 
     // Relax: the list, then a full breath and "it did", which is the one thing only the person can say.
     await tab('Relax');
@@ -109,7 +110,7 @@ describe('the third design', () => {
     expect((await monthToday()).kinds).toContain('breathe');
 
     // A game, and "I feel better".
-    await page.getByRole('button', { name: /^Rangoli/ }).click();
+    await page.getByRole('button', { name: /Rangoli/ }).first().click();
     await page.getByRole('main', { name: 'Rangoli' }).waitFor();
     const canvas = (await page.locator('canvas').first().boundingBox())!;
     await page.mouse.move(canvas.x + 80, canvas.y + 80); await page.mouse.down();
@@ -119,8 +120,9 @@ describe('the third design', () => {
     await page.getByRole('button', { name: /feel better/i }).click();
     await page.getByRole('heading', { level: 1 }).filter({ hasText: 'Relax' }).waitFor();
     expect((await monthToday()).kinds).toContain('play');
+    // One game is the month's pick and the rest are small buttons under it; the games are reached the same way either way.
     for (const g of ['Balloon pop', 'Fruit slice', 'Cozy room']) {
-      await page.getByRole('button', { name: new RegExp(`^${g}`) }).click();
+      await page.getByRole('button', { name: new RegExp(g) }).first().click();
       await page.getByRole('main', { name: g }).waitFor();
       problems.push(...await scan(page, g));
       await page.getByRole('button', { name: 'Back', exact: true }).click();
@@ -150,12 +152,18 @@ describe('the third design', () => {
     problems.push(...await scan(page, 'chat'));
     await page.getByRole('button', { name: 'Back', exact: true }).click();
 
-    // The month, in each of its four ways.
+    // The month: this month's way up front, and the other ways one tap away.
     await tab('Month');
-    await page.getByRole('tablist', { name: 'Ways to see this month' }).waitFor();
-    for (const name of [/Song/, /Letters/, /Future you/, /What works/]) {
-      await page.getByRole('tab', { name }).click();
+    const own = (await page.getByRole('heading', { level: 1 }).innerText()).trim();
+    problems.push(...await scan(page, `month ${own}`));
+    await page.getByRole('button', { name: /See your month another way/ }).click();
+    const others = (await page.getByRole('tab').allInnerTexts()).map(t => t.trim());
+    expect(others).toHaveLength(3);
+    for (const name of others) {
+      await page.getByRole('tab', { name, exact: true }).click();
       problems.push(...await scan(page, `month ${name}`));
+      await page.getByRole('button', { name: /^Back to/ }).click();
+      await page.getByRole('button', { name: /See your month another way/ }).click();
     }
 
     // Help is always there, and You is reachable from Home.
@@ -163,6 +171,10 @@ describe('the third design', () => {
     await page.getByRole('button', { name: /^Help/ }).first().click();
     await page.getByRole('dialog', { name: 'You’re not alone' }).waitFor();
     problems.push(...await scan(page, 'help'));
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: /^For you, / }).click();
+    await page.getByRole('dialog', { name: 'For you' }).waitFor();
+    problems.push(...await scan(page, 'for you'));
     await page.keyboard.press('Escape');
     await page.getByRole('button', { name: 'You', exact: true }).click();
     await page.getByRole('region', { name: 'Your companion' }).waitFor();
@@ -173,40 +185,100 @@ describe('the third design', () => {
     expect(problems).toEqual([]);
   });
 
-  run('welcomes someone new through the earlier steps, then lands on how they are', async () => {
+  run('welcomes someone new: one picture-led screen, age, language and number and code on one screen, companion, consent, then how they are', async () => {
     const { page, ctx, errors } = await open(null);
     const problems: string[] = [];
-    await page.getByRole('heading', { name: /Hi, I.m Saathi/ }).waitFor();
+    await page.getByRole('heading', { name: 'Saathi', level: 1 }).waitFor();
+    // What the app does is shown on this one screen: four things, and the line that it is an AI companion, not a doctor.
+    for (const t of ['Talk', 'Relax', 'Write', 'See your month']) await page.getByText(t, { exact: true }).waitFor();
+    await page.getByText(/not a therapist or a doctor/).waitFor();
     problems.push(...await scan(page, 'welcome'));
     await page.getByRole('button', { name: 'Get started' }).click();
-    await page.getByRole('button', { name: 'Next' }).click();
-    await page.getByLabel('Your name').fill('Meera');
-    await page.getByRole('checkbox', { name: /18 or older/ }).click();
-    await page.getByRole('button', { name: 'Next' }).click();
-    await page.getByLabel('Mobile number').fill(`9${String(Date.now()).slice(-9)}`);
+    await page.getByRole('heading', { name: 'Are you 18 or older?' }).waitFor();
+    problems.push(...await scan(page, 'age'));
+    await page.getByRole('button', { name: 'Yes, I am' }).click();
+    // Language, name and number are one screen, and the code opens on the same screen.
+    await page.getByRole('radio', { name: 'Hinglish' }).click();
+    await page.getByLabel(/What should I call you/).fill('Meera');
+    await page.getByLabel('Your mobile number').fill(`9${String(Date.now()).slice(-9)}`);
+    problems.push(...await scan(page, 'set up'));
     await page.getByRole('button', { name: 'Send me a code' }).click();
     const code = (await page.getByText(/your code is/).innerText()).match(/\d{6}/)![0];
     await page.getByLabel('6-digit code').fill(code);
+    problems.push(...await scan(page, 'code'));
     await page.getByRole('button', { name: 'Continue' }).click();
     await page.getByRole('heading', { name: 'Choose your companion' }).waitFor();
-    await page.getByRole('button', { name: 'Next' }).click();
-    await page.getByRole('heading', { name: 'Before we begin' }).waitFor();
-    await page.getByRole('checkbox', { name: /AI companion/ }).click();
-    await page.getByRole('checkbox', { name: /words stay private/ }).click();
+    problems.push(...await scan(page, 'companion'));
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await page.getByRole('heading', { name: 'What you’re okay with' }).waitFor();
     await page.getByRole('switch', { name: /Remember things/ }).click();
-    await page.getByRole('button', { name: 'I understand' }).click();
-    await page.getByRole('heading', { name: 'Plant your first seed' }).waitFor().catch(() => undefined);
-    const seed = page.getByRole('button', { name: /Plant the seed/ });
-    if (await seed.isVisible().catch(() => false)) await seed.click();
-    await page.getByRole('heading', { level: 1 }).filter({ hasText: 'Meera' }).waitFor({ timeout: 15_000 });
+    problems.push(...await scan(page, 'consent'));
+    await page.getByRole('button', { name: /Say hello/ }).click();
+    // The first thing in the app is how they are, by name.
+    await page.getByRole('heading', { level: 1 }).filter({ hasText: 'How are you feeling' }).waitFor({ timeout: 15_000 });
+    await page.getByText(/Meera/).first().waitFor();
     problems.push(...await scan(page, 'first mood'));
     await page.getByRole('button', { name: /^Okay/ }).click();
-    await page.getByRole('button', { name: 'Continue', exact: true }).click();
+    await page.getByRole('button', { name: /^(Continue|Skip this)$/ }).click();
     await page.getByRole('button', { name: /^Feeling okay/ }).waitFor();
     problems.push(...await scan(page, 'first home'));
     await ctx.close();
     expect(errors).toEqual([]);
     expect(problems).toEqual([]);
+  });
+
+  run('signs back in without being asked their age, their name or their language again', async () => {
+    const user = await person();
+    await withSystem(t.ctx.db, tx => tx.query('DELETE FROM otp_challenges WHERE target_hash = $1', [t.ctx.crypto.lookupHash('phone', `+91${user.phone}`)])); // the resend wait is not what this checks
+    const { page, ctx, errors } = await open(null);
+    const problems: string[] = [];
+    await page.getByRole('button', { name: 'I already have an account' }).click();
+    await page.getByRole('heading', { name: 'Welcome back.' }).waitFor();
+    expect(await page.getByText('Are you 18 or older?').count()).toBe(0);
+    expect(await page.getByLabel(/What should I call you/).count()).toBe(0);
+    expect(await page.getByRole('radio', { name: 'Hinglish' }).count()).toBe(0);
+    problems.push(...await scan(page, 'welcome back'));
+    await page.getByLabel('Your mobile number').fill(user.phone);
+    await page.getByRole('button', { name: 'Send me a code' }).click();
+    const code = (await page.getByText(/your code is/).innerText()).match(/\d{6}/)![0];
+    await page.getByLabel('6-digit code').fill(code);
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await page.getByRole('heading', { level: 1 }).filter({ hasText: 'How are you' }).waitFor();
+    await ctx.close();
+    expect(errors).toEqual([]);
+    expect(problems).toEqual([]);
+  });
+
+  run('says "I already have an account" for a number with none, and sign-up takes over without making an account', async () => {
+    const stranger = newPhone();
+    const { page, ctx } = await open(null);
+    await page.getByRole('button', { name: 'I already have an account' }).click();
+    await page.getByLabel('Your mobile number').fill(stranger);
+    await page.getByRole('button', { name: 'Send me a code' }).click();
+    const code = (await page.getByText(/your code is/).innerText()).match(/\d{6}/)![0];
+    await page.getByLabel('6-digit code').fill(code);
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await page.getByRole('heading', { name: 'Are you 18 or older?' }).waitFor();
+    const made = await withSystem(t.ctx.db, tx => tx.query('SELECT 1 FROM users WHERE phone_hash = $1', [t.ctx.crypto.lookupHash('phone', `+91${stranger}`)]));
+    expect(made.rowCount).toBe(0);
+    await ctx.close();
+  });
+
+  run('asks how they are when they come back after a few hours, and not when they were just here', async () => {
+    // (A sign-in token is used up when it is used, so each visit is a different person.)
+    const hour = 3_600_000;
+    const away = await open(await person(), '?ui=3', Date.now() - 4 * hour);
+    await away.page.getByRole('heading', { level: 1 }).filter({ hasText: 'How are you' }).waitFor();
+    // Skipping counts as being asked: it is remembered, so it is not asked again until the next few hours away.
+    await away.page.getByRole('button', { name: 'Not now' }).click();
+    await away.page.getByRole('heading', { level: 1 }).filter({ hasText: 'Aarav' }).waitFor();
+    const askedAt = Number(await away.page.evaluate(() => localStorage.getItem('saathi.v3.asked')));
+    expect(Date.now() - askedAt).toBeLessThan(60_000);
+    await away.ctx.close();
+    const here = await open(await person(), '?ui=3', Date.now() - 1 * hour);
+    await here.page.getByRole('heading', { level: 1 }).filter({ hasText: 'Aarav' }).waitFor();
+    expect(await here.page.getByRole('heading', { level: 1 }).filter({ hasText: 'How are you' }).count()).toBe(0);
+    await here.ctx.close();
   });
 
   run('opens for everyone once its switch is on, and ?ui=1 or ?ui=2 still bring back the others', async () => {

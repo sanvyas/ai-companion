@@ -23,7 +23,7 @@ export interface Resolved { userId: string; isNew: boolean; pendingDeletion: boo
  * Find the account for a verified identity, or create it. New accounts require the 18+ confirmation
  * (PRD 8.1) and get default consent (everything off), privacy, companion and notification rows.
  */
-export async function resolveUser(ctx: Ctx, id: Identity, opts: { ageConfirmed18: boolean; nickname?: string }): Promise<Resolved> {
+export async function resolveUser(ctx: Ctx, id: Identity, opts: { ageConfirmed18: boolean; existingOnly?: boolean; nickname?: string }): Promise<Resolved> {
   const hash = ctx.crypto.lookupHash(id.kind, id.value);
   const col = id.kind === 'phone' ? 'phone_hash' : 'google_hash';
   const find = (tx: Tx) => tx.query<{ id: string; deleted_at: Date | null; deletion_requested_at: Date | null; age_confirmed_18: boolean; suspended_at: Date | null }>(`SELECT id, deleted_at, deletion_requested_at, age_confirmed_18, suspended_at FROM users WHERE ${col} = $1`, [hash]);
@@ -35,6 +35,8 @@ export async function resolveUser(ctx: Ctx, id: Identity, opts: { ageConfirmed18
       if (existing.suspended_at) throw forbidden('suspended', 'This account is paused. Please contact support.');
       return { userId: existing.id, isNew: false, pendingDeletion: !!existing.deletion_requested_at };
     }
+    // Signing back in never makes an account: someone who says they have one and does not is sent to sign-up, where the age question is asked.
+    if (opts.existingOnly) throw forbidden('no_account', 'I couldn’t find an account for that. Let’s set you up.');
     if (!opts.ageConfirmed18) throw forbidden('under18', 'Saathi is for adults.');
     if (!ctx.rt.settings.bool('access.signups_open')) throw forbidden('signups_closed', 'New sign-ups are paused right now. Please try again later.');
 

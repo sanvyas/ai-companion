@@ -44,10 +44,10 @@ export interface Api {
   // session
   hasSession(): boolean;
   restoreSession(): Promise<boolean>;
-  otpStart(phone: string, age18: boolean): Promise<OtpStartResponse>;
-  otpVerify(b: { phone: string; code: string; challengeId?: string; age18: boolean; nickname?: string }): Promise<{ isNewUser: boolean; pendingDeletion: boolean }>;
+  otpStart(phone: string, age18: boolean, returning?: boolean): Promise<OtpStartResponse>;
+  otpVerify(b: { phone: string; code: string; challengeId?: string; age18: boolean; returning?: boolean; nickname?: string }): Promise<{ isNewUser: boolean; pendingDeletion: boolean }>;
   googleDiag(stage: string, note?: string): void;
-  googleSignIn(b: { idToken: string; age18: boolean; nickname?: string }): Promise<{ isNewUser: boolean; pendingDeletion: boolean }>;
+  googleSignIn(b: { idToken: string; age18: boolean; returning?: boolean; nickname?: string }): Promise<{ isNewUser: boolean; pendingDeletion: boolean }>;
   signOut(): Promise<void>;
   onSignedOut(cb: () => void): void;
 

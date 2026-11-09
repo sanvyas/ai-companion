@@ -19,29 +19,29 @@ export function TalkTab() {
   const modes: [string, string, () => void, boolean][] = [['Voice', I.mic, () => void startCall('voice'), true], ['Video', I.video, () => void startCall('video'), false], ['Text', I.chat, () => void openChat(), false]];
   const be: [string, string, string, string, () => void][] = [['Sit with me', 'Quiet company', I.sit, '#5B57A6', () => void startCall('sit')], ['Walk with me', 'In your ear', I.walk, '#3E7F4C', () => void startWalkFlow()]];
   return (
-    <div className="screen" data-scroll="1" style={{ ...s('overflow:auto;background:linear-gradient(180deg,#ECE8F8 0%,#FAF6EF 55%);display:flex;flex-direction:column;padding:58px 20px 120px;gap:14px') }}>
+    <div className="screen" data-scroll="1" style={{ ...s('overflow:auto;background:linear-gradient(180deg,var(--tint) 0%,var(--bg) 55%);display:flex;flex-direction:column;padding:56px 24px 128px;gap:16px') }}>
       <Head title="Talk" />
-      <div style={s('display:flex;flex-direction:column;align-items:center;gap:10px;padding:6px 0 4px')}>
-        <div style={s('width:170px;height:170px;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 50% 40%,#FFFFFF,#E6E2F6);display:flex;justify-content:center;align-items:flex-end')}><Companion look={look} size={170} /></div>
-        <p className="serif" style={s('font-size:30px;line-height:1.1;text-align:center;margin:0')}>Say anything.<br />No judging.</p>
+      <div style={s('display:flex;flex-direction:column;align-items:center;gap:12px;padding:8px 0 4px')}>
+        <div style={s('width:168px;height:168px;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 50% 40%,#FFFFFF,#E6E2F6);display:flex;justify-content:center;align-items:flex-end')}><Companion look={look} size={168} /></div>
+        <p className="serif" style={s('font-size:36px;line-height:1.1;text-align:center;margin:0')}>Say anything.<br />No judging.</p>
       </div>
-      <div style={s('display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px')}>
+      <div style={s('display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px')}>
         {modes.map(([label, icon, run, primary]) => (
-          <button key={label} onClick={run} data-track={`talk.${label.toLowerCase()}`} style={s(`border:none;border-radius:24px;padding:16px 8px;background:${primary ? '#2F2A5E' : '#FFFFFF'};color:${primary ? '#FFFFFF' : '#1E2430'};display:flex;flex-direction:column;align-items:center;gap:8px;box-shadow:0 8px 22px rgba(30,36,48,.06);min-height:88px`)}>
-            <Svg d={icon} size={26} /><span style={s('font-size:15px;font-weight:700')}>{label}</span>
+          <button key={label} onClick={run} data-track={`talk.${label.toLowerCase()}`} style={s(`border:none;border-radius:24px;padding:18px 8px;background:${primary ? '#2F2A5E' : '#FFFFFF'};color:${primary ? '#FFFFFF' : '#1E2430'};display:flex;flex-direction:column;align-items:center;gap:10px;box-shadow:0 8px 22px rgba(30,36,48,.06);min-height:96px`)}>
+            <Svg d={icon} size={26} /><span style={s('font-size:17px;font-weight:600')}>{label}</span>
           </button>
         ))}
       </div>
-      <h2 className="kicker" style={s('margin:8px 0 0')}>Just be with me</h2>
+      <h2 className="kicker" style={s('margin:12px 0 -4px')}>Just be with me</h2>
       <div style={s('display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px')}>
         {be.map(([label, sub, icon, bg, run]) => (
-          <button key={label} onClick={run} data-track={`talk.${label.split(' ')[0].toLowerCase()}`} style={s(`text-align:left;border:none;border-radius:24px;padding:16px;background:${bg};color:#FFFFFF;height:132px;display:flex;flex-direction:column;justify-content:space-between`)}>
+          <button key={label} onClick={run} data-track={`talk.${label.split(' ')[0].toLowerCase()}`} style={s(`text-align:left;border:none;border-radius:24px;padding:16px;background:${bg};color:#FFFFFF;height:140px;display:flex;flex-direction:column;justify-content:space-between`)}>
             <Svg d={icon} size={26} stroke="#FFFFFF" />
-            <span style={s('display:flex;flex-direction:column;gap:2px')}><span style={s('font-size:17px;font-weight:700')}>{label}</span><span style={s('font-size:13px;opacity:.9')}>{sub}</span></span>
+            <span style={s('display:flex;flex-direction:column;gap:2px')}><span style={s('font-size:17px;font-weight:600')}>{label}</span><span style={s('font-size:15px;opacity:.92')}>{sub}</span></span>
           </button>
         ))}
       </div>
-      <div style={s('display:flex;gap:8px;align-items:center;justify-content:center;font-size:13px;color:#636B78;margin-top:6px')}><Svg d={I.lock} size={14} sw={2} stroke="#636B78" />Private. {comp} is an AI, not a therapist.</div>
+      <div style={s('display:flex;gap:8px;align-items:center;justify-content:center;font-size:15px;color:#636B78;margin-top:8px')}><Svg d={I.lock} size={14} sw={2} stroke="#636B78" />Private. {comp} is an AI, not a therapist.</div>
     </div>
   );
 }
