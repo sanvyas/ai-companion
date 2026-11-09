@@ -1,8 +1,8 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import '@fontsource-variable/figtree/wght.css';
-import '@fontsource/instrument-serif/400.css';
-import '@fontsource/instrument-serif/400-italic.css';
+import '@fontsource-variable/plus-jakarta-sans/wght.css';
+import '@fontsource-variable/fraunces/soft.css';
+import '@fontsource-variable/fraunces/soft-italic.css';
 import { AppV3 } from '../v3/AppV3';
 import '../v3/v3.css';
 

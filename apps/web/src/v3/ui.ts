@@ -5,7 +5,7 @@ import type { MonthMode } from '@saathi/domain';
 // only change how things are shown. What someone said, wrote or did lives in the shared store and on the server.
 
 export type GameId = 'rangoli' | 'balloon' | 'fruit' | 'room';
-export type V3Sheet = { id: 'help' } | { id: 'inbox' } | { id: 'event'; eventId: string } | { id: 'day'; entryId: string } | null;
+export type V3Sheet = { id: 'help' } | { id: 'inbox' } | { id: 'colours' } | { id: 'event'; eventId: string } | { id: 'day'; entryId: string } | null;
 export interface Banner { text: string; go: 'checkin' | 'breathe' | 'event' | 'story'; eventId?: string }
 export type Feel = 'All' | 'Calm down' | 'Sleep' | 'Lift me up' | 'Focus';
 
@@ -24,6 +24,8 @@ interface V3State {
   jtab: 'today' | 'book';
   /** Where "back" goes from a screen that was opened from elsewhere. */
   from: string | null;
+  /** Which set of colours the app wears. Kept on this phone. */
+  palette: string;
 }
 
 // When to ask how they are: on opening the app after a few hours away, and not again until the next time. Answering and skipping
@@ -46,7 +48,12 @@ export function whenWords(at: number, now = new Date()): string {
   return days <= 0 ? 'earlier today' : days === 1 ? `yesterday ${part}` : `${days} days ago`;
 }
 
-let state: V3State = { over: null, why: [], sheet: null, banner: null, bannerShown: false, game: null, feel: 'All', view: null, jtab: 'today', from: null };
+const PAL = 'saathi.v3.palette';
+function startPalette(): string {
+  try { const q = new URLSearchParams(location.search).get('palette'); if (q) { localStorage.setItem(PAL, q); return q; } return localStorage.getItem(PAL) ?? 'dusk'; } catch { return 'dusk'; }
+}
+
+let state: V3State = { palette: startPalette(), over: null, why: [], sheet: null, banner: null, bannerShown: false, game: null, feel: 'All', view: null, jtab: 'today', from: null };
 const listeners = new Set<() => void>();
 
 export const getV3 = () => state;
@@ -59,5 +66,6 @@ export function useV3<T>(selector: (s: V3State) => T): T {
   return useSyncExternalStore(subscribeV3, () => selector(state), () => selector(state));
 }
 
+export function setPalette(id: string) { try { localStorage.setItem(PAL, id); } catch { /* blocked: it holds for this visit */ } setV3({ palette: id }); }
 export const openHelp = () => setV3({ sheet: { id: 'help' } });
 export const closeSheet = () => setV3({ sheet: null });

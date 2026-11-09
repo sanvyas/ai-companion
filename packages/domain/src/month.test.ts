@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { feelingOf, futureYou, guideStats, kindsOfDay, letterBody, lyricFor, modeFor, monthWeeks, noticedFor, weekStart, type HelpRow } from './month';
+import { feelingOf, futureYou, guideStats, kindsOfDay, letterBody, lyricFor, FEATURED_MODE, MONTH_MODES, monthWeeks, noticedFor, weekStart, type HelpRow } from './month';
 
 describe('kindsOfDay', () => {
   it('turns what the app counted into the kinds of a day', () => {
@@ -32,14 +32,9 @@ describe('weeks', () => {
   });
 });
 
-describe('modeFor', () => {
-  it('moves to the next way of seeing the month each month, and starts over after four', () => {
-    expect(modeFor('2026-10-02', '2026-10-29')).toBe('song');
-    expect(modeFor('2026-10-02', '2026-11-01')).toBe('letters');
-    expect(modeFor('2026-10-02', '2026-12-15')).toBe('future');
-    expect(modeFor('2026-10-02', '2027-01-04')).toBe('guide');
-    expect(modeFor('2026-10-02', '2027-02-01')).toBe('song');
-  });
+describe('the month up front', () => {
+  it('is letters, whoever is looking and whenever', () => expect(FEATURED_MODE).toBe('letters'));
+  it('keeps the other three ways to see it', () => expect(MONTH_MODES.filter(m => m !== FEATURED_MODE).sort()).toEqual(['future', 'guide', 'song']));
 });
 
 describe('feelingOf', () => {

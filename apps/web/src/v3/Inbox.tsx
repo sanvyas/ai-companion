@@ -25,7 +25,7 @@ export function useInbox(): InboxItem[] {
   const out: InboxItem[] = [];
 
   const card = cards.find(c => c.kind === 'checkin');
-  if (card) out.push({ id: 'checkin', icon: I.chat, tint: '#E6E4F5', title: 'Your check-in is here', body: 'Two minutes, whenever suits. Or skip it, that’s fine too.', cta: 'Check in', run: () => { void dismissCard(card.id); closeSheet(); void startCheckin(); }, cta2: { label: 'Not now', run: () => void dismissCard(card.id) } });
+  if (card) out.push({ id: 'checkin', icon: I.chat, tint: 'var(--t1)', title: 'Your check-in is here', body: 'Two minutes, whenever suits. Or skip it, that’s fine too.', cta: 'Check in', run: () => { void dismissCard(card.id); closeSheet(); void startCheckin(); }, cta2: { label: 'Not now', run: () => void dismissCard(card.id) } });
 
   if (mood !== null && mood <= 1) {
     const helped = month?.help.some(h => h.kind === 'breathe' && h.helped);
@@ -51,7 +51,7 @@ export function BellButton() {
   return (
     <button onClick={() => setV3({ sheet: { id: 'inbox' } })} data-track="inbox.open" aria-label={n ? `For you, ${n} ${n === 1 ? 'thing' : 'things'}` : 'For you, nothing new'} style={s('position:relative;width:44px;height:44px;border-radius:50%;border:none;background:#FFFFFF;display:grid;place-items:center;flex:none')}>
       <Svg d="M6 17V11a6 6 0 0 1 12 0v6l1.5 2h-15zM10 21a2 2 0 0 0 4 0" size={20} stroke="#1E2430" />
-      {n > 0 && <span aria-hidden="true" style={s('position:absolute;top:2px;right:2px;min-width:18px;height:18px;border-radius:9px;background:#2F2A5E;color:#FFFFFF;font-size:11px;font-weight:700;display:grid;place-items:center;padding:0 4px')}>{n}</span>}
+      {n > 0 && <span aria-hidden="true" style={s('position:absolute;top:2px;right:2px;min-width:18px;height:18px;border-radius:9px;background:var(--accent);color:#FFFFFF;font-size:11px;font-weight:700;display:grid;place-items:center;padding:0 4px')}>{n}</span>}
     </button>
   );
 }
@@ -69,8 +69,8 @@ export function InboxSheet() {
             <div style={s('flex:1;display:flex;flex-direction:column;gap:2px')}><b style={s('font-size:17px;line-height:1.3')}>{it.title}</b><span style={s('font-size:15px;line-height:1.4;color:#636B78')}>{it.body}</span></div>
           </div>
           <div style={s('display:flex;gap:8px')}>
-            <button onClick={it.run} data-track={`inbox.${it.id}`} style={s('flex:none;height:48px;padding:0 22px;border-radius:24px;border:none;background:#2F2A5E;color:#FFFFFF;font-size:15px;font-weight:600')}>{it.cta}</button>
-            {it.cta2 && <button onClick={it.cta2.run} style={s('height:48px;padding:0 16px;border-radius:24px;border:none;background:none;color:#2F2A5E;font-size:15px;font-weight:600')}>{it.cta2.label}</button>}
+            <button onClick={it.run} data-track={`inbox.${it.id}`} style={s('flex:none;height:48px;padding:0 22px;border-radius:24px;border:none;background:var(--accent);color:#FFFFFF;font-size:15px;font-weight:600')}>{it.cta}</button>
+            {it.cta2 && <button onClick={it.cta2.run} style={s('height:48px;padding:0 16px;border-radius:24px;border:none;background:none;color:var(--accent);font-size:15px;font-weight:600')}>{it.cta2.label}</button>}
           </div>
         </section>
       ))}

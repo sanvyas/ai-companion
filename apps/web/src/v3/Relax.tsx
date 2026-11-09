@@ -65,7 +65,7 @@ export function Relax() {
     <div className="screen" data-scroll="1" style={{ ...s('overflow:auto;background:linear-gradient(180deg,var(--tint) 0px,var(--bg) 380px);display:flex;flex-direction:column;padding:56px 24px 128px;gap:16px') }}>
       <Head title="Relax" />
       <div role="group" aria-label="How do you want to feel?" style={s('display:flex;gap:8px;overflow-x:auto;margin:0 -24px;padding:0 24px')}>
-        {FEELS.map(f => <button key={f.v} aria-pressed={feel === f.v} onClick={() => setV3({ feel: f.v })} style={s(`flex:none;height:44px;padding:0 18px;border-radius:22px;border:none;background:${feel === f.v ? '#2F2A5E' : '#FFFFFF'};color:${feel === f.v ? '#FFFFFF' : '#1E2430'};font-size:15px;font-weight:600`)}>{f.label}</button>)}
+        {FEELS.map(f => <button key={f.v} aria-pressed={feel === f.v} onClick={() => setV3({ feel: f.v })} style={s(`flex:none;height:44px;padding:0 18px;border-radius:22px;border:none;background:${feel === f.v ? 'var(--accent)' : '#FFFFFF'};color:${feel === f.v ? '#FFFFFF' : '#1E2430'};font-size:15px;font-weight:600`)}>{f.label}</button>)}
       </div>
 
       {pickItem && pick && (
@@ -74,7 +74,7 @@ export function Relax() {
           <span style={s('display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;position:relative')}>{M && <Face mood={mood!} size={24} />}{M ? `Picked for feeling ${M.label.toLowerCase()}` : 'Picked for you'}</span>
           <span className="serif" style={s('font-size:32px;line-height:1.1;position:relative;max-width:260px')}>{pickItem.title}</span>
           <span style={s('font-size:17px;line-height:1.4;position:relative')}>{pick.why} · {pickItem.mins} min</span>
-          <button onClick={() => open(pickItem)} data-track="relax.pick" style={s('margin-top:6px;align-self:flex-start;height:52px;padding:0 26px 0 20px;border-radius:26px;border:none;background:#2F2A5E;color:#FFFFFF;font-size:17px;font-weight:600;display:flex;align-items:center;gap:10px;position:relative')}><Svg d={I.play} size={14} fill="#FFFFFF" stroke="#FFFFFF" sw={0} />Begin</button>
+          <button onClick={() => open(pickItem)} data-track="relax.pick" style={s('margin-top:6px;align-self:flex-start;height:52px;padding:0 26px 0 20px;border-radius:26px;border:none;background:var(--accent);color:#FFFFFF;font-size:17px;font-weight:600;display:flex;align-items:center;gap:10px;position:relative')}><Svg d={I.play} size={14} fill="#FFFFFF" stroke="#FFFFFF" sw={0} />Begin</button>
         </section>
       )}
 
@@ -103,7 +103,7 @@ export function Relax() {
           <Label sub="Guided, a little longer">Meditations</Label>
           <div style={s('background:#FFFFFF;border-radius:28px;padding:6px 18px;display:flex;flex-direction:column;box-shadow:0 8px 22px rgba(30,36,48,.05)')}>
             {longer.map((m, i) => (
-              <button key={m.id} onClick={() => open(m)} aria-label={`${m.title}, ${m.mins} minutes`} style={s(`display:flex;align-items:center;gap:16px;text-align:left;border:none;background:none;padding:14px 0;border-bottom:${i < longer.length - 1 ? '1px solid #F1EDE6' : 'none'};min-height:72px`)}>
+              <button key={m.id} onClick={() => open(m)} aria-label={`${m.title}, ${m.mins} minutes`} style={s(`display:flex;align-items:center;gap:16px;text-align:left;border:none;background:none;padding:14px 0;border-bottom:${i < longer.length - 1 ? '1px solid var(--soft)' : 'none'};min-height:72px`)}>
                 <span aria-hidden="true" style={s(`flex:none;width:52px;height:52px;border-radius:18px;background:${m.tint};display:grid;place-items:center`)}><Svg d={I.lotus} size={24} /></span>
                 <span style={s('flex:1;display:flex;flex-direction:column;gap:2px')}><span style={s('font-size:17px;font-weight:600')}>{m.title}</span><span style={s('font-size:15px;color:var(--muted)')}>{m.desc} · {m.mins} min</span></span>
                 <Svg d={I.chev} size={16} sw={2} stroke="#636B78" />
@@ -131,7 +131,7 @@ export function Relax() {
         <section aria-label="A tale made for tonight" style={s('background:#FFFFFF;border-radius:28px;padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 8px 22px rgba(30,36,48,.05)')}>
           <div style={s('display:flex;flex-direction:column;gap:2px')}><h2 className="serif" style={s('font-size:26px;line-height:1.15;margin:0')}>A tale made for tonight</h2><span style={s('font-size:15px;line-height:1.4;color:var(--muted)')}>Pick a place and Saathi writes a new, quiet story, just for you.</span></div>
           <div style={s('display:flex;flex-wrap:wrap;gap:8px')}>
-            {STORY_THEMES.map(t => <button key={t.id} disabled={busy} onClick={() => void playStory(t.id)} style={s('height:48px;padding:0 20px;border-radius:24px;border:1.5px solid #D9D2C5;background:#FAF6EF;font-size:15px;font-weight:600')}>{t.label}</button>)}
+            {STORY_THEMES.map(t => <button key={t.id} disabled={busy} onClick={() => void playStory(t.id)} style={s('height:48px;padding:0 20px;border-radius:24px;border:1.5px solid #D9D2C5;background:var(--bg);font-size:15px;font-weight:600')}>{t.label}</button>)}
           </div>
           {busy && <span role="status" style={s('font-size:15px;color:var(--muted)')}>Writing it now…</span>}
         </section>

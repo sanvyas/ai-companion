@@ -180,6 +180,15 @@ describe('the third design', () => {
     await page.getByRole('region', { name: 'Your companion' }).waitFor();
     problems.push(...await scan(page, 'you'));
 
+    // Colours: pick another set and the whole app wears it at once, and it is still readable.
+    await page.getByRole('button', { name: /^Colours/ }).click();
+    await page.getByRole('dialog', { name: 'Colours' }).waitFor();
+    await page.getByRole('radio', { name: /Forest Sage/ }).click();
+    expect(await page.evaluate(() => getComputedStyle(document.querySelector('.v3')!).getPropertyValue('--accent').trim())).toBe('#254B35');
+    problems.push(...await scan(page, 'colours'));
+    await page.keyboard.press('Escape');
+    problems.push(...await scan(page, 'you in sage'));
+
     await ctx.close();
     expect(errors).toEqual([]);
     expect(problems).toEqual([]);

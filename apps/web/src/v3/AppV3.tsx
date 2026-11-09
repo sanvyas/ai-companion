@@ -4,6 +4,7 @@ import { useAppLifecycle } from '../state/lifecycle';
 import { getState, useStore, type Screen } from '../state/store';
 import { getV3, setV3, shouldAskMood, useV3 } from './ui';
 import { useTheme } from './theme';
+import { paletteById, paletteVars } from './palette';
 import { BannerView, HelpSheet, TabBar, Toast } from './Chrome';
 import { Home } from './Home';
 import { AgeV3, CompanionV3, ConsentV3, SignInV3, UnderV3, WelcomeV3 } from './Onboard';
@@ -42,7 +43,7 @@ function OnboardingV3({ screen }: { screen: Screen }) {
 }
 
 function Splash() {
-  return <div role="status" aria-live="polite" style={s('position:absolute;inset:0;display:grid;place-items:center;text-align:center;background:#FAF6EF')}><div><div className="serif" style={s('font-size:44px')}>Saathi</div><div style={s('color:#636B78;margin-top:6px')}>One moment…</div></div></div>;
+  return <div role="status" aria-live="polite" style={s('position:absolute;inset:0;display:grid;place-items:center;text-align:center;background:var(--bg)')}><div><div className="serif" style={s('font-size:44px')}>Saathi</div><div style={s('color:#636B78;margin-top:6px')}>One moment…</div></div></div>;
 }
 
 export function AppV3() {
@@ -63,6 +64,8 @@ export function AppV3() {
   const banner = useV3(x => x.banner);
   const asked = useRef(false);
   const theme = useTheme();
+  const pal = paletteById(useV3(x => x.palette));
+  useEffect(() => { document.querySelector('meta[name="theme-color"]')?.setAttribute('content', pal.bg); document.body.style.background = pal.bg; }, [pal]);
 
   useEffect(() => { document.documentElement.dataset.reduce = reduce ? 'true' : ''; }, [reduce]);
   useEffect(() => { document.title = discreet ? 'Calm' : 'Saathi'; }, [discreet]);
@@ -109,7 +112,7 @@ export function AppV3() {
   };
 
   return (
-    <div className="v3" style={{ '--tint': theme.tint, '--wash': theme.wash } as React.CSSProperties}>
+    <div className="v3" style={{ ...paletteVars(pal), '--tint': theme.tint, '--wash': theme.wash } as React.CSSProperties}>
       <div className="stage">
         <div className="app">
           <div style={{ position: 'absolute', inset: 0 }} {...(behind ? { inert: '' as unknown as boolean, 'aria-hidden': true } : {})}>

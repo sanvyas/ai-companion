@@ -22,10 +22,10 @@ interface Suggestion { label: string; meta: string; icon: string; tint: string; 
 function suggestions(events: { id: string; title: string }[]): Record<SuggestId, Suggestion> {
   const ev = events[0];
   return {
-    sit: { label: 'Sit with me', meta: 'No talking', icon: I.sit, tint: '#E6E4F5', run: () => void startCall('sit') },
+    sit: { label: 'Sit with me', meta: 'No talking', icon: I.sit, tint: 'var(--t1)', run: () => void startCall('sit') },
     write: { label: 'Write it out', meta: 'Private', icon: I.pen, tint: '#FCEFCF', run: () => startJournal('write') },
     speak: { label: 'Talk it out', meta: 'Journal', icon: I.mic, tint: '#FCEFCF', run: () => startJournal('speak') },
-    rain: { label: 'Rain story', meta: '20 min', icon: I.moon, tint: '#E6E4F5', run: () => playCalm('monsoon') },
+    rain: { label: 'Rain story', meta: '20 min', icon: I.moon, tint: 'var(--t1)', run: () => playCalm('monsoon') },
     balloon: { label: 'Balloon pop', meta: 'Game', icon: I.game, tint: '#FBE4DA', run: () => openGame('balloon') },
     racing: { label: 'Calm my mind', meta: '5 min', icon: I.lotus, tint: '#E0EFE5', run: () => playCalm('sos') },
     walk: { label: 'Walk with me', meta: '10 min', icon: I.walk, tint: '#E0EFE5', run: () => void startWalkFlow() },
@@ -33,7 +33,7 @@ function suggestions(events: { id: string; title: string }[]): Record<SuggestId,
     room: { label: 'Cozy room', meta: 'Game', icon: I.home, tint: '#FCEFCF', run: () => openGame('room') },
     event: { label: ev ? ev.title.split(' ').slice(0, 2).join(' ') : 'Near you', meta: 'Near you', icon: I.pin, tint: '#FBE4DA', run: () => (ev ? setV3({ sheet: { id: 'event', eventId: ev.id } }) : go('talk')) },
     month: { label: 'My month', meta: 'See it', icon: I.month, tint: '#E0EFE5', run: () => go('journey') },
-    breathe: { label: 'Breathe', meta: '1 min', icon: I.breathe, tint: '#E6E4F5', run: () => openBreathe() },
+    breathe: { label: 'Breathe', meta: '1 min', icon: I.breathe, tint: 'var(--t1)', run: () => openBreathe() },
   };
 }
 
@@ -110,8 +110,8 @@ export function Home() {
           <div style={s('flex:1;display:flex;flex-direction:column;gap:2px')}><span style={s('font-size:15px;color:var(--muted);font-weight:600')}>{comp} · checking on you</span><span style={s('font-size:17px;line-height:1.45')}>{line}</span></div>
         </div>
         <div style={s('display:flex;gap:10px')}>
-          <button onClick={() => void startCall('voice')} data-track="home.say" style={s('flex:1.3;height:52px;border-radius:26px;border:none;background:#2F2A5E;color:#FFFFFF;font-size:17px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px')}><Svg d={I.mic} size={18} stroke="#FFFFFF" />Say it</button>
-          <button onClick={() => void openChat()} data-track="home.type" style={s('flex:1;height:52px;border-radius:26px;border:none;background:#F1EDE6;font-size:17px;font-weight:600')}>Type</button>
+          <button onClick={() => void startCall('voice')} data-track="home.say" style={s('flex:1.3;height:52px;border-radius:26px;border:none;background:var(--accent);color:#FFFFFF;font-size:17px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px')}><Svg d={I.mic} size={18} stroke="#FFFFFF" />Say it</button>
+          <button onClick={() => void openChat()} data-track="home.type" style={s('flex:1;height:52px;border-radius:26px;border:none;background:var(--soft);font-size:17px;font-weight:600')}>Type</button>
         </div>
       </section>
 
@@ -131,12 +131,12 @@ export function Home() {
         ))}
       </div>
 
-      <Label right={<button onClick={() => go('journey')} style={s('border:none;background:none;font-size:15px;font-weight:600;color:#2F2A5E;padding:0;min-height:44px')}>All steps</button>}>Tiny steps today</Label>
+      <Label right={<button onClick={() => go('journey')} style={s('border:none;background:none;font-size:15px;font-weight:600;color:var(--accent);padding:0;min-height:44px')}>All steps</button>}>Tiny steps today</Label>
       <section aria-label="Tiny steps today" style={s('background:#FFFFFF;border-radius:28px;padding:20px 0 16px;display:flex;flex-direction:column;gap:14px;box-shadow:0 10px 28px rgba(30,36,48,.05)')}>
         {plan.length > 0 && (
           <div style={s('padding:0 20px;display:flex;flex-direction:column;gap:8px')}>
             <div style={s('display:flex;justify-content:space-between;font-size:15px')}><span style={s('font-weight:600')}>{doneN === plan.length ? 'All done. That counts.' : doneN ? 'Nicely going' : 'Whenever you’re ready'}</span><span style={s('color:var(--muted)')}>{doneN} of {plan.length}</span></div>
-            <div role="progressbar" aria-label="Tiny steps done today" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} style={s('height:10px;border-radius:5px;background:#EFE9DD;overflow:hidden')}><div style={s(`height:100%;width:${Math.max(pct, 4)}%;border-radius:5px;background:linear-gradient(90deg,#6F6BB8,#F2B33D);transition:width 600ms cubic-bezier(.22,.61,.36,1)`)} /></div>
+            <div role="progressbar" aria-label="Tiny steps done today" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} style={s('height:10px;border-radius:5px;background:#EFE9DD;overflow:hidden')}><div style={s(`height:100%;width:${Math.max(pct, 4)}%;border-radius:5px;background:linear-gradient(90deg,var(--accent2),var(--gold));transition:width 600ms cubic-bezier(.22,.61,.36,1)`)} /></div>
           </div>
         )}
         {notes.length === 0 ? (
@@ -161,7 +161,7 @@ export function Home() {
               <button key={e.id} onClick={() => setV3({ sheet: { id: 'event', eventId: e.id } })} data-track="home.event" style={s('flex:none;width:220px;border:none;border-radius:24px;overflow:hidden;background:#FFFFFF;text-align:left;padding:0;display:flex;flex-direction:column;box-shadow:0 8px 22px rgba(30,36,48,.06)')}>
                 <div style={s(`height:84px;background:${EVENT_BG[i % 3]};position:relative;padding:12px`)}>
                   <span style={s('background:rgba(255,255,255,.92);border-radius:12px;padding:4px 10px;font-size:13px;font-weight:700')}>{dayOf(e.startsAt)}</span>
-                  {e.interested && <span style={s('position:absolute;right:12px;top:12px;background:#2F2A5E;color:#FFFFFF;border-radius:12px;padding:4px 10px;font-size:13px;font-weight:700')}>Going</span>}
+                  {e.interested && <span style={s('position:absolute;right:12px;top:12px;background:var(--accent);color:#FFFFFF;border-radius:12px;padding:4px 10px;font-size:13px;font-weight:700')}>Going</span>}
                 </div>
                 <div style={s('padding:12px 16px 16px;display:flex;flex-direction:column;gap:2px')}><span style={s('font-size:17px;font-weight:700')}>{e.title}</span><span style={s('font-size:15px;color:var(--muted)')}>{e.venue}</span></div>
               </button>
@@ -184,4 +184,4 @@ export function Home() {
   );
 }
 
-const EVENT_BG = ['linear-gradient(135deg,#93C48A,#DDEFE4)', 'linear-gradient(135deg,#E8896B,#FCEFCF)', 'linear-gradient(135deg,#6F6BB8,#E6E4F5)'];
+const EVENT_BG = ['linear-gradient(135deg,#93C48A,#DDEFE4)', 'linear-gradient(135deg,#E8896B,#FCEFCF)', 'linear-gradient(135deg,var(--accent2),var(--t1))'];

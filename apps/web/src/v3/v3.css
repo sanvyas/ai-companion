@@ -4,8 +4,9 @@ html,body,#root{height:100%;margin:0}
 body{background:#FAF6EF}
 .v3{
   --bg:#FAF6EF; --ink:#1E2430; --muted:#636B78; --indigo:#2F2A5E; --card:#FFFFFF; --line:#E5DED2; --soft:#F1EDE6; --gold:#F2B33D; --help:#9A3B1E;
+  --accent:#2F2A5E; --accent2:#6F6BB8; --t1:#E6E4F5; --hero1:#5B57A6;
   --tint:#F1EAF8; --wash:#F7F2FB;
-  --serif:'Instrument Serif','Noto Serif Devanagari',Georgia,serif; --sans:'Figtree Variable','Noto Sans Devanagari',system-ui,sans-serif;
+  --serif:'Fraunces Variable','Noto Serif Devanagari',Georgia,serif; --sans:'Plus Jakarta Sans Variable','Noto Sans Devanagari',system-ui,sans-serif;
   font-family:var(--sans); color:var(--ink); -webkit-font-smoothing:antialiased; height:100%;
 }
 .v3 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -25,7 +26,8 @@ body{background:#FAF6EF}
 .v3 .screen{position:absolute;inset:0}
 
 /* Headline type used across screens */
-.v3 .serif{font-family:var(--serif);font-weight:400}
+.v3 .serif{font-family:var(--serif);font-weight:500;font-variation-settings:'SOFT' 100;letter-spacing:-.018em;font-size-adjust:.4;text-wrap:balance}
+.v3 .serif em,.v3 .serif i{font-style:italic}
 .v3 .kicker{font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
 
 /* Focus that can be seen on every control */

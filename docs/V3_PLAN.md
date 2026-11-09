@@ -56,6 +56,13 @@ The third design now borrows what worked from the first two: the first design's 
 - **For you** (the bell on Home) replaces guessing what needs attention: your check-in, a heavy-day nudge that offers what has helped you before, your next tiny step, something near you, a Sunday letter, an empty month. Each is a button that does the thing. Built only from what is true today.
 - **Notifications** say more about you and do more: with previews on, a push uses your name, how yesterday was, a step you set and what has helped you before (never when previews are off or discreet mode is on), and its buttons go straight to Breathe, Talk, Walk and so on (`buildContent` in `packages/domain/src/notifications.ts`, `personalContext` in `apps/api/src/services/notifier.ts`).
 
+## Type, colour and pictures (after the first look)
+
+- **Type**: Fraunces (soft) for headlines and Plus Jakarta Sans for everything else. Both are bundled, so nothing is fetched at run time. Headlines use `font-size-adjust` so Hindi and English lines stay the same size.
+- **Colour**: six palettes (`v3/palette.ts`: Indigo Dusk, Garden Teal, Sunrise Terracotta, Rose and Plum, Ocean Mist, Forest Sage). Each sets the main colour, a lighter one, a highlight, the paper, field and tile colours, the Talk card, and the top-of-screen colour for each part of the day. Moods, warnings and words never change. Pick under You, then Colours; it is kept on the phone, and `?palette=<id>` sets it for a link. All are light, and the contrast of each is tested (`palette.test.ts`).
+- **Month** opens on letters, always (`FEATURED_MODE` in the domain package). Each stamp is a small drawing of what the day held. Song, future you and what works are one tap away.
+- **Pictures**: Talk and Journal are drawn, not iconed (`v3/art.tsx`): Saathi with a glow and a few quiet words, a bench under a tree, a path through hills, a notebook with a pen, and a small picture for morning, afternoon and evening. How you felt is shown with the same five faces everywhere.
+
 ## Known limits
 
 - Legacy screens (memory, privacy, reminders in detail, voice studio, language, safety sheets) are v2-styled inside v3. Sign-up is no longer one of them.

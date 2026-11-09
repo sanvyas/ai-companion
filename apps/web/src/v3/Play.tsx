@@ -49,7 +49,7 @@ export function BreatheScreen() {
     return () => cancelAnimationFrame(raf);
   }, [reduce]);
   return (
-    <div ref={ref} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Breathe with me" className="screen dark" style={{ ...s('z-index:62;background:linear-gradient(180deg,#2F2A5E 0%,#6F6BB8 100%);color:#FFFFFF;display:flex;flex-direction:column;align-items:center;padding:56px 24px 40px;outline:none') }}>
+    <div ref={ref} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Breathe with me" className="screen dark" style={{ ...s('z-index:62;background:linear-gradient(180deg,var(--accent) 0%,var(--accent2) 100%);color:#FFFFFF;display:flex;flex-direction:column;align-items:center;padding:56px 24px 40px;outline:none') }}>
       <div style={s('align-self:stretch;display:flex;align-items:center;justify-content:space-between')}>
         <span style={s('font-size:14px;color:#D6D3EE;font-weight:600')}>{done ? '1 minute done' : `Breath ${cycle + 1} of 3`}</span>
         <HelpButton dark />
@@ -98,7 +98,7 @@ export function PlayerScreen() {
         <HelpButton dark />
       </div>
       <div style={s('flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;text-align:center')}>
-        <div aria-hidden="true" style={s(`width:170px;height:170px;border-radius:50%;background:${story ? 'radial-gradient(circle at 40% 35%,#F8E9C8,#B7B1E6 55%,#5A5493)' : 'radial-gradient(circle at 40% 35%,#FFFFFF,#B7B1E6 50%,#6F6BB8)'};box-shadow:0 0 60px rgba(183,177,230,.5);animation:${playing ? 'kBob 5s ease-in-out infinite' : 'none'}`)} />
+        <div aria-hidden="true" style={s(`width:170px;height:170px;border-radius:50%;background:${story ? 'radial-gradient(circle at 40% 35%,#F8E9C8,#B7B1E6 55%,#5A5493)' : 'radial-gradient(circle at 40% 35%,#FFFFFF,#B7B1E6 50%,var(--accent2))'};box-shadow:0 0 60px rgba(183,177,230,.5);animation:${playing ? 'kBob 5s ease-in-out infinite' : 'none'}`)} />
         {!ended ? (
           <p className="serif" aria-live="polite" key={idx} style={{ ...s('font-style:italic;font-size:24px;line-height:1.35;min-height:100px;margin:0;text-wrap:pretty;animation:kFade 900ms') }}>{line || 'Settling in…'}</p>
         ) : (

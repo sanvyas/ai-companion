@@ -56,10 +56,10 @@ export function WhyScreen({ onDone }: { onDone: () => void }) {
       <div role="group" aria-label="What it is about" style={s('display:flex;flex-wrap:wrap;gap:10px;margin-top:24px')}>
         {WHY.map(c => {
           const on = why.includes(c);
-          return <button key={c} aria-pressed={on} onClick={() => setV3({ why: on ? why.filter(x => x !== c) : [...why, c] })} style={s(`height:52px;padding:0 20px;border-radius:26px;border:1.5px solid ${on ? '#2F2A5E' : '#E5DED2'};background:${on ? '#2F2A5E' : '#FFFFFF'};font-size:17px;font-weight:600;color:${on ? '#FFFFFF' : '#1E2430'}`)}>{c}</button>;
+          return <button key={c} aria-pressed={on} onClick={() => setV3({ why: on ? why.filter(x => x !== c) : [...why, c] })} style={s(`height:52px;padding:0 20px;border-radius:26px;border:1.5px solid ${on ? 'var(--accent)' : '#E5DED2'};background:${on ? 'var(--accent)' : '#FFFFFF'};font-size:17px;font-weight:600;color:${on ? '#FFFFFF' : '#1E2430'}`)}>{c}</button>;
         })}
       </div>
-      <button onClick={onDone} data-track="why.continue" style={s('margin-top:auto;height:56px;border-radius:28px;border:none;background:#2F2A5E;color:#FFFFFF;font-size:17px;font-weight:600')}>{why.length ? 'Continue' : 'Skip this'}</button>
+      <button onClick={onDone} data-track="why.continue" style={s('margin-top:auto;height:56px;border-radius:28px;border:none;background:var(--accent);color:#FFFFFF;font-size:17px;font-weight:600')}>{why.length ? 'Continue' : 'Skip this'}</button>
     </div>
   );
 }

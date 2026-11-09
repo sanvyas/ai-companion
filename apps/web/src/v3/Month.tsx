@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  FEELINGS, FEELING_LABEL, KIND_INFO, SONG_ROWS, futureYou, guideStats, letterBody, lyricFor, modeFor, monthWeeks, noticedFor,
+  FEELINGS, FEELING_LABEL, KIND_INFO, SONG_ROWS, futureYou, guideStats, letterBody, lyricFor, FEATURED_MODE, monthWeeks, noticedFor,
   type Feeling, type MonthKind, type MonthMode,
 } from '@saathi/domain';
 import { stopSpeech, say } from '../audio/speech';
@@ -16,12 +16,14 @@ const MODE_INFO: Record<MonthMode, { label: string; name: string; desc: string; 
   song: { label: 'Song', name: 'Your month as a song', desc: 'Each day adds a sound and a lyric. Four weeks, one album.', bg: 'linear-gradient(180deg,#3A3278 0%,#5547A0 100%)', fg: '#FFFFFF', dark: true },
   letters: { label: 'Letters', name: 'Letters, day by day', desc: 'A stamp a day in a weekly envelope. A letter every Sunday.', bg: '#F4EEE3', fg: '#1E2430', dark: false },
   future: { label: 'Future you', name: 'Future you comes into focus', desc: 'A year-from-now you gets clearer with each small thing.', bg: '#FBF1E8', fg: '#1E2430', dark: false },
-  guide: { label: 'What works', name: 'Your what-works guide', desc: 'Saathi learns what lifts your mood and writes it down.', bg: '#FAF6EF', fg: '#1E2430', dark: false },
+  guide: { label: 'What works', name: 'Your what-works guide', desc: 'Saathi learns what lifts your mood and writes it down.', bg: 'var(--bg)', fg: '#1E2430', dark: false },
 };
 const ORDER: MonthMode[] = ['song', 'letters', 'future', 'guide'];
 const DN = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const STYLES = ['Lo-fi', 'Acoustic', 'Piano', 'Upbeat'] as const;
-const COVERS = ['linear-gradient(135deg,#F2B33D,#E8896B)', 'linear-gradient(135deg,#7FD1C3,#3B8FC0)', 'linear-gradient(135deg,#D9708F,#6F6BB8)', 'linear-gradient(135deg,#93C48A,#3E7F4C)'];
+const COVERS = ['linear-gradient(135deg,var(--gold),#E8896B)', 'linear-gradient(135deg,#7FD1C3,#3B8FC0)', 'linear-gradient(135deg,#D9708F,var(--accent2))', 'linear-gradient(135deg,#93C48A,#3E7F4C)'];
+/** A little drawing for each kind of day, so a stamp says what it was without any words squeezed onto it. */
+const KIND_ICON: Record<MonthKind, string> = { walk: I.walk, friend: I.phone, out: I.pin, sleep: I.moon, talk: I.chat, breathe: I.breathe, journal: I.pen, play: I.game, step: I.check, show: I.lotus };
 const ADD: MonthKind[] = ['walk', 'friend', 'out', 'sleep', 'breathe', 'play'];
 
 // What they edit in the song (its title, its style, a line they rewrote) stays on this phone: it is theirs, not data.
@@ -44,12 +46,11 @@ export function MonthTab() {
   const weeks = useMemo(() => monthWeeks(today), [today]);
   const byDay = useMemo(() => new Map((month?.days ?? []).map(d => [d.day, d.kinds])), [month]);
   const kindsOn = (day: string) => byDay.get(day) ?? [];
-  const mode = view ?? (month ? modeFor(month.signedUp, today) : 'song');
-  const own = month ? modeFor(month.signedUp, today) : 'song';
+  const own = FEATURED_MODE;
+  const mode = view ?? own;
   const info = MODE_INFO[mode];
   const total = weeks.flatMap(w => w.days).reduce((n, d) => n + kindsOn(d.day).length, 0);
   const todayKinds = kindsOn(today);
-  const next = MODE_INFO[ORDER[(ORDER.indexOf(own) + 1) % 4]];
 
   return (
     <div className="screen" data-scroll="1" style={{ ...s(`overflow:auto;background:${info.bg};color:${info.fg};display:flex;flex-direction:column;padding:56px 24px 128px;gap:16px;transition:background 600ms`) }}>
@@ -65,7 +66,6 @@ export function MonthTab() {
             {ORDER.filter(m => m !== own).map(m => (
               <button key={m} role="tab" aria-selected={false} onClick={() => { stopSpeech(); setV3({ view: m }); }} style={s(`height:48px;padding:0 20px;border-radius:24px;border:none;background:${info.dark ? 'rgba(255,255,255,.14)' : '#FFFFFF'};color:inherit;font-size:15px;font-weight:700`)}>{MODE_INFO[m].label}</button>
             ))}
-            <span style={s('flex-basis:100%;font-size:15px;opacity:.8')}>Next month it becomes {next.name.toLowerCase()}.</span>
           </div>
         )}
       </div>
@@ -90,14 +90,14 @@ export function MonthTab() {
       <h2 style={s('font-size:13px;font-weight:700;opacity:.8;letter-spacing:.06em;text-transform:uppercase;margin:8px 0 0')}>Tiny steps</h2>
       <section aria-label="Tiny steps" style={s('background:#FFFFFF;color:#1E2430;border-radius:28px;padding:8px 18px 18px;display:flex;flex-direction:column')}>
         {[...plan].sort((a, b) => Number(a.done) - Number(b.done)).map((p, i, all) => (
-          <button key={p.id} role="checkbox" aria-checked={p.done} onClick={() => void togglePlan(p.id)} style={s(`display:flex;align-items:center;gap:14px;text-align:left;border:none;background:none;padding:14px 0;min-height:60px;border-bottom:${i < all.length - 1 ? '1px solid #F1EDE6' : 'none'}`)}>
+          <button key={p.id} role="checkbox" aria-checked={p.done} onClick={() => void togglePlan(p.id)} style={s(`display:flex;align-items:center;gap:14px;text-align:left;border:none;background:none;padding:14px 0;min-height:60px;border-bottom:${i < all.length - 1 ? '1px solid var(--soft)' : 'none'}`)}>
             <span aria-hidden="true" style={s(`flex:none;width:28px;height:28px;border-radius:50%;border:2px solid #1E2430;background:${p.done ? '#1E2430' : 'transparent'};display:grid;place-items:center`)}><Svg d={I.check} size={14} stroke="#FFFFFF" sw={3} style={{ opacity: p.done ? 1 : 0 }} /></span>
             <span style={s('flex:1;display:flex;flex-direction:column;gap:2px')}><span style={s(`font-size:17px;text-decoration:${p.done ? 'line-through' : 'none'};opacity:${p.done ? 0.65 : 1}`)}>{p.label}</span><span style={s('font-size:13px;color:#4A4F5A')}>{{ ai: 'Suggested', user: 'You added', journal: 'From journal', checkin: 'From a check-in' }[p.source]}</span></span>
           </button>
         ))}
         <form onSubmit={e => { e.preventDefault(); const t = newStep.trim(); if (t) { void addPlanItem(t); setNewStep(''); } }} style={s('display:flex;gap:8px;margin-top:10px')}>
-          <input aria-label="A tiny step" value={newStep} onChange={e => setNewStep(e.target.value)} placeholder="Add a tiny step…" maxLength={120} style={s('flex:1;min-width:0;height:52px;border-radius:26px;border:none;background:#F1EDE6;color:#1E2430;padding:0 20px;font-size:17px;outline:none')} />
-          <button type="submit" aria-label="Add step" style={s('flex:none;width:52px;height:52px;border-radius:50%;border:none;background:#2F2A5E;display:grid;place-items:center')}><Svg d={I.plus} size={20} stroke="#FFFFFF" sw={2.2} /></button>
+          <input aria-label="A tiny step" value={newStep} onChange={e => setNewStep(e.target.value)} placeholder="Add a tiny step…" maxLength={120} style={s('flex:1;min-width:0;height:52px;border-radius:26px;border:none;background:var(--soft);color:#1E2430;padding:0 20px;font-size:17px;outline:none')} />
+          <button type="submit" aria-label="Add step" style={s('flex:none;width:52px;height:52px;border-radius:50%;border:none;background:var(--accent);display:grid;place-items:center')}><Svg d={I.plus} size={20} stroke="#FFFFFF" sw={2.2} /></button>
         </form>
       </section>
     </div>
@@ -161,7 +161,7 @@ function SongView({ weeks, kindsOn, today }: { weeks: ReturnType<typeof monthWee
       <div role="group" aria-label="Weeks" style={s('display:flex;gap:6px')}>
         {weeks.map((w, i) => {
           const future = w.start > today;
-          return <button key={w.start} aria-pressed={i === wk} onClick={() => { stopAll(); setWk(i); }} style={s(`flex:1;min-height:52px;border-radius:16px;border:${i === wk ? '1.5px solid #F2B33D' : '1.5px solid transparent'};background:${i === wk ? 'rgba(242,179,61,.25)' : 'rgba(255,255,255,.08)'};color:#FFFFFF;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;opacity:${future ? 0.45 : 1}`)}><span style={s('font-size:13px;font-weight:700')}>Week {i + 1}</span><span style={s('font-size:11px;opacity:.85')}>{i < weeks.length - 1 ? 'Done' : 'Now'}</span></button>;
+          return <button key={w.start} aria-pressed={i === wk} onClick={() => { stopAll(); setWk(i); }} style={s(`flex:1;min-height:52px;border-radius:16px;border:${i === wk ? '1.5px solid var(--gold)' : '1.5px solid transparent'};background:${i === wk ? 'rgba(242,179,61,.25)' : 'rgba(255,255,255,.08)'};color:#FFFFFF;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;opacity:${future ? 0.45 : 1}`)}><span style={s('font-size:13px;font-weight:700')}>Week {i + 1}</span><span style={s('font-size:11px;opacity:.85')}>{i < weeks.length - 1 ? 'Done' : 'Now'}</span></button>;
         })}
       </div>
       <div style={s('background:rgba(255,255,255,.07);border-radius:24px;padding:16px 14px;display:flex;flex-direction:column;gap:12px')}>
@@ -170,33 +170,33 @@ function SongView({ weeks, kindsOn, today }: { weeks: ReturnType<typeof monthWee
           <span style={s('font-size:12px;font-weight:700;color:#D6D3F0')}>{sounds} {sounds === 1 ? 'sound' : 'sounds'} · {style}</span>
         </div>
         <div role="group" aria-label="Style" style={s('display:flex;gap:6px;overflow-x:auto;margin:0 -14px;padding:0 14px')}>
-          {STYLES.map(st => <button key={st} aria-pressed={style === st} onClick={() => save({ ...song, styles: { ...song.styles, [week.start]: st } })} style={s(`flex:none;min-height:44px;padding:0 14px;border-radius:22px;border:none;background:${style === st ? '#F2B33D' : 'rgba(255,255,255,.1)'};color:${style === st ? '#1C1838' : '#FFFFFF'};font-size:13px;font-weight:700`)}>{st}</button>)}
+          {STYLES.map(st => <button key={st} aria-pressed={style === st} onClick={() => save({ ...song, styles: { ...song.styles, [week.start]: st } })} style={s(`flex:none;min-height:44px;padding:0 14px;border-radius:22px;border:none;background:${style === st ? 'var(--gold)' : 'rgba(255,255,255,.1)'};color:${style === st ? '#1C1838' : '#FFFFFF'};font-size:13px;font-weight:700`)}>{st}</button>)}
         </div>
         <div role="img" aria-label={`This week’s score: ${sounds} sounds across the days`} style={s('position:relative;display:flex;flex-direction:column;gap:6px')}>
-          {playing && <span aria-hidden="true" style={s(`position:absolute;top:-4px;bottom:16px;width:2px;background:#F2B33D;left:calc(55px + (100% - 55px) * ${(step / 7).toFixed(3)});box-shadow:0 0 10px #F2B33D;z-index:2`)} />}
+          {playing && <span aria-hidden="true" style={s(`position:absolute;top:-4px;bottom:16px;width:2px;background:var(--gold);left:calc(55px + (100% - 55px) * ${(step / 7).toFixed(3)});box-shadow:0 0 10px var(--gold);z-index:2`)} />}
           {SONG_ROWS.map(row => (
             <div key={row.label} style={s('display:flex;align-items:center;gap:5px')}>
               <span style={s('width:50px;font-size:11px;font-weight:700;color:#D6D3F0')}>{row.label}</span>
               {week.days.map((d, di) => { const on = kindsOn(d.day).some(k => row.kinds.includes(k)); const pl = playing && Math.floor(step) === di && on; return <span key={d.day} style={s(`flex:1;height:22px;border-radius:6px;background:${on ? row.color : 'rgba(255,255,255,.06)'};box-shadow:${pl ? `0 0 14px ${row.color}` : 'none'};border:${d.today ? '1.5px solid rgba(242,179,61,.7)' : '1.5px solid transparent'};transition:background 400ms`)} />; })}
             </div>
           ))}
-          <div aria-hidden="true" style={s('display:flex;gap:5px;padding-left:55px')}>{DN.map((d, i) => <span key={d} style={s(`flex:1;text-align:center;font-size:11px;font-weight:700;color:${i === nowIdx ? '#F2B33D' : '#C8C5E8'}`)}>{d[0]}</span>)}</div>
+          <div aria-hidden="true" style={s('display:flex;gap:5px;padding-left:55px')}>{DN.map((d, i) => <span key={d} style={s(`flex:1;text-align:center;font-size:11px;font-weight:700;color:${i === nowIdx ? 'var(--gold)' : '#C8C5E8'}`)}>{d[0]}</span>)}</div>
         </div>
         <div style={s('display:flex;gap:8px')}>
-          <button onClick={play} data-track="month.play" style={s('flex:1;height:52px;border-radius:26px;border:none;background:#F2B33D;color:#1C1838;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px')}><Svg d={playing ? I.pause : I.play} size={16} fill="#1C1838" stroke="#1C1838" sw={0} />{playing ? 'Stop' : `Play week ${wk + 1}`}</button>
-          <button aria-pressed={sing} onClick={() => setSing(v => !v)} style={s(`height:52px;padding:0 16px;border-radius:26px;border:none;background:${sing ? '#6F6BB8' : 'rgba(255,255,255,.12)'};color:#FFFFFF;font-size:14px;font-weight:700`)}>{sing ? 'Sung' : 'Music only'}</button>
+          <button onClick={play} data-track="month.play" style={s('flex:1;height:52px;border-radius:26px;border:none;background:var(--gold);color:#1C1838;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px')}><Svg d={playing ? I.pause : I.play} size={16} fill="#1C1838" stroke="#1C1838" sw={0} />{playing ? 'Stop' : `Play week ${wk + 1}`}</button>
+          <button aria-pressed={sing} onClick={() => setSing(v => !v)} style={s(`height:52px;padding:0 16px;border-radius:26px;border:none;background:${sing ? 'var(--accent2)' : 'rgba(255,255,255,.12)'};color:#FFFFFF;font-size:14px;font-weight:700`)}>{sing ? 'Sung' : 'Music only'}</button>
         </div>
       </div>
       <div style={s('display:flex;justify-content:space-between;align-items:baseline')}>
         <h2 style={s('font-size:12px;font-weight:700;color:#D6D3F0;letter-spacing:.06em;text-transform:uppercase;margin:0')}>Lyrics · tap a line to rewrite</h2>
-        <button onClick={() => { const turns = { ...song.turns }; const lines = { ...song.lines }; week.days.forEach(d => { turns[d.day] = (turns[d.day] ?? 0) + 1; delete lines[d.day]; }); save({ ...song, turns, lines }); }} style={s('border:none;background:none;color:#F2B33D;font-size:13px;font-weight:700;padding:0;min-height:44px')}>Rewrite all</button>
+        <button onClick={() => { const turns = { ...song.turns }; const lines = { ...song.lines }; week.days.forEach(d => { turns[d.day] = (turns[d.day] ?? 0) + 1; delete lines[d.day]; }); save({ ...song, turns, lines }); }} style={s('border:none;background:none;color:var(--gold);font-size:13px;font-weight:700;padding:0;min-height:44px')}>Rewrite all</button>
       </div>
       <div style={s('background:rgba(255,255,255,.07);border-radius:22px;padding:8px 14px;display:flex;flex-direction:column')}>
         {week.days.map((d, i) => {
           const has = kindsOn(d.day).length > 0, text = has ? line(d.day) : '';
           return (
             <div key={d.day} style={s(`display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:${i < 6 ? '1px solid rgba(255,255,255,.06)' : 'none'}`)}>
-              <span style={s(`flex:none;width:30px;font-size:11px;font-weight:700;color:${d.today ? '#F2B33D' : '#C8C5E8'}`)}>{DN[i]}</span>
+              <span style={s(`flex:none;width:30px;font-size:11px;font-weight:700;color:${d.today ? 'var(--gold)' : '#C8C5E8'}`)}>{DN[i]}</span>
               <input aria-label={`Lyric for ${DN[i]}`} value={text} placeholder={d.future ? 'not yet' : has ? '' : 'a quiet day'} readOnly={!has} onChange={e => save({ ...song, lines: { ...song.lines, [d.day]: e.target.value } })} style={s(`flex:1;min-width:0;background:${playing && Math.floor(step) === i ? 'rgba(242,179,61,.25)' : 'transparent'};border:none;border-radius:8px;color:${has ? '#FFFFFF' : '#B5B1DA'};font-family:var(--serif);font-style:italic;font-size:18px;padding:4px 6px;outline:none;transition:background 300ms`)} />
               {has && <button aria-label={`Rewrite the line for ${DN[i]}`} onClick={() => { const lines = { ...song.lines }; delete lines[d.day]; save({ ...song, lines, turns: { ...song.turns, [d.day]: (song.turns[d.day] ?? 0) + 1 } }); }} style={s('flex:none;width:44px;height:44px;border-radius:50%;border:none;background:transparent;display:grid;place-items:center')}><Svg d={I.refresh} size={14} stroke="#FFFFFF" sw={2} /></button>}
             </div>
@@ -231,17 +231,20 @@ function LettersView({ weeks, kindsOn, today, nick, letterText }: { weeks: Retur
           {week.days.map((d, i) => { const ks = kindsOn(d.day), v = ks[0]; return (
             <div key={d.day} role="listitem" aria-label={`${DN[i]}: ${v ? KIND_INFO[v].label : d.future ? 'not yet' : 'a quiet day'}`} style={s('display:flex;flex-direction:column;align-items:center;gap:4px')}>
               <span style={s('font-size:10px;font-weight:700;color:#7A6648')}>{DN[i]}</span>
-              <span style={s(`width:100%;height:58px;border-radius:3px;background:${v ? KIND_INFO[v].color : d.today ? '#FCEFCF' : '#F4EEE3'};border:2px dashed ${v ? '#FFFFFF' : d.today ? '#F2B33D' : '#E0D6C4'};box-shadow:${d.today && !v ? '0 0 10px rgba(242,179,61,.5)' : 'none'};display:grid;place-items:center;font-size:8.5px;font-weight:700;color:#FFFFFF;text-align:center;line-height:1.1;padding:2px;overflow:hidden;word-break:break-word`)}>{v ? (ks.length > 1 ? `${KIND_INFO[v].label} +${ks.length - 1}` : KIND_INFO[v].label) : ''}</span>
+              <span style={s(`position:relative;width:100%;height:64px;border-radius:4px;background:${v ? KIND_INFO[v].color : d.today ? '#FCEFCF' : '#F4EEE3'};border:2px dashed ${v ? '#FFFFFF' : d.today ? 'var(--gold)' : '#E0D6C4'};box-shadow:${v ? '0 3px 8px rgba(30,36,48,.18)' : d.today ? '0 0 10px rgba(242,179,61,.5)' : 'none'};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;transform:rotate(${v ? [-2, 1.5, -1, 2, -1.5, 1, -2][i] : 0}deg)`)}>
+                {v && <Svg d={KIND_ICON[v]} size={22} stroke="#FFFFFF" sw={2} />}
+                {ks.length > 1 && <span style={s('font-size:11px;font-weight:800;color:#FFFFFF;line-height:1')}>+{ks.length - 1}</span>}
+              </span>
             </div>
           ); })}
         </div>
       </div>
       {none && (
-        <div style={s('background:#2F2A5E;color:#FFFFFF;border-radius:22px;padding:14px 16px;display:flex;flex-direction:column;gap:10px')}>
+        <div style={s('background:var(--accent);color:#FFFFFF;border-radius:22px;padding:14px 16px;display:flex;flex-direction:column;gap:10px')}>
           <span style={s('font-size:12px;font-weight:700;color:#D6D3F0')}>Saathi wondered</span>
           <span style={s('font-size:16px;line-height:1.4')}>{sug.text}</span>
           <div style={s('display:flex;gap:8px')}>
-            <button onClick={() => { logActivity(sug.kind); void loadMonthData(); }} style={s('flex:1;min-height:44px;border-radius:22px;border:none;background:#FFFFFF;color:#2F2A5E;font-size:14px;font-weight:700')}>Yes, add it</button>
+            <button onClick={() => { logActivity(sug.kind); void loadMonthData(); }} style={s('flex:1;min-height:44px;border-radius:22px;border:none;background:#FFFFFF;color:var(--accent);font-size:14px;font-weight:700')}>Yes, add it</button>
             <button onClick={() => { logActivity('show'); void loadMonthData(); }} style={s('flex:1;min-height:44px;border-radius:22px;border:none;background:rgba(255,255,255,.14);color:#FFFFFF;font-size:14px;font-weight:700')}>Just showed up</button>
           </div>
         </div>
@@ -277,7 +280,7 @@ function FutureView({ points }: { points: number }) {
         </div>
         <div style={s('position:absolute;left:16px;right:16px;top:16px;background:rgba(255,253,248,.94);border-radius:18px;padding:12px 14px;color:#1E2430')}><span style={s('font-size:12px;font-weight:700;color:#7A5A00')}>Future you says</span><div className="serif" style={s('font-size:19px;line-height:1.3')}>{f.message}</div></div>
       </div>
-      <div role="progressbar" aria-label="How clearly you can see them" aria-valuenow={f.clarity} aria-valuemin={0} aria-valuemax={100} style={s('height:8px;border-radius:4px;background:#EEE8DE;overflow:hidden')}><div style={s(`height:100%;width:${f.clarity}%;background:linear-gradient(90deg,#F2B33D,#3E7F4C);transition:width 800ms`)} /></div>
+      <div role="progressbar" aria-label="How clearly you can see them" aria-valuenow={f.clarity} aria-valuemin={0} aria-valuemax={100} style={s('height:8px;border-radius:4px;background:#EEE8DE;overflow:hidden')}><div style={s(`height:100%;width:${f.clarity}%;background:linear-gradient(90deg,var(--gold),#3E7F4C);transition:width 800ms`)} /></div>
       <span style={s('font-size:14px;opacity:.85')}>{f.clarity}% clear · {f.points} small thing{f.points === 1 ? '' : 's'} in these four weeks</span>
     </>
   );
@@ -293,7 +296,7 @@ function GuideView({ help }: { help: { feeling: Feeling; kind: MonthKind; helped
       <div role="group" aria-label="When you feel" style={s('display:flex;gap:6px;flex-wrap:wrap')}>
         {FEELINGS.filter(f => f !== 'okay').map(f => <button key={f} aria-pressed={feel === f} onClick={() => setFeel(f)} style={s(`min-height:44px;padding:0 14px;border-radius:22px;border:none;background:${feel === f ? '#1E2430' : '#FFFFFF'};color:${feel === f ? '#FFFFFF' : '#1E2430'};font-size:14px;font-weight:700`)}>{FEELING_LABEL[f]}</button>)}
       </div>
-      <div style={s('background:#2F2A5E;color:#FFFFFF;border-radius:24px;padding:18px;display:flex;flex-direction:column;gap:6px')}>
+      <div style={s('background:var(--accent);color:#FFFFFF;border-radius:24px;padding:18px;display:flex;flex-direction:column;gap:6px')}>
         <span style={s('font-size:12px;font-weight:700;color:#D6D3F0;letter-spacing:.06em;text-transform:uppercase')}>When you feel {FEELING_LABEL[feel].toLowerCase()}, this helps most</span>
         <span className="serif" style={s('font-size:30px;line-height:1.05')}>{top ? KIND_INFO[top.kind].label : 'Still learning'}</span>
         <span style={s('font-size:14px;color:#DAD7F2')}>{top ? `Helped ${top.helped} of ${top.tried} time${top.tried === 1 ? '' : 's'}` : 'Try something when you feel this way, and tell me if it helped. I’ll write it down.'}</span>
@@ -301,7 +304,7 @@ function GuideView({ help }: { help: { feeling: Feeling; kind: MonthKind; helped
       {st.length > 0 && (
         <div style={s('background:#FFFFFF;border-radius:22px;padding:6px 16px;display:flex;flex-direction:column')}>
           {st.map((r, i) => (
-            <div key={r.kind} style={s(`display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:${i < st.length - 1 ? '1px solid #F1EDE6' : 'none'}`)}>
+            <div key={r.kind} style={s(`display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:${i < st.length - 1 ? '1px solid var(--soft)' : 'none'}`)}>
               <span aria-hidden="true" style={s(`width:12px;height:12px;border-radius:50%;background:${KIND_INFO[r.kind].color}`)} /><span style={s('flex:1;font-size:15px;font-weight:600')}>{KIND_INFO[r.kind].label}</span><span style={s('font-size:13px;font-weight:700;color:#636B78')}>{r.helped}/{r.tried}</span>
             </div>
           ))}

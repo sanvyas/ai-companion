@@ -14,7 +14,7 @@ import { I, Svg } from './icons';
 // What changed: the explanation is one picture-led screen, language, name, number and code share a single screen, and anyone
 // who already has an account is never asked their age or their language again.
 
-const INK = '#1E2430', MUTED = '#636B78', INDIGO = '#2F2A5E';
+const INK = '#1E2430', MUTED = '#636B78', INDIGO = 'var(--accent)';
 const page = 'position:absolute;inset:0;display:flex;flex-direction:column;overflow:auto;padding:64px 24px 32px';
 const ground = 'linear-gradient(180deg,var(--tint) 0%,var(--bg) 62%)';
 
@@ -24,11 +24,11 @@ const Primary = ({ children, onClick, disabled, type = 'button' }: { children: R
   <button type={type} onClick={onClick} disabled={disabled} style={s(`height:56px;border-radius:28px;border:none;background:${INDIGO};color:#FFFFFF;font-size:17px;font-weight:600;width:100%;opacity:${disabled ? 0.65 : 1}`)}>{children}</button>;
 const Quiet = ({ children, onClick }: { children: React.ReactNode; onClick: () => void }) => <button type="button" onClick={onClick} style={s(`height:48px;border:none;background:none;color:${INDIGO};font-size:17px;font-weight:600;width:100%`)}>{children}</button>;
 const Back = ({ onClick }: { onClick: () => void }) => <button type="button" onClick={onClick} aria-label="Back" style={s('align-self:flex-start;width:44px;height:44px;border:none;background:none;display:grid;place-items:center;margin:-8px 0 8px -10px')}><Svg d={I.back} size={22} stroke={INK} /></button>;
-const field = 'height:56px;border-radius:20px;border:none;background:#F1EDE6;padding:0 20px;font-size:19px;outline:none;width:100%;color:#1E2430';
+const field = 'height:56px;border-radius:20px;border:none;background:var(--soft);padding:0 20px;font-size:19px;outline:none;width:100%;color:#1E2430';
 
 // ------------------------------------------------------------------------------------------------ welcome: what it does, in one look
 const DOES: { icon: string; bg: string; title: string; line: string }[] = [
-  { icon: I.chat, bg: '#E6E4F5', title: 'Talk', line: 'Say it out loud or type it. No judging, any hour.' },
+  { icon: I.chat, bg: 'var(--t1)', title: 'Talk', line: 'Say it out loud or type it. No judging, any hour.' },
   { icon: I.lotus, bg: '#E0EFE5', title: 'Relax', line: 'Breathing, stories and quiet games to settle down.' },
   { icon: I.pen, bg: '#FCEFCF', title: 'Write', line: 'A private journal that listens back.' },
   { icon: I.month, bg: '#FBE4DA', title: 'See your month', line: 'Notice how you’ve been looking after yourself.' },
@@ -117,7 +117,7 @@ export function SignInV3({ step }: { step: 'name' | 'otp' }) {
           <>
             <div id="lang-l" style={s('font-size:15px;font-weight:600;margin-top:28px')}>Which language feels like home?</div>
             <div role="radiogroup" aria-labelledby="lang-l" style={s('display:flex;gap:10px;flex-wrap:wrap;margin-top:10px')}>
-              {LANGS.map(l => { const on = x.language === l.value; return <button key={l.value} type="button" role="radio" aria-checked={on} onClick={() => set({ language: l.value })} lang={l.value === 'hi' ? 'hi' : 'en'} style={s(`height:48px;padding:0 20px;display:inline-flex;align-items:center;justify-content:center;line-height:1;border-radius:24px;font-size:17px;border:1.5px solid ${on ? INDIGO : 'transparent'};background:${on ? '#FFFFFF' : '#F1EDE6'};font-weight:${on ? 700 : 500}`)}>{l.label}</button>; })}
+              {LANGS.map(l => { const on = x.language === l.value; return <button key={l.value} type="button" role="radio" aria-checked={on} onClick={() => set({ language: l.value })} lang={l.value === 'hi' ? 'hi' : 'en'} style={s(`height:48px;padding:0 20px;display:inline-flex;align-items:center;justify-content:center;line-height:1;border-radius:24px;font-size:17px;border:1.5px solid ${on ? INDIGO : 'transparent'};background:${on ? '#FFFFFF' : 'var(--soft)'};font-weight:${on ? 700 : 500}`)}>{l.label}</button>; })}
             </div>
             <label htmlFor="nick" style={s('font-size:15px;font-weight:600;margin-top:24px')}>What should I call you? <span style={s(`font-weight:400;color:${MUTED}`)}>A nickname is fine.</span></label>
             <input id="nick" value={x.nick} maxLength={24} autoComplete="nickname" onChange={e => set({ nick: e.target.value })} style={{ ...s(field), marginTop: 10 }} />
@@ -175,7 +175,7 @@ export function CompanionV3() {
       <div role="radiogroup" aria-labelledby="av-l" style={s('display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:12px')}>
         {LOOK_OPTIONS.map(o => (
           <button key={o.id} type="button" role="radio" aria-checked={look === o.id} onClick={() => set({ look: o.id })} style={s('background:none;border:none;padding:0;display:flex;flex-direction:column;align-items:center;gap:6px')}>
-            <span style={s(`width:60px;height:60px;border-radius:50%;overflow:hidden;background:#FFFFFF;display:grid;place-items:center;box-shadow:${look === o.id ? `0 0 0 3px #FAF6EF,0 0 0 5px ${INDIGO}` : 'none'}`)}><Companion look={o.id} size={o.id === 'orb' ? 44 : 60} /></span>
+            <span style={s(`width:60px;height:60px;border-radius:50%;overflow:hidden;background:#FFFFFF;display:grid;place-items:center;box-shadow:${look === o.id ? `0 0 0 3px var(--bg),0 0 0 5px ${INDIGO}` : 'none'}`)}><Companion look={o.id} size={o.id === 'orb' ? 44 : 60} /></span>
             <span style={s('font-size:15px')}>{o.label}</span>
           </button>
         ))}

@@ -3,11 +3,13 @@ import { addPlanItem, confirmEvent, startWalkFlow } from '../state/actions';
 import { s } from './css';
 import { Sheet } from './Chrome';
 import { InboxSheet } from './Inbox';
+import { ColoursSheet } from './Colours';
 import { MOODS } from './moods';
+import { Face } from './faces';
 import { closeSheet, useV3 } from './ui';
 import type { JournalEntry } from '../api';
 
-const BG = ['linear-gradient(135deg,#93C48A,#DDEFE4)', 'linear-gradient(135deg,#E8896B,#FCEFCF)', 'linear-gradient(135deg,#6F6BB8,#E6E4F5)'];
+const BG = ['linear-gradient(135deg,#93C48A,#DDEFE4)', 'linear-gradient(135deg,#E8896B,#FCEFCF)', 'linear-gradient(135deg,var(--accent2),var(--t1))'];
 
 /** An event near them. Nothing is booked or paid here; saying "I’ll go" only adds a tiny step and a reminder. */
 export function EventSheet({ id }: { id: string }) {
@@ -27,8 +29,8 @@ export function EventSheet({ id }: { id: string }) {
       <div style={s('display:flex;flex-wrap:wrap;gap:6px')}>{tags.map(t => <span key={t} style={s('height:30px;padding:0 12px;border-radius:15px;background:#FFFFFF;font-size:13px;font-weight:600;display:flex;align-items:center')}>{t}</span>)}</div>
       {d.like && <p style={s('font-size:16px;line-height:1.5;margin:0')}>{d.like}</p>}
       {d.stay && <p style={s('font-size:14px;line-height:1.5;margin:0;color:#636B78')}>{d.stay}</p>}
-      <button onClick={() => void go()} style={s('height:56px;border-radius:28px;border:none;background:#2F2A5E;color:#FFFFFF;font-size:16px;font-weight:700;flex:none')}>{e.interested ? 'You’re going · close' : 'I’ll go'}</button>
-      <button onClick={() => { closeSheet(); void startWalkFlow(); }} style={s('height:48px;border-radius:24px;border:none;background:none;color:#2F2A5E;font-size:15px;font-weight:700;flex:none')}>Walk me there</button>
+      <button onClick={() => void go()} style={s('height:56px;border-radius:28px;border:none;background:var(--accent);color:#FFFFFF;font-size:16px;font-weight:700;flex:none')}>{e.interested ? 'You’re going · close' : 'I’ll go'}</button>
+      <button onClick={() => { closeSheet(); void startWalkFlow(); }} style={s('height:48px;border-radius:24px;border:none;background:none;color:var(--accent);font-size:15px;font-weight:700;flex:none')}>Walk me there</button>
       <span style={s('font-size:13px;color:#636B78')}>Nothing is booked or paid here. I’ll remind you before it starts.{e.organiser ? ` Listed by ${e.organiser}.` : ''}</span>
     </Sheet>
   );
@@ -48,7 +50,7 @@ export function DaySheet({ entryId }: { entryId: string }) {
   const m = MOODS[es.at(-1)!.mood];
   return (
     <Sheet label="That day" onClose={closeSheet}>
-      <div style={s('display:flex;align-items:center;gap:12px')}><span aria-hidden="true" style={s(`width:36px;height:36px;border-radius:${m.shape};background:${m.color}`)} /><span style={s('font-size:15px;color:#636B78;font-weight:600')}>{dayOf(anchor.createdAt)} · {m.label.toLowerCase()}</span></div>
+      <div style={s('display:flex;align-items:center;gap:12px')}><Face mood={es.at(-1)!.mood} size={40} /><span style={s('font-size:15px;color:#636B78;font-weight:600')}>{dayOf(anchor.createdAt)} · {m.label.toLowerCase()}</span></div>
       <p className="serif" style={s('font-size:28px;line-height:1.15;margin:0')}>{daySummary(es)}</p>
       {es.map(e => (
         <div key={e.id} style={s('background:#FFFFFF;border-radius:20px;padding:14px 16px;display:flex;flex-direction:column;gap:6px')}>
@@ -66,5 +68,6 @@ export function V3Sheets() {
   if (sheet.id === 'event') return <EventSheet id={sheet.eventId} />;
   if (sheet.id === 'day') return <DaySheet entryId={sheet.entryId} />;
   if (sheet.id === 'inbox') return <InboxSheet />;
+  if (sheet.id === 'colours') return <ColoursSheet />;
   return null;
 }

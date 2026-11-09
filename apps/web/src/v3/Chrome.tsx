@@ -35,9 +35,9 @@ export function TabBar() {
         const on = screen === t.screen, center = t.screen === 'talk';
         return (
           <button key={t.screen} onClick={() => go(t.screen)} aria-current={on ? 'page' : undefined} data-track={`nav.${t.screen}`}
-            style={s(`border:none;background:none;display:flex;flex-direction:column;align-items:center;gap:3px;color:${on ? '#2F2A5E' : '#6B7280'};width:64px;padding:0`)}>
-            <span style={s(`width:${center ? 52 : 28}px;height:${center ? 52 : 28}px;border-radius:50%;background:${center ? '#2F2A5E' : 'transparent'};display:grid;place-items:center;margin-top:${center ? -22 : 0}px;box-shadow:${center ? '0 8px 20px rgba(47,42,94,.35)' : 'none'}`)}>
-              <Svg d={t.icon} stroke={center ? '#FFFFFF' : on ? '#2F2A5E' : '#6B7280'} />
+            style={s(`border:none;background:none;display:flex;flex-direction:column;align-items:center;gap:3px;color:${on ? 'var(--accent)' : '#6B7280'};width:64px;padding:0`)}>
+            <span style={s(`width:${center ? 52 : 28}px;height:${center ? 52 : 28}px;border-radius:50%;background:${center ? 'var(--accent)' : 'transparent'};display:grid;place-items:center;margin-top:${center ? -22 : 0}px;box-shadow:${center ? '0 8px 20px rgba(47,42,94,.35)' : 'none'}`)}>
+              <Svg d={t.icon} stroke="currentColor" style={{ color: center ? '#FFFFFF' : on ? 'var(--accent)' : '#6B7280' }} />
             </span>
             <span style={s('font-size:11px;font-weight:700')}>{t.label}</span>
           </button>
@@ -66,7 +66,7 @@ export function BannerView({ onGo }: { onGo: (b: Banner) => void }) {
   if (!b) return null;
   return (
     <button onClick={() => onGo(b)} data-track="banner" data-banner="1" style={{ ...s('position:absolute;left:10px;right:10px;top:12px;z-index:80;border:none;border-radius:24px;background:rgba(250,248,255,.97);box-shadow:0 16px 40px rgba(20,20,40,.22);padding:12px 14px;display:flex;gap:12px;align-items:center;text-align:left;animation:kDrop 500ms cubic-bezier(.22,.61,.36,1)') }}>
-      <span style={s('flex:none;width:40px;height:40px;border-radius:12px;background:#2F2A5E;display:grid;place-items:center')}><span style={s('width:18px;height:18px;border-radius:50%;background:#F2B33D')} /></span>
+      <span style={s('flex:none;width:40px;height:40px;border-radius:12px;background:var(--accent);display:grid;place-items:center')}><span style={s('width:18px;height:18px;border-radius:50%;background:var(--gold)')} /></span>
       <span style={s('flex:1;display:flex;flex-direction:column;gap:2px')}>
         <span style={s('display:flex;justify-content:space-between;font-size:13px;font-weight:700')}><span>Saathi</span><span style={s('color:#636B78;font-weight:500')}>now</span></span>
         <span style={s('font-size:15px;line-height:1.35')}>{b.text}</span>
@@ -81,7 +81,7 @@ export function Sheet({ label, onClose, children }: { label: string; onClose: ()
   return (
     <>
       <div onClick={onClose} aria-hidden="true" style={s('position:absolute;inset:0;background:rgba(20,20,40,.4);z-index:60;animation:kFade 300ms')} />
-      <div ref={ref} tabIndex={-1} role="dialog" aria-modal="true" aria-label={label} style={{ ...s('position:absolute;left:0;right:0;bottom:0;z-index:61;background:#FAF6EF;border-radius:30px 30px 0 0;padding:12px 20px 36px;display:flex;flex-direction:column;gap:12px;animation:kSheet 400ms cubic-bezier(.22,.61,.36,1);max-height:88%;overflow:auto;outline:none;color:#1E2430') }}>
+      <div ref={ref} tabIndex={-1} role="dialog" aria-modal="true" aria-label={label} style={{ ...s('position:absolute;left:0;right:0;bottom:0;z-index:61;background:var(--bg);border-radius:30px 30px 0 0;padding:12px 20px 36px;display:flex;flex-direction:column;gap:12px;animation:kSheet 400ms cubic-bezier(.22,.61,.36,1);max-height:88%;overflow:auto;outline:none;color:#1E2430') }}>
         <span style={s('align-self:center;width:40px;height:5px;border-radius:3px;background:#D9D2C5;flex:none')} aria-hidden="true" />
         {children}
       </div>

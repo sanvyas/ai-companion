@@ -86,12 +86,8 @@ export function monthWeeks(today: string, n = 4): MonthWeek[] {
   });
 }
 
-/** Which of the four ways to see the month it is: each month they have been here moves to the next, starting with the song. */
-export function modeFor(signedUpDay: string, today: string): MonthMode {
-  const [y0, m0] = signedUpDay.split('-').map(Number), [y1, m1] = today.split('-').map(Number);
-  const months = Math.max(0, (y1 - y0) * 12 + (m1 - m0));
-  return MONTH_MODES[months % 4];
-}
+/** The way the month is shown up front: letters, a stamp a day in a weekly envelope and a letter on Sunday. The other ways are one tap away. */
+export const FEATURED_MODE: MonthMode = 'letters';
 
 // ---------------------------------------------------------------------------------------------------- feelings and what works
 /** How they said they were, in the words the what-works guide uses. */
