@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { inAppBrowser, openInBrowserHref } from './GoogleButton';
+import { inAppBrowser, iosStandalone, openInBrowserHref } from './GoogleButton';
 
 describe('browsers Google refuses to sign people in with', () => {
   it('spots the browsers built into WhatsApp, Instagram and Facebook', () => {
@@ -23,5 +23,14 @@ describe('getting out of a browser Google refuses', () => {
   });
   it('has no such link on iPhone, where the address is copied instead', () => {
     expect(openInBrowserHref(page, 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) [LinkedInApp]')).toBeNull();
+  });
+});
+
+describe('an iPhone app on the Home Screen', () => {
+  const iphone = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148';
+  it('is told apart from Safari itself and from Android', () => {
+    expect(iosStandalone(iphone, true)).toBe(true);
+    expect(iosStandalone(iphone, false)).toBe(false);
+    expect(iosStandalone('Mozilla/5.0 (Linux; Android 13; Pixel 7) Chrome/120', true)).toBe(false);
   });
 });

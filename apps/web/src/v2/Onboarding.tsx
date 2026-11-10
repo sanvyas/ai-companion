@@ -149,7 +149,7 @@ function GoogleV2({ clientId }: { clientId: string }) {
         <div ref={g.overlay} style={{ position: 'absolute', inset: 0, opacity: .01, transform: `scaleY(${54 / 40})`, transformOrigin: 'top', display: 'flex', justifyContent: 'center', pointerEvents: g.stuck ? 'none' : 'auto' }} />
         {g.stuck && <button type="button" aria-label="Continue with Google" onClick={g.tappedWhileStuck} style={{ position: 'absolute', inset: 0 }} />}
       </div>
-      {g.message && <div role="status" className="note">{g.message}<div><BrowserEscape state={g.state} /></div></div>}
+      {g.message ? <div role="status" className="note">{g.message}<div><BrowserEscape state={g.state} /></div></div> : <BrowserEscape state={g.state} />}
     </div>
   );
 }

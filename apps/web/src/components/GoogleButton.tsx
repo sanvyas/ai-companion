@@ -51,10 +51,13 @@ export function openInBrowserHref(url = location.href, ua = navigator.userAgent)
   return `intent://${u.host}${u.pathname}${u.search}#Intent;scheme=${u.protocol.replace(':', '')};package=com.android.chrome;S.browser_fallback_url=${fallback};end`;
 }
 
+/** An iPhone app added to the Home Screen: Google's pop-up sign-in is unreliable there, so say what always works. */
+export const iosStandalone = (ua = navigator.userAgent, standalone = (navigator as unknown as { standalone?: boolean }).standalone) => /iPhone|iPad|iPod/.test(ua) && standalone === true;
+
 /** Shown under the message when Google's sign-in can't run in this browser: one tap to carry on in a browser that can. */
 export function BrowserEscape({ state, style }: { state: string; style?: React.CSSProperties }) {
   const [copied, setCopied] = useState(false);
-  if (state !== 'in_app_browser') return null;
+  if (state !== 'in_app_browser') return iosStandalone() ? <div style={{ fontSize: 13, opacity: 0.75, marginTop: 8, lineHeight: 1.4 }}>If Google doesn’t open here, use your phone number instead, or sign in once in Safari.</div> : null;
   const href = openInBrowserHref();
   const btn: React.CSSProperties = { display: 'inline-block', marginTop: 8, padding: '10px 16px', borderRadius: 999, border: 0, background: C.ink, color: C.white, fontWeight: 600, fontSize: 15, textDecoration: 'none', cursor: 'pointer', ...style };
   return href
@@ -130,7 +133,7 @@ export function GoogleButton({ clientId }: { clientId: string }) {
         {/* When Google's button can't be used, our own button says why instead of doing nothing. */}
         {stuck && <button type="button" aria-label="Continue with Google" onClick={g.tappedWhileStuck} style={{ position: 'absolute', inset: 0, background: 'transparent', border: 0, cursor: 'pointer' }} />}
       </div>
-      {g.message && <div role="status" style={{ fontSize: 14, color: C.amberText, background: C.amber, borderRadius: 14, padding: '10px 12px', marginTop: 10, lineHeight: 1.4 }}>{g.message}<div><BrowserEscape state={g.state} /></div></div>}
+      {g.message ? <div role="status" style={{ fontSize: 14, color: C.amberText, background: C.amber, borderRadius: 14, padding: '10px 12px', marginTop: 10, lineHeight: 1.4 }}>{g.message}<div><BrowserEscape state={g.state} /></div></div> : <BrowserEscape state={g.state} />}
     </div>
   );
 }
