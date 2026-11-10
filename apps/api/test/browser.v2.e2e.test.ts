@@ -235,6 +235,8 @@ describe('the new design', () => {
 
   run('opens for everyone once the switch is on, and ?ui=1 still brings back the previous design', async () => {
     const user = await person();
+    // The third design is the default now (migration 0019); the second shows when it is off and ui.v2 is on.
+    await t.ctx.rt.flags.upsert('ui.v3', { enabled: false }, 'test');
     await t.ctx.rt.flags.upsert('ui.v2', { enabled: true, rolloutPct: 100 }, 'test');
     const on = await open(user, '');
     await on.page.locator('.v2').waitFor();
@@ -244,5 +246,6 @@ describe('the new design', () => {
     expect(await old.page.locator('.v2').count()).toBe(0);
     await old.ctx.close();
     await t.ctx.rt.flags.upsert('ui.v2', { enabled: false }, 'test');
+    await t.ctx.rt.flags.upsert('ui.v3', { enabled: true }, 'test');
   });
 });

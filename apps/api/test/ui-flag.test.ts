@@ -25,13 +25,13 @@ describe('the switch for the new design', () => {
     await t.ctx.rt.flags.upsert('ui.v2', { enabled: false, rolloutPct: 100 }, 'test');
   });
 
-  it('has its own switch for the third design, off until turned on, and independent of the second', async () => {
-    expect((await cfg()).uiV3).toBe(false);
-    await t.ctx.rt.flags.upsert('ui.v3', { enabled: true, rolloutPct: 100 }, 'test');
+  it('has its own switch for the third design, which is on by default (migration 0019), independent of the second, and can be turned off at once', async () => {
     const c = await cfg();
     expect(c.uiV3).toBe(true);
     expect(c.uiV2).toBe(false);
     await t.ctx.rt.flags.upsert('ui.v3', { enabled: false }, 'test');
     expect((await cfg()).uiV3).toBe(false);
+    await t.ctx.rt.flags.upsert('ui.v3', { enabled: true }, 'test');
+    expect((await cfg()).uiV3).toBe(true);
   });
 });

@@ -68,7 +68,7 @@ async function visit(user: Auth, o: { speech?: boolean } = {}): Promise<{ page: 
   await ctx.addInitScript(rt => { try { localStorage.setItem('saathi.rt', rt); } catch { /* storage blocked */ } }, user.refreshToken);
   if (o.speech !== false) await ctx.addInitScript(FAKE_SPEECH);
   const page = await ctx.newPage();
-  await page.goto(base);
+  await page.goto(`${base}?ui=1`); // this suite covers the first design, which is no longer the default
   await page.locator('[data-track="nav.talk"]').click();
   await page.getByText('Voice call').first().waitFor();
   return { page, close: () => ctx.close() };
