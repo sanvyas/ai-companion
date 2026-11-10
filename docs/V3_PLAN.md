@@ -63,6 +63,12 @@ The third design now borrows what worked from the first two: the first design's 
 - **Month** opens on letters, always (`FEATURED_MODE` in the domain package). Each stamp is a small drawing of what the day held. Song, future you and what works are one tap away.
 - **Pictures**: Talk and Journal are drawn, not iconed (`v3/art.tsx`): Saathi with a glow and a few quiet words, a bench under a tree, a path through hills, a notebook with a pen, and a small picture for morning, afternoon and evening. How you felt is shown with the same five faces everywhere.
 
+## Name, words and the first screen
+
+- The app's name, its one-line promise and its pitch live in `v3/brand.ts` (`BRAND`, `TAGLINE`, `PITCH`), so a rename is one edit there plus the places listed in `docs/RENAME.md`. The companion keeps its own name (Saathi by default, changeable in sign-up and You).
+- Words say what the app does as a whole and that it is a two-way conversation: "Feel lighter, every day." and "Talk with a companion who listens and answers, calm your mind, write it out, and watch yourself grow." Talk opens with "Talk to me about anything." and "I listen, and I talk back."
+- The first screen is a garden with Saathi standing in it, a real three-line exchange above (so it is plain that this is a conversation), and four drawn pictures for Talk, Relax, Write and Grow. It fits one phone screen and reads in every palette (tested).
+
 ## Known limits
 
 - Legacy screens (memory, privacy, reminders in detail, voice studio, language, safety sheets) are v2-styled inside v3. Sign-up is no longer one of them.

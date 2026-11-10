@@ -24,7 +24,8 @@ export function TalkTab() {
       <Head title="Talk" />
       <div style={s('display:flex;flex-direction:column;align-items:center;gap:6px')}>
         <TalkHero look={look} />
-        <p className="serif" style={s('font-size:36px;line-height:1.1;text-align:center;margin:0')}>Say anything.<br />No judging.</p>
+        <p className="serif" style={s('font-size:34px;line-height:1.12;text-align:center;margin:0')}>Talk to me<br />about anything.</p>
+        <p style={s('font-size:17px;line-height:1.4;color:var(--muted);text-align:center;margin:0')}>I listen, and I talk back. No judging.</p>
       </div>
       <div style={s('display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px')}>
         {modes.map(([label, icon, run, primary]) => (
@@ -236,7 +237,7 @@ export function ChatScreen() {
         <HelpButton small />
       </div>
       <div ref={ref} role="log" aria-live="polite" aria-label="Conversation" data-scroll="1" style={s('flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:8px')}>
-        <span style={s('align-self:center;font-size:12px;color:var(--muted);background:var(--soft);border-radius:12px;padding:4px 10px')}>Private · you can say anything</span>
+        <span style={s('align-self:center;font-size:12px;color:var(--muted);background:var(--soft);border-radius:12px;padding:4px 10px')}>Private · talk about anything</span>
         {msgs.map((m, i) => (
           <div key={i} style={s(`align-self:${m.who === 'me' ? 'flex-end' : 'flex-start'};max-width:82%;background:${m.who === 'me' ? 'var(--accent)' : 'var(--card)'};color:${m.who === 'me' ? '#FFFFFF' : 'var(--ink)'};border-radius:${m.who === 'me' ? '20px 20px 6px 20px' : '20px 20px 20px 6px'};padding:12px 14px;font-size:16px;line-height:1.45;animation:kUp 300ms`)}>
             <span className="sr">{m.who === 'ai' ? `${comp} says: ` : 'You said: '}</span>{m.text}
@@ -262,7 +263,7 @@ export function ChatScreen() {
         </div>
       )}
       <form onSubmit={e => { e.preventDefault(); sendChat(); }} style={s('display:flex;gap:8px;align-items:center;padding:8px 12px 34px;background:var(--card);box-shadow:0 -1px 0 var(--line)')}>
-        <input type="text" aria-label="Message" disabled={!conv} value={draft} onChange={e => set({ draft: e.target.value })} placeholder="Say anything…" autoComplete="off" style={s('flex:1;height:44px;border-radius:22px;border:none;background:var(--soft);padding:0 16px;font-size:16px;outline:none')} />
+        <input type="text" aria-label="Message" disabled={!conv} value={draft} onChange={e => set({ draft: e.target.value })} placeholder="Talk to me about anything…" autoComplete="off" style={s('flex:1;height:44px;border-radius:22px;border:none;background:var(--soft);padding:0 16px;font-size:16px;outline:none')} />
         <button type="submit" aria-label="Send" style={s('flex:none;width:44px;height:44px;border-radius:50%;border:none;background:var(--accent);display:grid;place-items:center')}><Svg d={I.send} size={18} stroke="#FFFFFF" sw={2} /></button>
       </form>
     </div>

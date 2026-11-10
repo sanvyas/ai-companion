@@ -5,6 +5,7 @@ import { updateCompanion } from '../state/session';
 import { useStore } from '../state/store';
 import { Head } from './Chrome';
 import { s } from './css';
+import { BRAND } from './brand';
 import { I, Svg } from './icons';
 import { paletteById } from './palette';
 import { setV3, useV3 } from './ui';
@@ -87,7 +88,7 @@ export function YouTab() {
 
       <h2 className="kicker" style={s('margin:6px 0 0')}>Privacy</h2>
       <Group>
-        <Toggle on={!!consent?.remember} label="Let Saathi remember what I share" desc="You choose what is kept, and can see or delete all of it." onTap={() => void updateConsent({ remember: !consent?.remember })} />
+        <Toggle on={!!consent?.remember} label={`Let ${comp} remember what I share`} desc="You choose what is kept, and can see or delete all of it." onTap={() => void updateConsent({ remember: !consent?.remember })} />
         <Sep />
         <Toggle on={!!priv?.discreetMode} label="Hide message previews" desc="Quiet notifications and a plain name on the screen." onTap={() => void updatePrivacy({ discreetMode: !priv?.discreetMode })} />
         <Sep />
@@ -98,7 +99,7 @@ export function YouTab() {
       <Group>
         <Link label={`What ${comp} remembers`} sub="See, edit or delete what I’ve learned." value={String(memN)} onTap={() => go('memory')} />
         <Sep />
-        <Link label="Colours" sub="Choose how Saathi looks." value={paletteById(palette).name} onTap={() => setV3({ sheet: { id: 'colours' } })} />
+        <Link label="Colours" sub={`Choose how ${BRAND} looks.`} value={paletteById(palette).name} onTap={() => setV3({ sheet: { id: 'colours' } })} />
         <Sep />
         <Link label="Language" value={LANG[language]} onTap={() => setV3({ over: 'language' })} />
         <Sep />

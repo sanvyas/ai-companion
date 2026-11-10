@@ -5,6 +5,7 @@ import { addPlanItem, go, loadInsights, loadJournal, loadOutside, loadToday, ope
 import { dayOf, set, useStore } from '../state/store';
 import { playCalm } from './calm';
 import { s } from './css';
+import { BRAND } from './brand';
 import { I, Svg } from './icons';
 import { HelpButton } from './Chrome';
 import { Face } from './faces';
@@ -89,7 +90,7 @@ export function Home() {
       <header style={s('display:flex;align-items:center;justify-content:space-between')}>
         <button onClick={() => go('you')} aria-label="You" data-track="nav.you" style={s('display:flex;align-items:center;gap:10px;border:none;background:none;padding:0;min-height:44px')}>
           <span style={s('width:40px;height:40px;border-radius:50%;background:var(--card);overflow:hidden;display:grid;place-items:center')}><Companion look={look} size={40} /></span>
-          <span className="serif" style={s('font-size:24px')}>Saathi</span>
+          <span className="serif" style={s('font-size:24px')}>{BRAND}</span>
         </button>
         <div style={s('display:flex;align-items:center;gap:8px')}><BellButton /><HelpButton /></div>
       </header>
@@ -110,7 +111,7 @@ export function Home() {
           <div style={s('flex:1;display:flex;flex-direction:column;gap:2px')}><span style={s('font-size:15px;color:var(--muted);font-weight:600')}>{comp} · checking on you</span><span style={s('font-size:17px;line-height:1.45')}>{line}</span></div>
         </div>
         <div style={s('display:flex;gap:10px')}>
-          <button onClick={() => void startCall('voice')} data-track="home.say" style={s('flex:1.3;height:52px;border-radius:26px;border:none;background:var(--accent);color:#FFFFFF;font-size:17px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px')}><Svg d={I.mic} size={18} stroke="#FFFFFF" />Say it</button>
+          <button onClick={() => void startCall('voice')} data-track="home.say" style={s('flex:1.3;height:52px;border-radius:26px;border:none;background:var(--accent);color:#FFFFFF;font-size:17px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px')}><Svg d={I.mic} size={18} stroke="#FFFFFF" />Talk</button>
           <button onClick={() => void openChat()} data-track="home.type" style={s('flex:1;height:52px;border-radius:26px;border:none;background:var(--soft);font-size:17px;font-weight:600')}>Type</button>
         </div>
       </section>

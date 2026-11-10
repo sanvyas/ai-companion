@@ -203,9 +203,11 @@ describe('the third design', () => {
   run('welcomes someone new: one picture-led screen, age, language and number and code on one screen, companion, consent, then how they are', async () => {
     const { page, ctx, errors } = await open(null);
     const problems: string[] = [];
-    await page.getByRole('heading', { name: 'Saathi', level: 1 }).waitFor();
-    // What the app does is shown on this one screen: four things, and the line that it is an AI companion, not a doctor.
-    for (const t of ['Talk', 'Relax', 'Write', 'See your month']) await page.getByText(t, { exact: true }).waitFor();
+    await page.getByRole('heading', { name: 'Feel lighter, every day.', level: 1 }).waitFor();
+    // What the app does is on this one screen: a real exchange (so it is plain that it is a conversation), the four things it does,
+    // and the line that it is an AI companion, not a doctor.
+    await page.getByText('How was your day?').waitFor();
+    for (const t of ['Talk', 'Relax', 'Write', 'Grow']) await page.getByText(t, { exact: true }).waitFor();
     await page.getByText(/not a therapist or a doctor/).waitFor();
     problems.push(...await scan(page, 'welcome'));
     await page.getByRole('button', { name: 'Get started' }).click();
@@ -294,6 +296,17 @@ describe('the third design', () => {
     await here.page.getByRole('heading', { level: 1 }).filter({ hasText: 'Aarav' }).waitFor();
     expect(await here.page.getByRole('heading', { level: 1 }).filter({ hasText: 'How are you' }).count()).toBe(0);
     await here.ctx.close();
+  });
+
+  // The first screen is the one everybody sees first: it has to read in every palette too.
+  run('opens readable in every palette', async () => {
+    for (const id of ['dusk', 'teal', 'terracotta', 'plum', 'ocean', 'sage', 'sorbet', 'sky', 'mango', 'aurora', 'midnight', 'forest', 'ember']) {
+      const { page, ctx, errors } = await open(null, `?ui=3&palette=${id}`);
+      await page.getByRole('heading', { name: 'Feel lighter, every day.', level: 1 }).waitFor();
+      expect(await scan(page, `${id} welcome`)).toEqual([]);
+      expect(errors).toEqual([]);
+      await ctx.close();
+    }
   });
 
   // Every palette, light, washed and dark, on the screens people use most: words must stay readable whatever the colours.

@@ -4,6 +4,7 @@ import { EMERGENCY } from '../data/helplines';
 import { acknowledgeHelp, go, openBreathe, openSheet as openStoreSheet } from '../state/actions';
 import { useStore, type Screen } from '../state/store';
 import { s } from './css';
+import { BRAND } from './brand';
 import { Buoy, I, Svg } from './icons';
 import { closeSheet, openHelp, setV3, useV3, type Banner } from './ui';
 
@@ -68,7 +69,7 @@ export function BannerView({ onGo }: { onGo: (b: Banner) => void }) {
     <button onClick={() => onGo(b)} data-track="banner" data-banner="1" style={{ ...s('position:absolute;left:10px;right:10px;top:12px;z-index:80;border:none;border-radius:24px;background:rgba(250,248,255,.97);box-shadow:0 16px 40px rgba(20,20,40,.22);padding:12px 14px;display:flex;gap:12px;align-items:center;text-align:left;animation:kDrop 500ms cubic-bezier(.22,.61,.36,1)') }}>
       <span style={s('flex:none;width:40px;height:40px;border-radius:12px;background:var(--accent);display:grid;place-items:center')}><span style={s('width:18px;height:18px;border-radius:50%;background:var(--gold)')} /></span>
       <span style={s('flex:1;display:flex;flex-direction:column;gap:2px')}>
-        <span style={s('display:flex;justify-content:space-between;font-size:13px;font-weight:700')}><span>Saathi</span><span style={s('color:var(--muted);font-weight:500')}>now</span></span>
+        <span style={s('display:flex;justify-content:space-between;font-size:13px;font-weight:700')}><span>{BRAND}</span><span style={s('color:var(--muted);font-weight:500')}>now</span></span>
         <span style={s('font-size:15px;line-height:1.35')}>{b.text}</span>
       </span>
     </button>

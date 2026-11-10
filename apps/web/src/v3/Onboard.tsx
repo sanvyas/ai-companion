@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Companion, LOOK_OPTIONS, Orb } from '../components/figures';
+import { Companion, LOOK_OPTIONS } from '../components/figures';
 import { GoogleButton } from '../components/GoogleButton';
 import { VoicePicker } from '../components/VoicePicker';
 import { stopSpeech } from '../audio/speech';
@@ -8,7 +8,9 @@ import { finishOnboarding, go, sendCode, toast, updateCompanion, verifyCode } fr
 import { set, useStore } from '../state/store';
 import type { ConsentUpdate } from '../api';
 import { s } from './css';
+import { BRAND } from './brand';
 import { I, Svg } from './icons';
+export { WelcomeV3 } from './Welcome';
 
 // Sign-up as the first design lays it out (one thing per screen, big type, plenty of room), in the third design's colours.
 // What changed: the explanation is one picture-led screen, language, name, number and code share a single screen, and anyone
@@ -26,50 +28,13 @@ const Quiet = ({ children, onClick }: { children: React.ReactNode; onClick: () =
 const Back = ({ onClick }: { onClick: () => void }) => <button type="button" onClick={onClick} aria-label="Back" style={s('align-self:flex-start;width:44px;height:44px;border:none;background:none;display:grid;place-items:center;margin:-8px 0 8px -10px')}><Svg d={I.back} size={22} stroke={INK} /></button>;
 const field = 'height:56px;border-radius:20px;border:none;background:var(--soft);padding:0 20px;font-size:19px;outline:none;width:100%;color:var(--ink)';
 
-// ------------------------------------------------------------------------------------------------ welcome: what it does, in one look
-const DOES: { icon: string; bg: string; title: string; line: string }[] = [
-  { icon: I.chat, bg: 'var(--t1)', title: 'Talk', line: 'Say it out loud or type it. No judging, any hour.' },
-  { icon: I.lotus, bg: 'var(--p-mint)', title: 'Relax', line: 'Breathing, stories and quiet games to settle down.' },
-  { icon: I.pen, bg: 'var(--p-butter)', title: 'Write', line: 'A private journal that listens back.' },
-  { icon: I.month, bg: 'var(--p-rose)', title: 'See your month', line: 'Notice how you’ve been looking after yourself.' },
-];
-
-export function WelcomeV3() {
-  return (
-    <main aria-label="Welcome" data-scroll="1" style={{ ...s(page), background: ground, padding: '56px 24px 28px' }}>
-      <div style={s('display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px')}>
-        <div style={s('position:relative;width:132px;height:132px;display:grid;place-items:center')}>
-          <span aria-hidden="true" style={s('position:absolute;inset:-16px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.75),rgba(255,255,255,0) 70%)')} />
-          <Orb size={104} />
-        </div>
-        <Title size={44} style="margin-top:6px">Saathi</Title>
-        <div className="serif" style={s('font-size:24px;line-height:1.25;color:var(--muted)')}>A place to talk, any time.</div>
-      </div>
-      <div style={s('display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:26px')}>
-        {DOES.map((d, i) => (
-          <div key={d.title} style={s(`background:var(--card);border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:10px;box-shadow:0 10px 26px rgba(30,36,48,.06);animation:kUp 600ms ${i * 90}ms backwards`)}>
-            <span aria-hidden="true" style={s(`width:44px;height:44px;border-radius:14px;background:${d.bg};display:grid;place-items:center`)}><Svg d={d.icon} size={22} stroke={INK} /></span>
-            <b style={s('font-size:17px')}>{d.title}</b>
-            <span style={s(`font-size:15px;line-height:1.4;color:${MUTED}`)}>{d.line}</span>
-          </div>
-        ))}
-      </div>
-      <p style={s(`font-size:15px;line-height:1.45;color:${MUTED};margin:18px 4px 0;text-align:center`)}>Saathi is an AI companion, not a therapist or a doctor. If you’re ever in danger, it helps you reach real people.</p>
-      <div style={s('margin-top:auto;padding-top:20px;display:flex;flex-direction:column;gap:6px')}>
-        <Primary onClick={() => { set({ returning: false }); go('age'); }}>Get started</Primary>
-        <Quiet onClick={() => { set({ returning: true, age18: false }); go('name'); }}>I already have an account</Quiet>
-      </div>
-    </main>
-  );
-}
-
 // ------------------------------------------------------------------------------------------------ age (new people only)
 export function AgeV3() {
   return (
     <main aria-label="Age" style={{ ...s(page), background: ground }}>
       <Back onClick={() => go('welcome')} />
       <Title>Are you 18 or older?</Title>
-      <Body style="margin-top:14px">Saathi is for adults for now.</Body>
+      <Body style="margin-top:14px">{BRAND} is for adults for now.</Body>
       <div style={s('margin-top:auto;display:flex;flex-direction:column;gap:6px')}>
         <Primary onClick={() => { set({ age18: true }); go('name'); }}>Yes, I am</Primary>
         <Quiet onClick={() => { set({ age18: false }); go('under'); }}>No, I’m younger</Quiet>
@@ -83,7 +48,7 @@ export function UnderV3() {
   return (
     <main aria-label="Support for younger people" style={{ ...s(page), background: ground, gap: 16 }}>
       <Title size={32}>Thank you for being honest. You deserve support too.</Title>
-      <Body>Saathi isn’t built for under-18s yet, so we won’t create an account. Talking to an adult you trust, like a family member or teacher, can really help.</Body>
+      <Body>{BRAND} isn’t built for under-18s yet, so we won’t create an account. Talking to an adult you trust, like a family member or teacher, can really help.</Body>
       <div style={s('display:flex;flex-direction:column;gap:10px;margin-top:8px')}>
         {YOUTH_HELPLINES.map(h => (
           <div key={h.id} style={s('background:#FFF1D6;border:1px solid #E8A93A;border-radius:24px;padding:18px;display:flex;align-items:center;gap:12px')}>
@@ -195,7 +160,7 @@ const CONSENTS: { k: 'remember' | 'notifications' | 'healthData' | 'city' | 'ana
   { k: 'remember', label: 'Remember things from our chats', desc: 'So I can ask how things went. You can see, edit and delete everything.' },
   { k: 'notifications', label: 'Notifications and check-ins', desc: 'Gentle, private, never more than twice a day.' },
   { k: 'city', label: 'Your city', desc: 'To suggest small things nearby. Never your exact location.' },
-  { k: 'analytics', label: 'Share how I use Saathi', desc: 'Which screens and buttons get used, never what you write or say.' },
+  { k: 'analytics', label: `Share how I use ${BRAND}`, desc: 'Which screens and buttons get used, never what you write or say.' },
   { k: 'healthData', label: 'Sleep and steps', desc: 'From Health Connect or Apple Health. Needs the phone app, so it does nothing in a browser yet.' },
 ];
 

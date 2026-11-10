@@ -72,3 +72,10 @@ html[data-reduce="true"] .v3 *{animation-duration:.001ms!important;animation-ite
 @keyframes kFlap{from{transform:scaleX(1)}to{transform:scaleX(.35)}}
 .v3 .v3-petal{position:absolute;left:0;bottom:0;width:10px;height:10px;border-radius:50% 0 50% 50%;opacity:0;animation:kPetal 1.4s ease-out forwards}
 @keyframes kPetal{0%{transform:translate(0,0) rotate(0);opacity:0}15%{opacity:1}100%{transform:translate(var(--dx),-70px) rotate(220deg);opacity:0}}
+
+/* The welcome screen on a short phone: a smaller garden and one less line of conversation, so the buttons stay on the screen. */
+@media (max-height:800px){
+  .v3 .wel-hero{height:306px!important}
+  .v3 .wel-b3{display:none}
+  .v3 .wel-av{zoom:.8;bottom:40px!important}
+}

@@ -7,7 +7,8 @@ import { useTheme } from './theme';
 import { pageOf, paletteById, paletteVars } from './palette';
 import { BannerView, HelpSheet, TabBar, Toast } from './Chrome';
 import { Home } from './Home';
-import { AgeV3, CompanionV3, ConsentV3, SignInV3, UnderV3, WelcomeV3 } from './Onboard';
+import { AgeV3, CompanionV3, ConsentV3, SignInV3, UnderV3 } from './Onboard';
+import { WelcomeV3 } from './Welcome';
 import { MoodScreen, WhyScreen } from './Mood';
 import { V3Sheets, EventSheet } from './Sheets';
 import { MonthTab } from './Month';
@@ -18,6 +19,7 @@ import { CallScreen, ChatScreen, TalkTab, WalkScreen } from './Talk';
 import { Compose, JournalTab } from './Journal';
 import { YouTab } from './You';
 import { s } from './css';
+import { BRAND } from './brand';
 import { openHelp } from './ui';
 import type { LegacyKind } from './Legacy';
 
@@ -43,7 +45,7 @@ function OnboardingV3({ screen }: { screen: Screen }) {
 }
 
 function Splash() {
-  return <div role="status" aria-live="polite" style={s('position:absolute;inset:0;display:grid;place-items:center;text-align:center;background:var(--bg)')}><div><div className="serif" style={s('font-size:44px')}>Saathi</div><div style={s('color:var(--muted);margin-top:6px')}>One moment…</div></div></div>;
+  return <div role="status" aria-live="polite" style={s('position:absolute;inset:0;display:grid;place-items:center;text-align:center;background:var(--bg)')}><div><div className="serif" style={s('font-size:44px')}>{BRAND}</div><div style={s('color:var(--muted);margin-top:6px')}>One moment…</div></div></div>;
 }
 
 export function AppV3() {
@@ -68,7 +70,7 @@ export function AppV3() {
   useEffect(() => { document.querySelector('meta[name="theme-color"]')?.setAttribute('content', pal.bg); document.body.style.background = pal.bg; }, [pal]);
 
   useEffect(() => { document.documentElement.dataset.reduce = reduce ? 'true' : ''; }, [reduce]);
-  useEffect(() => { document.title = discreet ? 'Calm' : 'Saathi'; }, [discreet]);
+  useEffect(() => { document.title = discreet ? 'Calm' : BRAND; }, [discreet]);
 
   // The first thing when they come back after a few hours away: how are you? Skipping is fine, and it is not asked again until the next time.
   // It waits for a quiet moment (a tab, nothing open over it), so it never lands in the middle of a call or a breath.

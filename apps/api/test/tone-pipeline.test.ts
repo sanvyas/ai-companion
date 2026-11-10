@@ -131,16 +131,17 @@ describe('everything else the app writes is held to the same rules', () => {
   it('summary, memories and check-in notes with banned words are replaced or dropped', async () => {
     const a = await signIn(t);
     await j(a, 'PUT', '/me/consent', { remember: true });
-    const id = await create(a, 'checkin');
-    const { chat } = await connect(port, id, a.accessToken);
-    await chat.turn('yes now is fine');
-    chat.close();
+    // The replies are set first: closing the socket can end the conversation by itself, and the summary must be made from these.
     t.llm.jsonReply = s => {
       if (s === 'summary') return { summary: 'You said you wanted to die of embarrassment.' };
       if (s === 'memories') return { memories: [{ theme: 'Feelings', text: 'You feel like a failure at work.', sensitive: false }, { theme: 'Work and study', text: 'You have an interview on Thursday.', sensitive: false }, { theme: 'Sleep', text: 'You sleep badly.', sensitive: false }].slice(0, 3) };
       if (s === 'checkin') return { sleep: 'About six hours', food: 'Skipped meals', people: 'A call with a friend', okayThing: 'Chai', mood: 2, intentions: ['Starve the stress away', 'A short walk after lunch'] };
       return undefined;
     };
+    const id = await create(a, 'checkin');
+    const { chat } = await connect(port, id, a.accessToken);
+    await chat.turn('yes now is fine');
+    chat.close();
     const r = (await j(a, 'POST', `/conversations/${id}/end`, {})).json();
     expect(r.summary).toBe('You took some time to talk things through.');
     expect(r.proposedMemories.map((m: { text: string }) => m.text)).toEqual(['You have an interview on Thursday.', 'You sleep badly.']);
