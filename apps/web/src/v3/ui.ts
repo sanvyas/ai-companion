@@ -49,7 +49,9 @@ export function whenWords(at: number, now = new Date()): string {
   return days <= 0 ? 'earlier today' : days === 1 ? `yesterday ${part}` : `${days} days ago`;
 }
 
-const PAL = 'saathi.v3.palette';
+// A new key whenever the default changes, so a colour picked or tried while testing an earlier default doesn't hide the new one.
+// (Garden Teal became the default under 'saathi.v3.palette.2'. Someone who chooses afterwards keeps their choice.)
+const PAL = 'saathi.v3.palette.2';
 function startPalette(): string {
   try { const q = new URLSearchParams(location.search).get('palette'); if (q) { localStorage.setItem(PAL, q); return q; } return localStorage.getItem(PAL) ?? DEFAULT_PALETTE; } catch { return DEFAULT_PALETTE; }
 }

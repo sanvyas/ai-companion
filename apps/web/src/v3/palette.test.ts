@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_PALETTE, PALETTES, paletteById } from './palette';
 import { themeFor } from './theme';
 
@@ -39,5 +39,17 @@ describe('the colour palettes', () => {
     expect(paletteById('nope').id).toBe('teal');
     expect(paletteById(null).id).toBe('teal');
     expect(paletteById('midnight').id).toBe('midnight');
+  });
+});
+
+describe('the colours someone sees on a device that tried others earlier', () => {
+  beforeEach(() => { localStorage.clear(); vi.resetModules(); });
+  it('shows Garden Teal even if an older build saved another colour, and keeps a colour chosen afterwards', async () => {
+    localStorage.setItem('saathi.v3.palette', 'dusk'); // what an earlier default left behind
+    const ui = await import('./ui');
+    expect(ui.getV3().palette).toBe('teal');
+    ui.setPalette('plum');
+    vi.resetModules();
+    expect((await import('./ui')).getV3().palette).toBe('plum');
   });
 });
