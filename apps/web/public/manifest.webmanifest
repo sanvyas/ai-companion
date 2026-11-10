@@ -3,7 +3,7 @@
   "short_name": "Flint",
   "description": "An AI companion to talk to, journal with, and step outside with.",
   "id": "/",
-  "start_url": "/",
+  "start_url": "/?ui=3",
   "scope": "/",
   "display": "standalone",
   "background_color": "#FBF7F0",
