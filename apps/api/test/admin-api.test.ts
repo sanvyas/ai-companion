@@ -340,6 +340,9 @@ describe('prompts', () => {
     const eng = await adminLogin(t, 'engineer');
     const base = (await call(owner, 'GET', '/prompts/classifier')).json().defaultBody as string;
     const body = `${base}\nBe especially careful with Hinglish.`;
+    // The rule is switchable by an owner (off by default for now); these checks are for when it is on.
+    expect((await call(owner, 'PUT', '/settings/prompts.require_eval', { value: true })).statusCode).toBe(200);
+    await t.ctx.rt.settings.refresh();
     const draft = await call(eng, 'POST', '/prompts/classifier/drafts', { body });
     expect(draft.statusCode).toBe(200);
     const id = draft.json().id;
@@ -363,6 +366,23 @@ describe('prompts', () => {
     expect(prompt('classifier')).toContain('Be especially careful with Hinglish.');
     expect((await call(owner, 'POST', '/prompts/classifier/revert')).statusCode).toBe(200);
     expect(prompt('classifier')).not.toContain('Be especially careful with Hinglish.');
+    await call(owner, 'PUT', '/settings/prompts.require_eval', { value: false });
+    await t.ctx.rt.settings.refresh();
+  });
+
+  it('lets an owner publish a safety prompt straight away when the evaluation rule is off, and records that it was skipped', async () => {
+    const eng = await adminLogin(t, 'engineer');
+    expect((await call(owner, 'GET', '/prompts/classifier')).json().def.evalRequired).toBe(false);
+    const base = (await call(owner, 'GET', '/prompts/classifier')).json().defaultBody as string;
+    const id = (await call(owner, 'POST', '/prompts/classifier/drafts', { body: `${base}\nTake extra care with short messages.` })).json().id;
+    // Owner only still holds: an engineer can ask, not publish.
+    expect((await call(eng, 'POST', `/prompts/versions/${id}/publish`)).statusCode).toBe(202);
+    const pub = await call(owner, 'POST', `/prompts/versions/${id}/publish`);
+    expect(pub.statusCode).toBe(200);
+    expect(prompt('classifier')).toContain('Take extra care with short messages.');
+    const audit = (await sql(`SELECT after FROM admin_audit WHERE action = 'prompt.published' ORDER BY id DESC LIMIT 1`))[0] as unknown as { after: { evaluationSkipped?: boolean } };
+    expect(audit.after.evaluationSkipped).toBe(true);
+    expect((await call(owner, 'POST', '/prompts/classifier/revert')).statusCode).toBe(200);
   });
 
   it('feeds a published companion prompt into the live conversation system block', async () => {

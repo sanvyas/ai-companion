@@ -7,7 +7,7 @@ import { Badge, Banner, Button, Card, Confirm, Empty, Field, Loading, PageHead, 
 
 interface Item { key: string; label: string; group: string; description: string; safetyCritical: boolean; vars: string[]; liveVersion: number | null; drafts: number; versions: number; suite: string | null }
 interface Version { id: number; version: number; body: string; note: string; status: 'draft' | 'active' | 'archived'; createdBy: string; createdAt: string; publishedBy: string | null; publishedAt: string | null; evalRunId: number | null }
-interface Detail { def: { key: string; label: string; group: string; description: string; safetyCritical: boolean; vars: string[]; mustContain: string[]; suite: string | null }; defaultBody: string; liveBody: string; liveVersion: number | null; versions: Version[] }
+interface Detail { def: { key: string; label: string; group: string; description: string; safetyCritical: boolean; evalRequired: boolean; vars: string[]; mustContain: string[]; suite: string | null }; defaultBody: string; liveBody: string; liveVersion: number | null; versions: Version[] }
 interface EvalOut { runId: number; suite: string; total: number; passed: number; failed: number; criticalFailed: number; gate: boolean; costInr: number | null; uncosted: boolean; results: { label: string; input: string; pass: boolean; critical: boolean; expected: string; got: string }[] }
 
 export function Prompts() {
@@ -100,7 +100,7 @@ function Editor({ pkey }: { pkey: string }) {
   return (
     <>
       <PageHead title={d.label} sub={<span><a href="#/prompts">← All prompts</a> · {d.description}</span>}
-        actions={<>{d.safetyCritical && <Badge tone="warn">Safety critical: owner publishes, evaluation must pass</Badge>}{data.liveVersion ? <Badge tone="accent">Live: v{data.liveVersion}</Badge> : <Badge>Live: built-in default</Badge>}</>} />
+        actions={<>{d.safetyCritical && <Badge tone="warn">{d.evalRequired ? 'Safety critical: owner publishes, evaluation must pass' : 'Safety critical: owner publishes, evaluation optional'}</Badge>}{data.liveVersion ? <Badge tone="accent">Live: v{data.liveVersion}</Badge> : <Badge>Live: built-in default</Badge>}</>} />
 
       <div className="cols">
         <div className="stack">
@@ -156,7 +156,7 @@ function Editor({ pkey }: { pkey: string }) {
                   <div className="stack tight">
                     <div className="row"><Badge tone={evalOut.gate ? 'ok' : 'bad'}>{evalOut.gate ? 'All critical cases pass' : `${evalOut.criticalFailed} critical failed`}</Badge><span className="num">{evalOut.passed}/{evalOut.total} passed</span><span className="faint">{evalOut.costInr === null ? 'cost not priced' : `₹${evalOut.costInr.toFixed(2)}`}</span></div>
                     {evalOut.results.filter(r => !r.pass).slice(0, 8).map(r => <div key={r.label} className="banner bad" style={{ display: 'block' }}><b>{r.label}</b>{r.critical ? ' (critical)' : ''}<div className="mono" style={{ fontSize: 12 }}>{r.input}</div><div style={{ fontSize: 12.5 }}>Wanted {r.expected}, got {r.got}</div></div>)}
-                    {d.safetyCritical && <div className="faint" style={{ fontSize: 12 }}>To publish, save a draft and run the evaluation on that saved version from History. It counts for 24 hours.</div>}
+                    {d.safetyCritical && <div className="faint" style={{ fontSize: 12 }}>{d.evalRequired ? 'To publish, save a draft and run the evaluation on that saved version from History. It counts for 24 hours.' : 'Publishing doesn’t wait for this. Run it on a saved version from History whenever you want a check.'}</div>}
                   </div>
                 )}
               </div>
@@ -167,7 +167,7 @@ function Editor({ pkey }: { pkey: string }) {
 
       {confirm?.kind === 'publish' && (
         <Confirm title={`Publish v${confirm.v.version}?`} confirmLabel="Publish" onClose={() => setConfirm(null)} onConfirm={async () => { await act(() => api.post(`/prompts/versions/${confirm.v.id}/publish`).then(reload), 'Published. The app uses it from the next message.'); }}>
-          <p>Everyone gets this wording from the next message. {d.safetyCritical ? 'This is a safety prompt, so the evaluation on this exact version must have passed in the last 24 hours.' : 'The current live version is kept, so you can go back.'}</p>
+          <p>Everyone gets this wording from the next message. {d.safetyCritical ? (d.evalRequired ? 'This is a safety prompt, so the evaluation on this exact version must have passed in the last 24 hours.' : 'This is a safety prompt and the evaluation rule is switched off, so it goes live without a passing run. Please try it in the test bench first.') : 'The current live version is kept, so you can go back.'}</p>
           <div className="codeblock" style={{ maxHeight: 180 }}>{confirm.v.body}</div>
         </Confirm>
       )}

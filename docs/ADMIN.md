@@ -22,7 +22,7 @@ In production, serve the admin build (`npm run build -w @saathi/admin`, output `
 | People | Add people (owner) and give them a sign-in code. Search people (never phone numbers), see plan, activity, consents; change plan, suspend or restore, request account deletion, set per-person flag overrides. No journal or conversation content is shown anywhere. |
 | Cost and pricing | Spend by day, feature, vendor and model, in rupees; budget warning; edit price rates; re-price older usage. Usage with no rate is shown as unpriced, never as ₹0. |
 | Prompts | Every instruction the AI follows. Edit as a draft, test in the playground, run the evaluations, publish, roll back. Each publish keeps the old version. |
-| Evaluations | Safety and quality test cases per prompt. A safety-critical prompt can only be published by an owner after a passing run on that exact version. |
+| Evaluations | Safety and quality test cases per prompt. A safety-critical prompt can only be published by an owner. Whether it must also have a passing run on that exact version is the setting **Safety prompts need a passing evaluation** (Settings, Access group, owner only). It is currently **off**, so an owner can publish directly; the audit entry for such a publish says `evaluationSkipped`. Turn it on before real users rely on the app. |
 | Safety review | The queue of risky replies flagged for human review. |
 | Settings and flags | Models (chosen from a list), limits, maintenance mode, kill switches, sign-up gate, per-person flag overrides. Changes apply within seconds, no restart. |
 | Content | Helplines (with last-verified dates) and local events. |

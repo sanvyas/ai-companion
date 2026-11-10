@@ -20,7 +20,7 @@ export function promptRoutes(app: FastifyInstance, ctx: Ctx) {
     const key = (req.params as { key: string }).key;
     const def = PROMPT_BY_KEY.get(key);
     if (!def) throw notFound('That prompt');
-    return { def: { key: def.key, label: def.label, group: def.group, description: def.description, safetyCritical: def.safetyCritical, vars: def.vars, mustContain: def.mustContain, suite: suiteFor(key) }, defaultBody: def.body, liveBody: store.get(key), liveVersion: store.liveVersion(key), versions: await store.versions(key) };
+    return { def: { key: def.key, label: def.label, group: def.group, description: def.description, safetyCritical: def.safetyCritical, evalRequired: ctx.rt.settings.bool('prompts.require_eval'), vars: def.vars, mustContain: def.mustContain, suite: suiteFor(key) }, defaultBody: def.body, liveBody: store.get(key), liveVersion: store.liveVersion(key), versions: await store.versions(key) };
   });
 
   app.post('/prompts/:key/drafts', guard(ctx, 'prompts.write'), async req => {
@@ -46,12 +46,13 @@ export function promptRoutes(app: FastifyInstance, ctx: Ctx) {
       if (!can(req.admin!.role, 'prompts.publish_safety')) throw forbidden('forbidden', 'Only an owner can publish a safety prompt.');
       const suite = suiteFor(v.key);
       const run = suite ? await gatingRun(ctx, id, suite) : null;
-      if (!run) throw badRequest('eval_required', `Run the “${suite}” evaluation on this version first. Every critical case must pass, and the run must be less than a day old.`);
-      evalRunId = run.id;
+      // An owner can switch the evaluation rule off (Settings > Safety prompts need a passing evaluation). Owner-only still applies.
+      if (!run && ctx.rt.settings.bool('prompts.require_eval')) throw badRequest('eval_required', `Run the “${suite}” evaluation on this version first. Every critical case must pass, and the run must be less than a day old.`);
+      evalRunId = run?.id ?? null;
     }
     const before = store.liveVersion(v.key);
     const out = await store.publish(id, req.admin!.email, evalRunId);
-    await record(ctx, req, 'prompt.published', `${v.key}@${v.version}`, { liveVersion: before }, { liveVersion: v.version, evalRunId });
+    await record(ctx, req, 'prompt.published', `${v.key}@${v.version}`, { liveVersion: before }, { liveVersion: v.version, evalRunId, ...(def.safetyCritical && evalRunId === null ? { evaluationSkipped: true } : {}) });
     return out;
   });
 
