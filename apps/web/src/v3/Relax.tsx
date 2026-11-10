@@ -3,7 +3,7 @@ import { openBreathe, playStory } from '../state/actions';
 import { useStore } from '../state/store';
 import { playCalm } from './calm';
 import { Head } from './Chrome';
-import { Face } from './faces';
+import { Weather } from './weather';
 import { openGame } from './Home';
 import { s } from './css';
 import { I, Svg } from './icons';
@@ -71,7 +71,7 @@ export function Relax() {
       {pickItem && pick && (
         <section aria-label="Picked for you" style={s(`border-radius:28px;padding:22px;color:#1E2430;background:linear-gradient(145deg,${pickItem.tint},#FFFFFF 135%);display:flex;flex-direction:column;gap:10px;box-shadow:0 14px 32px rgba(30,36,48,.1);position:relative;overflow:hidden`)}>
           <span aria-hidden="true" style={s('position:absolute;right:-34px;top:-34px;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,.4)')} />
-          <span style={s('display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;position:relative')}>{M && <Face mood={mood!} size={24} />}{M ? `Picked for feeling ${M.label.toLowerCase()}` : 'Picked for you'}</span>
+          <span style={s('display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;position:relative')}>{M && <Weather mood={mood!} size={24} />}{M ? `Picked for feeling ${M.label.toLowerCase()}` : 'Picked for you'}</span>
           <span className="serif" style={s('font-size:32px;line-height:1.1;position:relative;max-width:260px')}>{pickItem.title}</span>
           <span style={s('font-size:17px;line-height:1.4;position:relative')}>{pick.why} · {pickItem.mins} min</span>
           <button onClick={() => open(pickItem)} data-track="relax.pick" style={s('margin-top:6px;align-self:flex-start;height:52px;padding:0 26px 0 20px;border-radius:26px;border:none;background:var(--accent);color:#FFFFFF;font-size:17px;font-weight:600;display:flex;align-items:center;gap:10px;position:relative')}><Svg d={I.play} size={14} fill="#FFFFFF" stroke="#FFFFFF" sw={0} />Begin</button>

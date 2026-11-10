@@ -5,7 +5,7 @@ import { greetFor, MOODS, WHY } from './moods';
 import { s } from './css';
 import { Svg, I } from './icons';
 import { setMood, skipCheckin } from './actions';
-import { Face } from './faces';
+import { Weather, WEATHER_NAMES } from './weather';
 import { lastMood, setV3, useV3, whenWords } from './ui';
 
 /** The first thing when they come back after a while: how are you, right now? One tap, in words and a face, or skip. */
@@ -30,9 +30,9 @@ export function MoodScreen() {
       <div style={s('display:flex;flex-direction:column;gap:10px;margin-top:24px')} role="group" aria-label="How are you feeling">
         {MOODS.map((m, i) => (
           <button key={m.label} onClick={() => { void setMood(i); setV3({ over: 'why', why: [] }); }} data-track={`mood.${i}`} style={s('height:68px;border-radius:34px;border:none;background:var(--card);display:flex;align-items:center;gap:16px;padding:0 22px 0 12px;box-shadow:0 8px 22px rgba(30,36,48,.06);text-align:left')}>
-            <Face mood={i} size={46} />
+            <Weather mood={i} size={46} />
             <span style={s('font-size:19px;font-weight:600;flex:1')}>{m.label}</span>
-            <span style={s('font-size:15px;color:var(--muted)')}>{m.hint}</span>
+            <span style={s('font-size:15px;color:var(--muted);text-align:right')}>{WEATHER_NAMES[i]} · {m.hint}</span>
           </button>
         ))}
       </div>
@@ -50,7 +50,7 @@ export function WhyScreen({ onDone }: { onDone: () => void }) {
   return (
     <div className="screen" role="main" aria-label="What it is about" style={{ ...s('background:var(--page);display:flex;flex-direction:column;padding:60px 24px 32px;animation:kFade 500ms'), overflow: 'auto' }}>
       <button onClick={() => setV3({ over: 'mood' })} aria-label="Back" style={s('align-self:flex-start;width:44px;height:44px;border:none;background:none;display:grid;place-items:center;margin-left:-10px')}><Svg d={I.back} size={22} stroke="var(--ink)" /></button>
-      <div style={s('margin-top:12px;animation:kPop 500ms')}><Face mood={mood ?? 2} size={64} /></div>
+      <div style={s('margin-top:12px;animation:kPop 500ms')}><Weather mood={mood ?? 2} size={64} /></div>
       <h1 className="serif" style={s('font-size:38px;line-height:1.1;margin:20px 0 0')}>{good ? 'What’s making it good?' : m ? `What’s making it feel ${m.label.toLowerCase()}?` : 'What’s it about?'}</h1>
       <div style={s('font-size:17px;color:var(--muted);margin-top:8px;line-height:1.45')}>Pick any, or none. It helps me listen better.</div>
       <div role="group" aria-label="What it is about" style={s('display:flex;flex-wrap:wrap;gap:10px;margin-top:24px')}>

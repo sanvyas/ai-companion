@@ -8,7 +8,7 @@ import { s } from './css';
 import { BRAND } from './brand';
 import { I, Svg } from './icons';
 import { HelpButton } from './Chrome';
-import { Face } from './faces';
+import { Weather } from './weather';
 import { BellButton } from './Inbox';
 import { Living } from './Living';
 import { partOf, type Part } from './theme';
@@ -99,7 +99,7 @@ export function Home() {
         <h1 className="serif" style={s('font-size:36px;line-height:1.1;margin:0')}>{greet}{nick ? `, ${nick}` : ''}.</h1>
         <div style={s('font-size:17px;color:var(--muted)')}>{LINE[part]}</div>
         <button onClick={() => setV3({ over: 'mood' })} aria-label={M ? `Feeling ${M.label.toLowerCase()}. Change` : 'Not checked in. Check in'} style={s('align-self:flex-start;margin-top:8px;height:44px;padding:0 16px 0 8px;border-radius:22px;border:none;background:color-mix(in srgb,var(--card) 80%,transparent);display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600')}>
-          <Face mood={mood ?? 2} size={28} />{M ? `Feeling ${M.label.toLowerCase()}` : 'How are you today?'}<span style={s('color:var(--muted);font-weight:500')}>· {M ? 'change' : 'tell me'}</span>
+          <Weather mood={mood ?? 2} size={28} />{M ? `Feeling ${M.label.toLowerCase()}` : 'How are you today?'}<span style={s('color:var(--muted);font-weight:500')}>· {M ? 'change' : 'tell me'}</span>
         </button>
       </div>
 

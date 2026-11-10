@@ -5,7 +5,7 @@ import { Sheet } from './Chrome';
 import { InboxSheet } from './Inbox';
 import { ColoursSheet } from './Colours';
 import { MOODS } from './moods';
-import { Face } from './faces';
+import { Weather } from './weather';
 import { closeSheet, useV3 } from './ui';
 import type { JournalEntry } from '../api';
 
@@ -50,7 +50,7 @@ export function DaySheet({ entryId }: { entryId: string }) {
   const m = MOODS[es.at(-1)!.mood];
   return (
     <Sheet label="That day" onClose={closeSheet}>
-      <div style={s('display:flex;align-items:center;gap:12px')}><Face mood={es.at(-1)!.mood} size={40} /><span style={s('font-size:15px;color:var(--muted);font-weight:600')}>{dayOf(anchor.createdAt)} · {m.label.toLowerCase()}</span></div>
+      <div style={s('display:flex;align-items:center;gap:12px')}><Weather mood={es.at(-1)!.mood} size={40} /><span style={s('font-size:15px;color:var(--muted);font-weight:600')}>{dayOf(anchor.createdAt)} · {m.label.toLowerCase()}</span></div>
       <p className="serif" style={s('font-size:28px;line-height:1.15;margin:0')}>{daySummary(es)}</p>
       {es.map(e => (
         <div key={e.id} style={s('background:var(--card);border-radius:20px;padding:14px 16px;display:flex;flex-direction:column;gap:6px')}>

@@ -7,7 +7,7 @@ import { Head, HelpButton } from './Chrome';
 import { s } from './css';
 import { I, Svg } from './icons';
 import { MOODS } from './moods';
-import { Face } from './faces';
+import { Weather } from './weather';
 import { NotebookArt, PartArt } from './art';
 import { dayKeyOf, daySummary } from './Sheets';
 import { setV3, useV3 } from './ui';
@@ -57,7 +57,7 @@ export function JournalTab() {
             return (
               <div key={i} role="listitem" aria-label={`${w.d}${m ? `, ${m.label.toLowerCase()}` : ', no check-in'}`} style={s(`width:44px;background:${w.today ? 'var(--card)' : 'transparent'};border-radius:16px;padding:8px 0;display:flex;flex-direction:column;align-items:center;gap:6px`)}>
                 <span style={s('font-size:12px;color:var(--muted);font-weight:600')}>{w.d}</span>
-                {w.m === null ? <span aria-hidden="true" style={s('width:28px;height:28px;border-radius:50%;border:2px dashed var(--line)')} /> : <Face mood={w.m} size={28} />}
+                {w.m === null ? <span aria-hidden="true" style={s('width:28px;height:28px;border-radius:50%;border:2px dashed var(--line)')} /> : <Weather mood={w.m} size={28} />}
               </div>
             );
           })}
@@ -85,7 +85,7 @@ export function JournalTab() {
                   <h2 className="kicker" style={s('margin:0')}>{p}</h2>
                   {en.map(e => (
                     <div key={e.id} style={s('background:var(--card);border-radius:22px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;box-shadow:0 6px 16px rgba(30,36,48,.05);animation:kUp 500ms')}>
-                      <div style={s('display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);font-weight:600')}><span>{new Date(e.createdAt).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}</span><span aria-hidden="true">·</span><span>{e.mode === 'spoken' ? 'Spoken' : 'Written'}</span><span style={s('margin-left:auto;display:flex')}><Face mood={e.mood} size={22} /></span></div>
+                      <div style={s('display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);font-weight:600')}><span>{new Date(e.createdAt).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}</span><span aria-hidden="true">·</span><span>{e.mode === 'spoken' ? 'Spoken' : 'Written'}</span><span style={s('margin-left:auto;display:flex')}><Weather mood={e.mood} size={22} /></span></div>
                       <span style={s('font-size:17px;line-height:1.5;white-space:pre-wrap')}>{e.text}</span>
                     </div>
                   ))}
@@ -103,7 +103,7 @@ export function JournalTab() {
           {book.map(({ es, last }) => {
             return (
               <button key={last.id} onClick={() => setV3({ sheet: { id: 'day', entryId: last.id } })} style={s('text-align:left;border:none;border-radius:22px;padding:14px 16px;background:var(--card);display:flex;gap:14px;align-items:center;box-shadow:0 6px 16px rgba(30,36,48,.05)')}>
-                <Face mood={last.mood} size={44} />
+                <Weather mood={last.mood} size={44} />
                 <span style={s('flex:1;display:flex;flex-direction:column;gap:2px')}><span style={s('font-size:13px;color:var(--muted);font-weight:600')}>{new Date(last.createdAt).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}</span><span style={s('font-size:16px;font-weight:600;line-height:1.3')}>{daySummary(es)}</span></span>
                 <span style={s('font-size:13px;color:var(--muted)')}>{es.length} {es.length === 1 ? 'note' : 'notes'}</span>
               </button>
