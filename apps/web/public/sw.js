@@ -1,4 +1,4 @@
-/* Saathi service worker: web push and a small offline shell.
+/* Flint service worker: web push and a small offline shell.
    Never caches API traffic (it is cross-origin) and never stores anything personal. */
 const SHELL = 'saathi-shell-v1';
 
@@ -30,7 +30,7 @@ self.addEventListener('fetch', e => {
 self.addEventListener('push', e => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch { /* generic fallback below */ }
-  e.waitUntil(self.registration.showNotification(d.title || 'Saathi', {
+  e.waitUntil(self.registration.showNotification(d.title || 'Flint', {
     body: d.body || 'A quiet moment for you?',
     tag: d.tag || 'saathi',
     data: { route: d.route || 'today', kind: d.tag || '' },

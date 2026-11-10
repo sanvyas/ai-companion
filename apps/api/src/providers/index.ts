@@ -4,6 +4,9 @@ import type { Db } from '../db/pool.js';
 import { withSystem } from '../db/pool.js';
 import type { Runtime } from '../runtime/index.js';
 import { createLlm, type LlmUsage } from './llm.js';
+import { GoogleTts } from './google.js';
+import { DEFAULT_GROQ_STT_MODEL, GroqLiveStt, GroqStt } from './groq.js';
+import { TranscriberRouter, TtsRouter } from './router.js';
 import { createOtp } from './otp.js';
 import { createPush } from './push.js';
 import { SarvamStt, SarvamTts } from './sarvam.js';
@@ -41,16 +44,23 @@ export function recordSttUsage(db: Db, log: FastifyBaseLogger, rt: Runtime) {
 }
 
 export function createProviders(cfg: Config, db: Db, log: FastifyBaseLogger, rt: Runtime) {
+  const groqKey = () => rt.secrets.get('groq', 'api_key');
+  const groqStt = new GroqStt(groqKey, recordSttUsage(db, log, rt), () => rt.settings.str('voice.groq_stt_model') || DEFAULT_GROQ_STT_MODEL);
+  const sarvamStt = new SarvamStt(() => rt.secrets.get('sarvam', 'api_key'), recordSttUsage(db, log, rt));
   return {
-    llm: createLlm(cfg, { provider: () => rt.llmProvider(), key: p => rt.secrets.get(p, 'api_key') }, recordUsage(db, log, rt)),
+    llm: createLlm(cfg, { provider: () => rt.llmProvider(), key: p => rt.secrets.get(p, 'api_key'), groqEffort: () => { const e = rt.settings.str('groq.reasoning'); return e === 'medium' || e === 'high' ? e : 'low'; } }, recordUsage(db, log, rt)),
     otp: createOtp(cfg.otpProvider, log),
     push: createPush(name => rt.secrets.get('webpush', name)),
-    // Listening still runs through the browser's own speech engine, and no calls are placed.
-    stt: null,
-    // Server speech through Sarvam; it speaks only once its key is added in the portal.
-    tts: new SarvamTts(() => rt.secrets.get('sarvam', 'api_key'), recordTtsUsage(db, log, rt)),
-    // Dictation for the journal: a continuous recording sent in short pieces.
-    transcriber: new SarvamStt(() => rt.secrets.get('sarvam', 'api_key'), recordSttUsage(db, log, rt)),
+    // Listening during a call: Groq Whisper on the server when its key is set and "Listening" is Groq; otherwise the
+    // browser's own speech engine does it. No calls are placed.
+    stt: new GroqLiveStt(groqStt, () => rt.settings.str('voice.stt_provider') === 'groq'),
+    // Server speech: Sarvam's and Google's voices, each speaking only once its key is added in the portal.
+    tts: new TtsRouter({
+      sarvam: new SarvamTts(() => rt.secrets.get('sarvam', 'api_key'), recordTtsUsage(db, log, rt)),
+      google: new GoogleTts(() => rt.secrets.get('google_tts', 'api_key'), recordTtsUsage(db, log, rt)),
+    }),
+    // Dictation for the journal: a continuous recording sent in short pieces, by whichever engine "Listening" names.
+    transcriber: new TranscriberRouter(() => { const p = rt.settings.str('voice.stt_provider'); return p === 'sarvam' ? [sarvamStt, groqStt] : p === 'groq' ? [groqStt, sarvamStt] : [sarvamStt, groqStt]; }),
     telephony: null,
   };
 }

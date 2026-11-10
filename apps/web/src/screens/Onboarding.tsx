@@ -14,7 +14,7 @@ export function Welcome() {
   return (
     <Screen bg="linear-gradient(180deg,#F7D6C2 0%,#FAE6D6 40%,#FBF7F0 78%)" style={{ padding: onbPad }}>
       <div style={{ ...flex('row'), justifyContent: 'center', padding: '40px 0' }}><Orb size={150} /></div>
-      <Title style={{ marginTop: 24 }}>Saathi</Title>
+      <Title style={{ marginTop: 24 }}>Flint</Title>
       <div style={{ fontFamily: serif, fontSize: 28, lineHeight: 1.25, color: C.muted, marginTop: 6 }}>A place to talk, any time.</div>
       <div style={{ marginTop: 'auto', ...flex('column', 8) }}>
         <PrimaryButton onClick={() => { set({ returning: false }); go('intro'); }}>Get started</PrimaryButton>
@@ -28,8 +28,8 @@ export function Intro() {
   return (
     <Screen style={{ padding: onbPad }}>
       <div style={{ fontSize: 15, color: C.muted }}>Before we begin</div>
-      <Title size={28} style={{ marginTop: 16, lineHeight: 1.3 }}>Saathi is an AI companion, not a therapist or a doctor.</Title>
-      <Body style={{ marginTop: 20 }}>It’s here to listen and to help you look after yourself. If you’re ever in danger, Saathi will help you reach real people.</Body>
+      <Title size={28} style={{ marginTop: 16, lineHeight: 1.3 }}>Flint is an AI companion, not a therapist or a doctor.</Title>
+      <Body style={{ marginTop: 20 }}>It’s here to listen and to help you look after yourself. If you’re ever in danger, Flint will help you reach real people.</Body>
       <Body style={{ marginTop: 12 }}>You decide what it remembers.</Body>
       <div style={{ marginTop: 'auto' }}><PrimaryButton onClick={() => go('age')} style={{ width: '100%' }}>I understand</PrimaryButton></div>
     </Screen>
@@ -41,7 +41,7 @@ export function Age() {
   return (
     <Screen style={{ padding: onbPad }}>
       <Title>Are you 18 or older?</Title>
-      <Body style={{ marginTop: 16 }}>Saathi is for adults for now.</Body>
+      <Body style={{ marginTop: 16 }}>Flint is for adults for now.</Body>
       <div style={{ marginTop: 'auto', ...flex('column', 8) }}>
         <PrimaryButton onClick={() => { set({ age18: true }); go(returning ? 'name' : 'lang'); }}>Yes, I am</PrimaryButton>
         <TextButton onClick={() => { set({ age18: false }); go('under'); }}>No, I’m younger</TextButton>
@@ -55,7 +55,7 @@ export function Under() {
   return (
     <Screen style={{ padding: onbPad, gap: 16 }}>
       <Title size={28} style={{ lineHeight: 1.3 }}>Thank you for being honest. You deserve support too.</Title>
-      <Body>Saathi isn’t built for under-18s yet, so we won’t create an account. Talking to an adult you trust, like a family member or teacher, can really help.</Body>
+      <Body>Flint isn’t built for under-18s yet, so we won’t create an account. Talking to an adult you trust, like a family member or teacher, can really help.</Body>
       <div style={{ ...flex('column', 10), marginTop: 8 }}>
         {YOUTH_HELPLINES.map(h => (
           <div key={h.id} style={{ background: C.amber, border: `1px solid ${C.amberLine}`, borderRadius: 28, padding: 20, ...flex('row', 12), alignItems: 'center' }}>
@@ -113,7 +113,7 @@ export function NameScreen() {
         <input id="phone" value={s.phone} inputMode="tel" autoComplete="tel" placeholder="98765 43210" onChange={e => set({ phone: e.target.value })} style={{ ...field, marginTop: 14 }} />
         {s.err && <div role="alert" style={{ fontSize: 15, color: '#8A2D1A', marginTop: 12, lineHeight: 1.4 }}>{s.err}</div>}
         {s.cfg && !s.cfg.otp && <div role="status" style={{ fontSize: 15, color: C.amberText, background: C.amber, borderRadius: 16, padding: '12px 14px', marginTop: 12, lineHeight: 1.4 }}>Sign-in by phone isn’t switched on yet. Please check back soon.</div>}
-        {s.cfg === null && <div role="status" style={{ fontSize: 15, color: C.amberText, background: C.amber, borderRadius: 16, padding: '12px 14px', marginTop: 12 }}>I can’t reach Saathi right now. Check your internet.</div>}
+        {s.cfg === null && <div role="status" style={{ fontSize: 15, color: C.amberText, background: C.amber, borderRadius: 16, padding: '12px 14px', marginTop: 12 }}>I can’t reach Flint right now. Check your internet.</div>}
         <div style={{ marginTop: 'auto', paddingTop: 20, ...flex('column', 14) }}>
           <PrimaryButton type="submit" disabled={s.busy || (!!s.cfg && !s.cfg.otp)} style={{ width: '100%', opacity: s.busy ? 0.7 : 1 }}>{s.busy ? 'Sending…' : 'Send me a code'}</PrimaryButton>
           {s.cfg?.google && s.cfg.googleClientId && (
@@ -179,7 +179,7 @@ export function CompanionPicker() {
         <label htmlFor="cname" style={{ fontSize: 15, color: C.muted, marginTop: 24, marginBottom: 10 }}>Name (you can change it any time)</label>
         <input id="cname" value={name} maxLength={24} onChange={e => setName(e.target.value)} style={{ height: 56, borderRadius: 20, border: 'none', background: C.sand, padding: '0 20px', fontSize: 17, outline: 'none' }} />
         <div style={{ marginTop: 28, flex: 'none' }}>
-          <PrimaryButton onClick={() => { stopSpeech(); void updateCompanion({ name: name.trim() || 'Saathi', look, voice }); go('consent'); }} style={{ width: '100%' }}>Continue</PrimaryButton>
+          <PrimaryButton onClick={() => { stopSpeech(); void updateCompanion({ name: name.trim() || 'Flint', look, voice }); go('consent'); }} style={{ width: '100%' }}>Continue</PrimaryButton>
         </div>
       </div>
     </Screen>
@@ -192,7 +192,7 @@ const CONSENTS: { k: 'remember' | 'notifications' | 'healthData' | 'city' | 'ana
   { k: 'remember', label: 'Remember things from our chats', desc: 'So I can ask how things went. You can see, edit and delete everything.' },
   { k: 'notifications', label: 'Notifications and check-ins', desc: 'Gentle, private, never more than twice a day.' },
   { k: 'city', label: 'Your city', desc: 'To suggest small things nearby. Never your exact location.' },
-  { k: 'analytics', label: 'Share how I use Saathi', desc: 'Which screens and buttons get used, never what you write or say. It helps us make the app better.' },
+  { k: 'analytics', label: 'Share how I use Flint', desc: 'Which screens and buttons get used, never what you write or say. It helps us make the app better.' },
   { k: 'healthData', label: 'Sleep and steps', desc: 'From Health Connect or Apple Health. Needs the phone app, so it does nothing in a browser yet.' },
 ];
 

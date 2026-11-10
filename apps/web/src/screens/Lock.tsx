@@ -33,13 +33,13 @@ const NDEF: Record<NotifKind, NDef> = {
     ['Talk', () => void startCall('voice')],
     ['Not now', quietToast('Okay. I’m here when you want.')],
   ] },
-  quietweek: { body: 'No pressure. I’m here when you want.', actions: [['Open Saathi', () => go('today', { notif: null })]] },
+  quietweek: { body: 'No pressure. I’m here when you want.', actions: [['Open Flint', () => go('today', { notif: null })]] },
 };
 
 export function buildNotification(kind: NotifKind, compName: string, rich: boolean, disc: boolean) {
   const def = NDEF[kind];
   return {
-    app: disc ? 'Calm' : rich ? compName : 'Saathi',
+    app: disc ? 'Calm' : rich ? compName : 'Flint',
     body: rich ? def.body : 'A quiet moment for you?',
     tag: rich ? def.tag ?? '' : '',
     iconBg: disc ? '#C9CCD6' : C.teal,

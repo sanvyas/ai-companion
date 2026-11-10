@@ -6,7 +6,7 @@ import { withUser } from '../db/pool.js';
 import { AppError } from '../errors.js';
 import { parse, uid } from '../http.js';
 import { TtsFailure, TtsUnavailable } from '../providers/voice.js';
-import { SAMPLE, isServerVoice, voiceById, voicesFor } from '../services/voices.js';
+import { SAMPLE, canSpeak, isServerVoice, vendorsOf, voiceById, voicesFor } from '../services/voices.js';
 import { narrationFor, readAloud } from '../services/narration.js';
 
 const Query = z.object({ language: Language.optional() });
@@ -27,12 +27,13 @@ export function voiceRoutes(app: FastifyInstance, ctx: Ctx) {
   app.get('/voices', auth, async req => {
     const q = parse(Query, req.query);
     const language = q.language ?? (await userLanguage(uid(req)));
-    const server = !!ctx.tts?.configured;
+    const vendors = vendorsOf(ctx.tts);
+    const server = vendors.sarvam || vendors.google;
     return {
       language,
       // When no server voice is connected, only the phone's own voices are offered and the app says so.
       serverVoices: server,
-      items: voicesFor(language, server).map(v => ({ id: v.id, label: v.label, gender: v.gender, provider: v.provider })),
+      items: voicesFor(language, vendors).map(v => ({ id: v.id, label: v.label, gender: v.gender, provider: v.provider })),
     };
   });
 
@@ -40,7 +41,7 @@ export function voiceRoutes(app: FastifyInstance, ctx: Ctx) {
     const b = parse(Preview, req.body);
     const v = voiceById(b.voice);
     if (!v || !isServerVoice(b.voice)) throw new AppError(400, 'not_a_server_voice', 'That voice plays on your phone, not from the server.');
-    if (!ctx.tts?.configured) throw new AppError(503, 'voice_unavailable', 'The voices aren’t connected yet. You can still use the phone’s own voices.');
+    if (!ctx.tts?.configured || !canSpeak(ctx.tts, v.id)) throw new AppError(503, 'voice_unavailable', 'The voices aren’t connected yet. You can still use the phone’s own voices.');
     const language = b.language ?? (await userLanguage(uid(req)));
     if (!v.languages.includes(language)) throw new AppError(400, 'voice_language', 'That voice doesn’t speak this language.');
     const key = `${v.id}|${language}`;

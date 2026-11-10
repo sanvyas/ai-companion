@@ -105,7 +105,7 @@ export function Home() {
 
       <Living />
 
-      <section aria-label="Saathi checking on you" style={s('background:var(--card);border-radius:28px;padding:20px;display:flex;flex-direction:column;gap:14px;box-shadow:0 10px 28px rgba(30,36,48,.06)')}>
+      <section aria-label="Flint checking on you" style={s('background:var(--card);border-radius:28px;padding:20px;display:flex;flex-direction:column;gap:14px;box-shadow:0 10px 28px rgba(30,36,48,.06)')}>
         <div style={s('display:flex;gap:14px;align-items:flex-start')}>
           <div style={s('flex:none;width:48px;height:48px;border-radius:50%;overflow:hidden;background:#F3EEFA;display:grid;place-items:center')}><Companion look={look} size={48} /></div>
           <div style={s('flex:1;display:flex;flex-direction:column;gap:2px')}><span style={s('font-size:15px;color:var(--muted);font-weight:600')}>{comp} · checking on you</span><span style={s('font-size:17px;line-height:1.45')}>{line}</span></div>

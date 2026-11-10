@@ -3,9 +3,9 @@
 ## 1. Supabase (Mumbai)
 
 1. supabase.com > New project. **Region: South Asia (Mumbai) `ap-south-1`.** Pick a strong database password and keep it.
-2. Project Settings > **Data API**: switch it **off**. Saathi never uses it. (Migration 0009 also revokes its roles from every table, as a second lock.)
+2. Project Settings > **Data API**: switch it **off**. Flint never uses it. (Migration 0009 also revokes its roles from every table, as a second lock.)
 3. Project Settings > Database > Connection string. Choose **Session pooler** (port 5432). It works over IPv4 and keeps `SET LOCAL` transactions intact, which row-level security depends on. Copy it as `DATABASE_URL`, with `DATABASE_SSL=true`.
-4. Do not copy the `anon` or `service_role` keys anywhere. Saathi does not use them.
+4. Do not copy the `anon` or `service_role` keys anywhere. Flint does not use them.
 
 The connecting role (`postgres`) must be allowed to create the `saathi_app` role and `SET ROLE` to it. On Supabase it can; the first migration does it.
 
@@ -17,7 +17,15 @@ npm run gen:secrets -w @saathi/api
 
 Paste the four values into `apps/api/.env`. **Back up `DATA_KEK`** (a password manager, plus one offline copy). It wraps every user's data key; without it, journals, memories and phone numbers cannot be read again. Rotating `JWT_SECRET` signs everyone out (harmless). Never change `PHONE_HASH_KEY` or `OTP_PEPPER` on a live system: phone lookups would stop matching.
 
-## 3. Anthropic
+## 3. AI, listening and voice
+
+**Groq (the default).** Create a key at console.groq.com/keys and set `GROQ_API_KEY` (or add it under Integrations in the admin portal, which wins over the environment). `GROQ_MODEL` is the chat model used for every job until the portal says otherwise (default `openai/gpt-oss-20b`). The same key powers listening: Whisper (`whisper-large-v3-turbo`) hears calls and journal dictation. With a Groq key and no Anthropic key, Groq is the AI provider automatically; otherwise choose it in Settings > AI provider.
+
+**Google voices.** In Google Cloud, enable the **Cloud Text-to-Speech API** for a project with billing on (the free tier covers a lot), then create an API key and set `GOOGLE_TTS_API_KEY` (or add it in the portal). Restrict the key to that one API. People then see the Google voices in the app's voice picker.
+
+Both can be tested from the portal (Integrations > Test connection). Sarvam voices still work if their key is added.
+
+### Anthropic (optional)
 
 Create a key at console.anthropic.com, set `ANTHROPIC_API_KEY`. The three models are env-configurable (`MODEL_COMPANION`, `MODEL_SAFETY`, `MODEL_ANALYSIS`). Without a key the API starts, but conversations return a clear "not available" message and the app falls back to showing helplines. Set a monthly spend limit in the Anthropic console.
 

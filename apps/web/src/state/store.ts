@@ -180,7 +180,7 @@ export function initialState(): AppState {
     phase: 'booting', cfg: null, me: null, helplines: builtinHelplines(), trustedDial: null,
     screen: 'welcome', sheet: null, crisis: false, crisisConfirm: false, breathe: false, paywall: false, toast: null, tick: 0,
     language: ui.language ?? 'en', nick: '', age18: false, returning: false, phone: '', otpCode: '', challengeId: null, devCode: null, authBusy: false, authError: null, previewing: null,
-    compName: 'Saathi', look: 'asha', voice: 'warm', consent: null,
+    compName: 'Flint', look: 'asha', voice: 'warm', consent: null,
     conv: null, callMode: 'voice', firstRun: false, captions: ui.captions ?? true, muted: false, paused: false, callEnded: false, callPhase: 'connecting', callLine: null, callSummary: null, callBusy: false,
     micOk: false, pendingMode: null, pendingFirst: false, mouth: 0, speakingNow: false, sampleLang: 'English', deviceVoice: '', voicesList: [], studioMode: 'idle', walkEnded: false, walkSeconds: 0,
     msgs: [], draft: '', typing: false, careCard: false, risk: initialRisk,

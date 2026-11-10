@@ -38,7 +38,7 @@ export function meRoutes(app: FastifyInstance, ctx: Ctx) {
     const b = parse(AgeBody, req.body);
     if (!b.confirmed18) {
       await pauseAsMinor(ctx, uid(req));
-      throw forbidden('under18', 'Saathi is for adults.');
+      throw forbidden('under18', 'Flint is for adults.');
     }
     return reply.code(204).send();
   });

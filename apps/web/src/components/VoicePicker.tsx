@@ -37,7 +37,7 @@ export function VoicePicker({ value, onPick, accent = C.teal, soft = C.tealSoft 
   const items: VoiceItem[] = list?.items ?? [
     { id: 'warm', label: 'Warm', gender: null, provider: 'device' }, { id: 'steady', label: 'Steady', gender: null, provider: 'device' }, { id: 'bright', label: 'Bright', gender: null, provider: 'device' },
   ];
-  const natural = items.filter(v => v.provider === 'sarvam');
+  const natural = items.filter(v => v.provider !== 'device');
   const phone = items.filter(v => v.provider === 'device');
 
   const preview = async (v: VoiceItem) => {

@@ -26,7 +26,7 @@ export class DemoApi implements Api {
     ageConfirmed18: true, onboarded: false, pendingDeletion: false,
     consent: { version: 1, acceptedAt: null, remember: false, notifications: false, calls: false, healthData: false, location: 'off', improveModels: false, analytics: false },
     privacy: { lockScreenPreviews: false, discreetMode: false, appLock: 'off', quickHide: true, transcriptRetentionDays: 90 },
-    companion: { name: 'Saathi', look: 'asha', voice: 'warm' }, flags: {},
+    companion: { name: 'Flint', look: 'asha', voice: 'warm' }, flags: {},
     trustedContact: { name: TRUSTED_CONTACT.name, relation: TRUSTED_CONTACT.relation, phoneMasked: '+91 ••••• 233' },
     features: { otp: true, google: false, llm: true, stt: false, tts: false, push: false, calls: false },
   };
@@ -146,7 +146,7 @@ export class DemoApi implements Api {
     return { moodSeries: this.moods, rhythms: ['Days you step out for a walk tend to be lighter.', 'Sleep is a little shorter lately. Want to try winding down earlier?'], wins: this.wins.map(w => ({ ...w })), daysOfData: this.moods.length };
   }
   async latestLetter() {
-    return { id: uuid(), weekStart: '2026-10-19', createdAt: iso(7), body: 'Dear Aarav,\n\nThis week you stepped out three times, even on Wednesday when sleep was short. You called Priya, and afterwards you said you’d laughed properly for the first time in a while.\n\nEvenings seem gentler when the phone goes down before midnight. Just something I noticed.\n\nOne invitation for the week ahead, if you’d like it: the Sunday walk at Cubbon Park. Thirty minutes, or less.\n\n— Saathi' };
+    return { id: uuid(), weekStart: '2026-10-19', createdAt: iso(7), body: 'Dear Aarav,\n\nThis week you stepped out three times, even on Wednesday when sleep was short. You called Priya, and afterwards you said you’d laughed properly for the first time in a while.\n\nEvenings seem gentler when the phone goes down before midnight. Just something I noticed.\n\nOne invitation for the week ahead, if you’d like it: the Sunday walk at Cubbon Park. Thirty minutes, or less.\n\n— Flint' };
   }
 
   async safetyPlan() { return structuredClone(this.plan_); }

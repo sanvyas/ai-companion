@@ -92,7 +92,7 @@ export async function updatePlanItem(ctx: Ctx, userId: string, id: string, patch
     if (!cur) throw notFound('That plan item');
     const label = patch.label ?? ctx.crypto.decrypt(dek, userId, 'plan', cur.label_enc);
     const done = patch.done ?? cur.done;
-    // Changing the words makes it theirs: it is no longer something Saathi suggested.
+    // Changing the words makes it theirs: it is no longer something Flint suggested.
     const r = (await tx.query('UPDATE plan_items SET done = $2, label_enc = $3, source = $4 WHERE id = $1 RETURNING id, done, source', [id, done, patch.label ? ctx.crypto.encrypt(dek, userId, 'plan', label) : cur.label_enc, patch.label ? 'user' : cur.source])).rows[0];
     // "That counts." A completed item becomes a win, once. Un-ticking or editing it later never takes the win back.
     if (patch.done) await tx.query(`INSERT INTO wins (user_id, kind, label_enc, source_id) VALUES ($1,'plan',$2,$3) ON CONFLICT DO NOTHING`, [userId, ctx.crypto.encrypt(dek, userId, 'win', label), id]);

@@ -22,7 +22,7 @@ describe('conversation over WebSocket', () => {
     const a = await signIn(t);
     const id = await create(a);
     const { chat, ready } = await connect(port, id, a.accessToken);
-    expect(ready).toMatchObject({ type: 'ready', mode: 'text', companion: { name: 'Saathi' }, opening: null });
+    expect(ready).toMatchObject({ type: 'ready', mode: 'text', companion: { name: 'Flint' }, opening: null });
     const out = await chat.turn('I am so tired of this deadline');
     expect(out.map(m => m.type)).toEqual(['thinking', 'ack', 'sentence', 'sentence', 'done']);
     expect(texts(out)).toEqual(['That sounds like a lot to carry.', 'What part is sitting with you most?']);

@@ -95,7 +95,7 @@ const words = (s: string) => s.trim().split(/\s+/).length;
 export async function analyzeEntry(ctx: Ctx, userId: string, id: string): Promise<JournalAnalysis> {
   const loaded = await withUser(ctx.db, userId, async tx => {
     const r = await loadEntry(tx, id);
-    if (!r.shared) throw new AppError(409, 'not_shared', 'Turn on “Saathi can learn from this” first.');
+    if (!r.shared) throw new AppError(409, 'not_shared', 'Turn on “Flint can learn from this” first.');
     const dek = await getDek(ctx, userId, tx);
     const u = (await tx.query('SELECT nickname, language FROM users WHERE id = $1', [userId])).rows[0];
     const remember = (await tx.query('SELECT remember FROM consents WHERE user_id = $1', [userId])).rows[0].remember as boolean;

@@ -19,7 +19,7 @@ export function parsePhone(raw: string): string {
 
 export async function startOtp(ctx: Ctx, rawPhone: string, ageConfirmed18: boolean, ip: string) {
   // Under-18: nothing is stored, no code is sent (PRD 8.1).
-  if (!ageConfirmed18) throw forbidden('under18', 'Saathi is for adults.');
+  if (!ageConfirmed18) throw forbidden('under18', 'Flint is for adults.');
   const phone = parsePhone(rawPhone);
   // Invited people sign in with the code their owner gave them, so no SMS is needed for them.
   const invited = await hasInvite(ctx, phone);

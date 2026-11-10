@@ -4,7 +4,7 @@
 |---|---|---|
 | **v1.0.0** | The app as it stood before the new design: phone and Google sign-in, voice/chat/video companion, journal, calm, outside, safety pipeline, admin portal | `main` and the branch `release/v1.0.0` (commit `791e46d`) |
 | **v2** (built, off by default) | The new design (garden home, five tabs, onboarding and tour, journal timeline and progress, quiet games) connected to the same backend | branch `claude/hopeful-planck-y33w4w`, behind the feature flag `ui.v2` until you switch it on; merged to `main` only when you say so. See [V2_PLAN.md](V2_PLAN.md) for status |
-| **v3** (built, off by default) | The third design from the "Saathi Fresh" prototype (mood-first Home, Relax, Month as a song, letters, future you or a what-works guide) on the same backend | same branch, behind `ui.v3`; try with `?ui=3`. See [V3_PLAN.md](V3_PLAN.md) |
+| **v3** (built, off by default) | The third design from the "Flint Fresh" prototype (mood-first Home, Relax, Month as a song, letters, future you or a what-works guide) on the same backend | same branch, behind `ui.v3`; try with `?ui=3`. See [V3_PLAN.md](V3_PLAN.md) |
 
 ## Going back to v1
 

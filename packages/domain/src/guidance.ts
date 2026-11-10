@@ -1,4 +1,4 @@
-// What Saathi suggests comes from what the person has said and done lately, and every suggestion carries its reason so they can
+// What Flint suggests comes from what the person has said and done lately, and every suggestion carries its reason so they can
 // see why ("Why this?") and switch it off. The themes are found on the device from words that are already decrypted for them;
 // nothing here is sent anywhere or stored as a profile.
 
@@ -47,9 +47,9 @@ export type OneThingId = 'voice' | 'breathe' | 'walk' | 'meditate' | 'plan' | 's
 export interface OneThing { id: OneThingId; title: string; sub: string; cta: string; icon: 'mic' | 'wave' | 'pin' | 'lotus' | 'list' | 'moon' | 'leaf' | 'flower' | 'star'; why: string }
 
 const BY_MOOD: Record<number, Omit<OneThing, 'why'>> = {
-  0: { id: 'voice', title: 'Talk it out with Saathi', sub: 'No fixing. Just someone listening.', cta: 'Start talking', icon: 'mic' },
+  0: { id: 'voice', title: 'Talk it out with Flint', sub: 'No fixing. Just someone listening.', cta: 'Start talking', icon: 'mic' },
   1: { id: 'breathe', title: 'One minute of slow breathing', sub: 'Breathe out a little longer than you breathe in.', cta: 'Breathe with me', icon: 'wave' },
-  2: { id: 'walk', title: 'Ten minutes outside', sub: 'Saathi walks with you and talks softly.', cta: 'Go for a walk', icon: 'pin' },
+  2: { id: 'walk', title: 'Ten minutes outside', sub: 'Flint walks with you and talks softly.', cta: 'Go for a walk', icon: 'pin' },
   3: { id: 'meditate', title: 'A short guided meditation', sub: 'Five quiet minutes. Nothing to fix.', cta: 'Start meditating', icon: 'lotus' },
   4: { id: 'plan', title: 'Plan one nice thing', sub: 'Pick one small plan for tomorrow.', cta: 'Make a plan', icon: 'list' },
 };
@@ -57,7 +57,7 @@ const NIGHT: Omit<OneThing, 'why'> = { id: 'sleep', title: 'A sleep story', sub:
 const BOAT: Omit<OneThing, 'why'> = { id: 'boat', title: 'Float a worry away', sub: 'Write it, fold it into a paper boat, let it go. Nothing is saved.', cta: 'Make a boat', icon: 'leaf' };
 const RANGOLI: Omit<OneThing, 'why'> = { id: 'rangoli', title: 'Draw a small rangoli', sub: 'Colour and pattern. No skill needed.', cta: 'Start drawing', icon: 'flower' };
 const JAR: Omit<OneThing, 'why'> = { id: 'jar', title: 'Add a good thing to your jar', sub: 'One small good thing from today, for the days you need it.', cta: 'Add to the jar', icon: 'star' };
-const WALK_FOR_LONELY: Omit<OneThing, 'why'> = { id: 'walk', title: 'A short walk with Saathi', sub: 'Fresh air, and company on the way.', cta: 'Go for a walk', icon: 'pin' };
+const WALK_FOR_LONELY: Omit<OneThing, 'why'> = { id: 'walk', title: 'A short walk with Flint', sub: 'Fresh air, and company on the way.', cta: 'Go for a walk', icon: 'pin' };
 
 export interface OneThingInput {
   /** Today's mood, 0 (heaviest) to 4 (lightest), or null if they have not checked in. */

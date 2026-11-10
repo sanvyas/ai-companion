@@ -3,7 +3,7 @@ import type { Ctx } from '../../context.js';
 import { withSystem } from '../../db/pool.js';
 import { guard, intParam } from './util.js';
 
-// First-party product analytics. Only people who turned on "Share how I use Saathi" are tracked, events carry a
+// First-party product analytics. Only people who turned on "Share how I use Flint" are tracked, events carry a
 // screen name, a tagged element id or a step name and nothing else, and the person is a one-way hash.
 
 export function analyticsRoutes(app: FastifyInstance, ctx: Ctx) {

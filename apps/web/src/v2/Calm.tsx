@@ -91,7 +91,7 @@ export function Calm() {
         <div className="hscroll">{rs.map((r, i) => <Cover key={r.item.id} it={r.item.c} k={i + 1} forYou={!!r.why && i < 2} why={i === 0 ? r.why : undefined} />)}</div>
         <section aria-label="A story made for tonight" className="card" style={{ marginTop: 12 }}>
           <b>A story made for tonight</b>
-          <p className="muted small" style={{ margin: '4px 0 10px' }}>Pick a place and Saathi will write a new, quiet story, just for you.</p>
+          <p className="muted small" style={{ margin: '4px 0 10px' }}>Pick a place and Flint will write a new, quiet story, just for you.</p>
           <div className="chips" role="group" aria-label="Story place">{STORY_THEMES.map(t => <button key={t.id} className="chip" disabled={busy} onClick={() => void playStory(t.id)}>{t.label}</button>)}</div>
           <div role="status" aria-live="polite" className="fine" style={{ minHeight: 18, marginTop: 6 }}>{busy ? 'Writing your story…' : ''}</div>
         </section>

@@ -41,7 +41,7 @@ export function MoodScreen() {
   );
 }
 
-/** What it is about. Optional, and it only helps Saathi listen better. */
+/** What it is about. Optional, and it only helps Flint listen better. */
 export function WhyScreen({ onDone }: { onDone: () => void }) {
   const mood = useStore(x => x.mood);
   const why = useV3(x => x.why);

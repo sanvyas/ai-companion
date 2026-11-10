@@ -138,7 +138,7 @@ describe('paywall', () => {
     await signedIn('you');
     render(<App />);
     act(() => openPaywall());
-    expect(await screen.findByRole('dialog', { name: 'Saathi Plus' })).toBeInTheDocument();
+    expect(await screen.findByRole('dialog', { name: 'Flint Plus' })).toBeInTheDocument();
   });
 
   it('is never shown once there has been distress this session', async () => {
@@ -150,7 +150,7 @@ describe('paywall', () => {
     act(() => sendChat());
     await waitFor(() => expect(getState().risk.max).toBeGreaterThanOrEqual(1), { timeout: 4000 });
     act(() => openPaywall());
-    expect(screen.queryByRole('dialog', { name: 'Saathi Plus' })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: 'Flint Plus' })).toBeNull();
   });
 });
 

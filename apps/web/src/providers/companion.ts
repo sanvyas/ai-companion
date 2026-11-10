@@ -36,7 +36,7 @@ export const mockCompanion: CompanionProvider = {
       return {
         level,
         minor: true,
-        lines: ['Thank you for telling me. Saathi is only for adults, so I’ll pause here. A parent, teacher or another adult you trust can really help, and there are people to talk to for free right now.'],
+        lines: ['Thank you for telling me. Flint is only for adults, so I’ll pause here. A parent, teacher or another adult you trust can really help, and there are people to talk to for free right now.'],
       };
     }
     if (level === 2) {

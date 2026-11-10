@@ -1,4 +1,4 @@
-# Saathi
+# Flint
 
 An AI companion for adults in India who feel lonely, stressed or low: talk by voice, video or text, journal privately, calm down, and take small steps outside. **A wellness companion, not a therapist, doctor or crisis service.**
 
@@ -11,7 +11,9 @@ This is a real application: phone sign-in, an encrypted Postgres database, an AP
 | Key | Where from | Needed for |
 |---|---|---|
 | `DATABASE_URL` | Supabase project in **Mumbai (ap-south-1)**: Settings > Database > Session pooler | everything |
-| `ANTHROPIC_API_KEY` | console.anthropic.com | conversations, safety classifier, journal reading, summaries, letters |
+| `GROQ_API_KEY` (+ optional `GROQ_MODEL`, default `openai/gpt-oss-20b`) | console.groq.com/keys | conversations, safety classifier, journal reading, summaries, letters, **and** listening (Whisper) for calls and journal dictation |
+| `GOOGLE_TTS_API_KEY` | Google Cloud: enable the Cloud Text-to-Speech API, then Credentials > API key | the companion's spoken voice (Indian, American and British English, Hindi) |
+| `ANTHROPIC_API_KEY` | console.anthropic.com (optional) | the same jobs as Groq, if you choose Anthropic as the AI provider in the portal |
 | `JWT_SECRET`, `DATA_KEK`, `PHONE_HASH_KEY`, `OTP_PEPPER` | `npm run gen:secrets -w @saathi/api` (you generate them; back up `DATA_KEK`) | auth, encryption |
 | `GOOGLE_CLIENT_ID` | Google Cloud Console, OAuth Web client (optional) | "Continue with Google" |
 | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | `npx web-push generate-vapid-keys` (optional) | push notifications |

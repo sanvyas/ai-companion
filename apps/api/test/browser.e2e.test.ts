@@ -224,7 +224,7 @@ describe('calm narration', () => {
     expect(first.pitch).toBe(1);
     expect(first.rate).toBeGreaterThanOrEqual(0.65);
     expect(first.rate).toBeLessThanOrEqual(0.8); // a heavy week, at bedtime: the slowest reading
-    expect(await page.getByRole('dialog').getByText(/Narrated by Saathi/).count()).toBe(1);
+    expect(await page.getByRole('dialog').getByText(/Narrated by Flint/).count()).toBe(1);
     await close();
   });
 
@@ -367,7 +367,7 @@ describe('every screen and flow, with no errors on the way', () => {
 
     await nav('outside'); await page.getByText('Walk with me').first().waitFor();
     await nav('journal'); await page.getByText('Recent entries').waitFor();
-    await nav('you'); await page.getByText('What Saathi remembers').waitFor();
+    await nav('you'); await page.getByText('What Flint remembers').waitFor();
 
     // Video call
     await nav('talk'); await page.getByText('Video call').first().click(); await allow();
@@ -395,7 +395,7 @@ describe('every screen and flow, with no errors on the way', () => {
     await page.getByRole('button', { name: 'End walk' }).waitFor();
     await page.getByRole('button', { name: 'End walk' }).click(); await page.waitForTimeout(500); await dismiss();
 
-    // Journal: write, let Saathi read it, save
+    // Journal: write, let Flint read it, save
     await nav('journal'); await page.getByText('Write', { exact: true }).first().click();
     await page.getByRole('textbox', { name: 'Journal entry' }).fill('Today was a good walk and I felt lighter.');
     await page.getByRole('button', { name: /Save|Done|Keep/ }).first().click();

@@ -28,7 +28,7 @@ function Splash() {
   return (
     <div className="screen" style={{ display: 'grid', placeItems: 'center' }} role="status" aria-live="polite">
       <div style={{ textAlign: 'center', color: 'var(--ink-2)' }}>
-        <div className="serif" style={{ fontSize: 28 }}>Saathi</div>
+        <div className="serif" style={{ fontSize: 28 }}>Flint</div>
         <div style={{ fontSize: 14, marginTop: 6 }}>One moment…</div>
       </div>
     </div>
@@ -50,7 +50,7 @@ export function App() {
   useAppLifecycle();
 
   useEffect(() => { document.documentElement.dataset.reduce = reduce ? 'true' : ''; }, [reduce]);
-  useEffect(() => { document.title = discreet ? 'Calm' : 'Saathi'; }, [discreet]);
+  useEffect(() => { document.title = discreet ? 'Calm' : 'Flint'; }, [discreet]);
 
   const Current = SCREENS[screen];
   const showNav = phase === 'in' && NAV_SCREENS.includes(screen);

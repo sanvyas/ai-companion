@@ -3,7 +3,7 @@
 import type { TestResult } from './integrations.js';
 
 const BASE = 'https://openrouter.ai/api/v1';
-const HEADERS = (key?: string) => ({ ...(key ? { Authorization: `Bearer ${key}` } : {}), 'Content-Type': 'application/json', 'HTTP-Referer': 'https://saathi.app', 'X-Title': 'Saathi' });
+const HEADERS = (key?: string) => ({ ...(key ? { Authorization: `Bearer ${key}` } : {}), 'Content-Type': 'application/json', 'HTTP-Referer': 'https://saathi.app', 'X-Title': 'Flint' });
 
 /** Model ids that cannot answer a chat request. */
 export const isBatchModel = (id: string) => /:batch\b/i.test(id);

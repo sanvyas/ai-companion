@@ -76,7 +76,7 @@ async function writing(ctx: Ctx, get: PromptGetter, c: CaseRow): Promise<CaseRes
     const trend = c.input === 'heavier' ? 'heavier' : c.input === 'lighter' ? 'lighter' : 'between';
     const tone = openingTone(trend === 'heavier' ? 1 : null, trend, e.kind);
     const system = {
-      stable: stableSystem({ companionName: 'Saathi', nickname: 'Asha', language: 'en', voice: 'warm' }, get),
+      stable: stableSystem({ companionName: 'Flint', nickname: 'Asha', language: 'en', voice: 'warm' }, get),
       dynamic: dynamicSystem({ mode: e.kind, localTime: 'Tuesday 9:15 pm', planItems: [], moodTrend: c.input, memories: [], hasSafetyPlan: false, trustedFirstName: null, riskLevel: 0, priorSummary: null, openingHookSpoken: null, tone }, get),
     };
     const reply = await ctx.llm.text({ ...common, maxTokens: 200, system, messages: [{ role: 'user', content: e.kind === 'checkin' ? '(Begin the check-in now.)' : '(The walk has just started.)' }] });
@@ -121,7 +121,7 @@ export async function runEval(ctx: Ctx, o: { suite: SuiteName; overrides: Record
       // The tone is chosen in code from what the person said, exactly as in the live app, so these cases test the same prompt the person gets.
       const tone = assessTone({ text: c.input, riskLevel: e.level });
       const system = {
-        stable: stableSystem({ companionName: 'Saathi', nickname: 'Asha', language: 'en', voice: 'warm' }, get),
+        stable: stableSystem({ companionName: 'Flint', nickname: 'Asha', language: 'en', voice: 'warm' }, get),
         dynamic: dynamicSystem({ mode: 'text', localTime: 'Tuesday 9:15 pm', planItems: [], moodTrend: 'unknown', memories: [], hasSafetyPlan: false, trustedFirstName: null, riskLevel: e.level, priorSummary: null, openingHookSpoken: null, tone }, get),
       };
       const reply = await ctx.llm.text({ task: 'admin_eval', model: ctx.rt.model('companion'), maxTokens: 300, effort: 'low', system, messages: [{ role: 'user', content: wrapUser(c.input) }] });
@@ -172,7 +172,7 @@ export async function playground(ctx: Ctx, i: PlaygroundInput) {
   let text: string;
   if (conversational) {
     const system = {
-      stable: stableSystem({ companionName: 'Saathi', nickname: 'Asha', language: i.language ?? 'en', voice: 'warm' }, get),
+      stable: stableSystem({ companionName: 'Flint', nickname: 'Asha', language: i.language ?? 'en', voice: 'warm' }, get),
       dynamic: dynamicSystem({ mode: i.mode ?? 'text', localTime: 'Tuesday 9:15 pm', planItems: ['A 10-minute walk'], moodTrend: 'a little heavier this week', memories: ['Interview on Thursday'], hasSafetyPlan: false, trustedFirstName: null, riskLevel: i.level ?? 0, priorSummary: null, openingHookSpoken: null, firstRun: i.key === 'context.first_run', tone: assessTone({ text: last, riskLevel: i.level ?? 0 }) }, get),
     };
     const msgs = i.messages.map(m => (m.role === 'user' ? { ...m, content: wrapUser(m.content) } : m));

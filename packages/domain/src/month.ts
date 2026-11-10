@@ -131,7 +131,7 @@ export function letterBody(name: string, kinds: MonthKind[]): string {
   return `Dear ${name},\nThis week: ${said}.\n${uniq.includes('show') ? 'Some days you just showed up. That counts the most.\n' : ''}See you next week.`;
 }
 
-/** A line Saathi offers to add to today, from something it noticed. Never added without asking. */
+/** A line Flint offers to add to today, from something it noticed. Never added without asking. */
 export const NOTICED: Record<number, { kind: MonthKind; text: string }> = {
   0: { kind: 'walk', text: 'Did you get out for a walk today? Put “A walk” in today’s envelope?' },
   1: { kind: 'friend', text: 'Did you speak to a friend today? Add it?' },

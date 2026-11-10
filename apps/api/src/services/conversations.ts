@@ -15,7 +15,7 @@ import { SAFE_FALLBACK_LINE, classifyWithModel, logSafetyEvent, prefilter, revie
 import { retrieveMemories } from './memory.js';
 import { getCompanion, getTrusted } from './profile.js';
 import { getDek } from './users.js';
-import { isServerVoice } from './voices.js';
+import { canSpeak } from './voices.js';
 
 const HISTORY_LIMIT = 24;
 
@@ -61,7 +61,7 @@ type Emit = (m: ServerMsg) => void;
 export async function createConversation(ctx: Ctx, userId: string, mode: ConversationMode, continueFrom?: string, first = false) {
   return withUser(ctx.db, userId, async tx => {
     const u = (await tx.query<{ subscription: string; age_confirmed_18: boolean; suspended_at: Date | null }>('SELECT subscription, age_confirmed_18, suspended_at FROM users WHERE id = $1', [userId])).rows[0];
-    if (!u?.age_confirmed_18) throw forbidden('under18', 'Saathi is for adults. This account is paused.');
+    if (!u?.age_confirmed_18) throw forbidden('under18', 'Flint is for adults. This account is paused.');
     if (u.suspended_at) throw forbidden('suspended', 'This account is paused. Please contact support.');
     if (['voice', 'video'].includes(mode) && ctx.rt.settings.bool('kill.voice')) throw new AppError(503, 'voice_paused', 'Voice calls are paused for a moment. Text chat still works.');
     if (!ctx.llm.configured) throw new AppError(503, 'llm_unavailable', 'Your companion isn’t connected yet. Helplines and breathing exercises still work.');
@@ -81,7 +81,7 @@ export async function createConversation(ctx: Ctx, userId: string, mode: Convers
     }
     const { rows } = await tx.query<{ id: string }>('INSERT INTO conversations (user_id, mode, continued_from, first_run) VALUES ($1,$2,$3,$4) RETURNING id', [userId, mode, continueFrom ?? null, first]);
     const voice = (await tx.query<{ voice: string }>('SELECT voice FROM companions WHERE user_id = $1', [userId])).rows[0]?.voice ?? 'warm';
-    return { id: rows[0].id, mode, rtcToken: null as null, voice: { serverStt: !!ctx.stt, serverTts: !!ctx.tts?.configured && mode !== 'text' && isServerVoice(voice) } };
+    return { id: rows[0].id, mode, rtcToken: null as null, voice: { serverStt: !!ctx.stt?.configured, serverTts: mode !== 'text' && canSpeak(ctx.tts, voice) } };
   });
 }
 
@@ -96,7 +96,7 @@ export async function openSession(ctx: Ctx, userId: string, conversationId: stri
     if (conv.ended_at) throw new AppError(409, 'conversation_ended', 'That conversation has ended.');
     const dek = await getDek(ctx, userId, tx);
     const u = (await tx.query('SELECT nickname, language, timezone, age_confirmed_18 FROM users WHERE id = $1', [userId])).rows[0];
-    if (!u.age_confirmed_18) throw forbidden('under18', 'Saathi is for adults. This account is paused.');
+    if (!u.age_confirmed_18) throw forbidden('under18', 'Flint is for adults. This account is paused.');
     const companion = await getCompanion(tx, userId);
     const consent = (await tx.query('SELECT remember FROM consents WHERE user_id = $1', [userId])).rows[0];
     const priv = (await tx.query('SELECT transcript_retention_days FROM privacy_settings WHERE user_id = $1', [userId])).rows[0];

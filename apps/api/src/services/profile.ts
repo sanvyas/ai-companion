@@ -5,7 +5,7 @@ import { maskPhone } from '../crypto/envelope.js';
 import { badRequest, notFound } from '../errors.js';
 import { audit } from './audit.js';
 import { getDek } from './users.js';
-import { voiceById } from './voices.js';
+import { canSpeak, voiceById } from './voices.js';
 
 type Row = Record<string, unknown>;
 
@@ -61,7 +61,7 @@ export async function getMe(ctx: Ctx, userId: string): Promise<Me> {
       flags: ctx.rt.flags.forUser(userId),
       features: {
         otp: ctx.otp.canSend, google: !!ctx.rt.secrets.get('google', 'client_id'), llm: ctx.llm.configured,
-        stt: !!ctx.stt, tts: !!ctx.tts?.configured, push: ctx.push.enabled, calls: !!ctx.telephony,
+        stt: !!ctx.stt?.configured, tts: !!ctx.tts?.configured, push: ctx.push.enabled, calls: !!ctx.telephony,
       },
     };
   });
@@ -126,7 +126,7 @@ export async function updateCompanion(ctx: Ctx, userId: string, b: Partial<Compa
       if (!v) throw badRequest('unknown_voice', 'That voice isn’t available.');
       const lang = (await tx.query<{ language: 'en' | 'hinglish' | 'hi' }>('SELECT language FROM users WHERE id = $1', [userId])).rows[0]?.language ?? 'en';
       if (!v.languages.includes(lang)) throw badRequest('voice_language', 'That voice doesn’t speak your language.');
-      if (v.provider === 'sarvam' && !ctx.tts?.configured) throw badRequest('voice_unavailable', 'That voice isn’t connected yet. Pick one of the phone’s own voices for now.');
+      if (v.provider !== 'device' && !canSpeak(ctx.tts, v.id)) throw badRequest('voice_unavailable', 'That voice isn’t connected yet. Pick one of the phone’s own voices for now.');
     }
     const before = await getCompanion(tx, userId);
     const sets: string[] = ['updated_at = now()'];

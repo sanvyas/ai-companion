@@ -21,7 +21,7 @@ const inviteBadge = (s: Invite['status']) => s === 'signed_in' ? <Badge tone="ok
 function CodeShown({ title, phone, code, onClose }: { title: string; phone: string; code: string; onClose: () => void }) {
   return (
     <Dialog title={title} onClose={onClose} footer={<Button variant="primary" onClick={onClose}>Done</Button>}>
-      <p>Give <b className="mono">{phone}</b> this code. It is how they sign in to Saathi until text-message codes are connected.</p>
+      <p>Give <b className="mono">{phone}</b> this code. It is how they sign in to Flint until text-message codes are connected.</p>
       <div className="row" style={{ justifyContent: 'center', margin: '16px 0' }}><code style={{ fontSize: 32, letterSpacing: 6 }}>{code}</code><Copy text={code} /></div>
       <Banner tone="warn"><span>This is the only time the code is shown. It isn’t stored, so if it’s lost you’ll need to make a new one.</span></Banner>
     </Dialog>

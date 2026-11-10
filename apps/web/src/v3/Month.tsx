@@ -16,7 +16,7 @@ const MODE_INFO: Record<MonthMode, { label: string; name: string; desc: string; 
   song: { label: 'Song', name: 'Your month as a song', desc: 'Each day adds a sound and a lyric. Four weeks, one album.', bg: 'linear-gradient(180deg,#3A3278 0%,#5547A0 100%)', fg: '#FFFFFF', dark: true },
   letters: { label: 'Letters', name: 'Letters, day by day', desc: 'A stamp a day in a weekly envelope. A letter every Sunday.', bg: 'var(--bg2)', fg: 'var(--ink)', dark: false },
   future: { label: 'Future you', name: 'Future you comes into focus', desc: 'A year-from-now you gets clearer with each small thing.', bg: 'var(--page)', fg: 'var(--ink)', dark: false },
-  guide: { label: 'What works', name: 'Your what-works guide', desc: 'Saathi learns what lifts your mood and writes it down.', bg: 'var(--page)', fg: 'var(--ink)', dark: false },
+  guide: { label: 'What works', name: 'Your what-works guide', desc: 'Flint learns what lifts your mood and writes it down.', bg: 'var(--page)', fg: 'var(--ink)', dark: false },
 };
 const ORDER: MonthMode[] = ['song', 'letters', 'future', 'guide'];
 const DN = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -241,7 +241,7 @@ function LettersView({ weeks, kindsOn, today, nick, letterText }: { weeks: Retur
       </div>
       {none && (
         <div style={s('background:var(--accent);color:#FFFFFF;border-radius:22px;padding:14px 16px;display:flex;flex-direction:column;gap:10px')}>
-          <span style={s('font-size:12px;font-weight:700;color:#F0EEFF')}>Saathi wondered</span>
+          <span style={s('font-size:12px;font-weight:700;color:#F0EEFF')}>Flint wondered</span>
           <span style={s('font-size:16px;line-height:1.4')}>{sug.text}</span>
           <div style={s('display:flex;gap:8px')}>
             <button onClick={() => { logActivity(sug.kind); void loadMonthData(); }} style={s('flex:1;min-height:44px;border-radius:22px;border:none;background:var(--card);color:var(--accent-ink);font-size:14px;font-weight:700')}>Yes, add it</button>
@@ -256,7 +256,7 @@ function LettersView({ weeks, kindsOn, today, nick, letterText }: { weeks: Retur
         </div>
       )}
       <div style={s('background:var(--card);border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:6px')}>
-        <span style={s('font-size:12px;font-weight:700;color:var(--muted)')}>{isSunday && letterText ? 'Sunday · from Saathi' : 'A preview of Sunday’s letter'}</span>
+        <span style={s('font-size:12px;font-weight:700;color:var(--muted)')}>{isSunday && letterText ? 'Sunday · from Flint' : 'A preview of Sunday’s letter'}</span>
         <span className="serif" style={s('font-size:20px;line-height:1.35;white-space:pre-wrap')}>{isSunday && letterText ? letterText : letterBody(nick || 'friend', kinds)}</span>
       </div>
     </>

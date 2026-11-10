@@ -24,7 +24,7 @@ export function Analytics() {
 
   return (
     <>
-      <PageHead title="Usage analytics" sub="Which screens and buttons people use and for how long. Only people who turned on “Share how I use Saathi” are included, and nothing here can contain what someone wrote or said." actions={<select className="input" style={{ width: 140 }} value={days} onChange={e => setDays(Number(e.target.value))} aria-label="Period"><option value={7}>Last 7 days</option><option value={14}>Last 14 days</option><option value={30}>Last 30 days</option><option value={90}>Last 90 days</option></select>} />
+      <PageHead title="Usage analytics" sub="Which screens and buttons people use and for how long. Only people who turned on “Share how I use Flint” are included, and nothing here can contain what someone wrote or said." actions={<select className="input" style={{ width: 140 }} value={days} onChange={e => setDays(Number(e.target.value))} aria-label="Period"><option value={7}>Last 7 days</option><option value={14}>Last 14 days</option><option value={30}>Last 30 days</option><option value={90}>Last 90 days</option></select>} />
       {!data.enabled && <Banner tone="bad"><span>Analytics collection is switched off under Settings and flags. Nothing new is being recorded.</span></Banner>}
       <div className="grid g4">
         <Stat label="Sharing with us" value={`${pct(data.optIn.opted_in, data.optIn.total)}%`} hint={`${num(data.optIn.opted_in)} of ${num(data.optIn.total)} people opted in`} />
@@ -32,7 +32,7 @@ export function Analytics() {
         <Stat label="Sessions" value={num(data.totals.sessions)} />
         <Stat label="Events" value={num(data.totals.events)} />
       </div>
-      {data.optIn.total > 0 && data.optIn.opted_in < 5 && <Banner tone="info"><span>Only {data.optIn.opted_in} people have opted in, so these numbers are a small sample. Ask friends to switch on “Share how I use Saathi” in Privacy Center.</span></Banner>}
+      {data.optIn.total > 0 && data.optIn.opted_in < 5 && <Banner tone="info"><span>Only {data.optIn.opted_in} people have opted in, so these numbers are a small sample. Ask friends to switch on “Share how I use Flint” in Privacy Center.</span></Banner>}
 
       <Card title="Sign-ups to first conversation" sub="Counted by the server for everyone, with no tracking.">
         <div className="stack">{funnel.map(([label, n], i) => (

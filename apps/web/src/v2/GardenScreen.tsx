@@ -24,7 +24,7 @@ export function GardenScreen() {
     { name: 'Your tree', icon: 'leaf', bg: 'var(--t-sage)', text: 'Grows taller on every day you show up, in any way.', value: `Day ${g.activeDays}`, on: g.activeDays > 0 },
     { name: 'Flower beds', icon: 'book', bg: 'var(--t-rose)', text: 'Every journal page plants a flower. Its colour is the weather you named.', value: plural(C.journal ?? 0, 'flower'), on: (C.journal ?? 0) > 0 },
     { name: 'Pond', icon: 'lotus', bg: 'var(--t-sky)', text: 'Breathing and meditation add lily pads and lotus flowers.', value: plural(calm, 'calm moment'), on: calm > 0 },
-    { name: 'Saathi’s bench', icon: 'mic', bg: 'var(--t-sky)', text: 'Each talk hangs a lantern in your tree.', value: plural(C.talk ?? 0, 'talk'), on: (C.talk ?? 0) > 0 },
+    { name: 'Flint’s bench', icon: 'mic', bg: 'var(--t-sky)', text: 'Each talk hangs a lantern in your tree.', value: plural(C.talk ?? 0, 'talk'), on: (C.talk ?? 0) > 0 },
     { name: 'Herb patch', icon: 'list', bg: 'var(--t-sage)', text: 'Tiny daily steps grow tulsi, mint and tomatoes.', value: plural(C.plan ?? 0, 'step'), on: (C.plan ?? 0) > 0 },
     { name: 'Moon nook', icon: 'moon', bg: 'var(--t-lilac)', text: 'Sleep stories bring fireflies and a moon lantern.', value: plural(C.sleep ?? 0, 'night'), on: (C.sleep ?? 0) > 0 },
     { name: 'Path and gate', icon: 'pin', bg: 'var(--t-clay)', text: 'Every walk or outing lays a stone. The path always goes on.', value: plural((C.walk ?? 0) + (C.event ?? 0), 'stone'), on: (C.walk ?? 0) + (C.event ?? 0) > 0 },

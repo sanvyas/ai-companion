@@ -52,7 +52,7 @@ describe('buildContent', () => {
   it('shows nothing personal on the lock screen when previews are off', () => {
     const c = buildContent('followup', { previews: false, discreet: false, companionName: 'Asha' });
     expect(c.body).toBe('A quiet moment for you?');
-    expect(c.title).toBe('Saathi');
+    expect(c.title).toBe('Flint');
     expect(c.actions).toEqual([]);
   });
   it('discreet mode renames the app', () => expect(buildContent('checkin', { previews: false, discreet: true, companionName: 'Asha' }).title).toBe('Calm'));
@@ -63,7 +63,7 @@ describe('buildContent', () => {
     expect(c.title).toBe('Asha');
   });
   it('is about the person when previews are on: their name, how they were, a step, and what helped', () => {
-    const o = { previews: true, discreet: false, companionName: 'Saathi' };
+    const o = { previews: true, discreet: false, companionName: 'Flint' };
     const heavy = buildContent('checkin', { ...o, ctx: { nick: 'Aarav', lastMood: 0, hour: 9, helped: 'breathe' } });
     expect(heavy.body).toBe('Aarav, yesterday felt heavy. How are you today? A slow breath helped last time.');
     expect(heavy.actions[0]).toEqual({ action: 'breathe', title: 'Breathe' });
@@ -74,13 +74,13 @@ describe('buildContent', () => {
     expect(buildContent('followup', o).actions.map(a => a.action)).toEqual(['talk', 'breathe', 'later']);
   });
   it('never leaks a name, a mood or a step when previews are off', () => {
-    const c = buildContent('checkin', { previews: false, discreet: false, companionName: 'Saathi', ctx: { nick: 'Aarav', lastMood: 0, stepLabel: 'Call the doctor', helped: 'talk' } });
+    const c = buildContent('checkin', { previews: false, discreet: false, companionName: 'Flint', ctx: { nick: 'Aarav', lastMood: 0, stepLabel: 'Call the doctor', helped: 'talk' } });
     expect(c.body).toBe('A quiet moment for you?');
     expect(JSON.stringify(c)).not.toMatch(/Aarav|doctor|heavy/);
   });
   it('never uses streak or guilt language', () => {
     for (const k of ['checkin', 'plan', 'leave', 'followup', 'quietweek', 'letter'] as const) {
-      for (const ctx of [undefined, { nick: 'Aarav', lastMood: 0, hour: 9, stepLabel: 'Walk', helped: 'walk' as const }]) expect(buildContent(k, { previews: true, discreet: false, companionName: 'Saathi', ctx }).body).not.toMatch(/streak|haven.t talked|missed|days in a row/i);
+      for (const ctx of [undefined, { nick: 'Aarav', lastMood: 0, hour: 9, stepLabel: 'Walk', helped: 'walk' as const }]) expect(buildContent(k, { previews: true, discreet: false, companionName: 'Flint', ctx }).body).not.toMatch(/streak|haven.t talked|missed|days in a row/i);
     }
   });
 });

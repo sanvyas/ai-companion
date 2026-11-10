@@ -43,7 +43,7 @@ const PANES: Record<Tab, () => JSX.Element> = {
 function Splash() {
   return (
     <div className="splash" role="status" aria-live="polite">
-      <div><div className="h1">Saathi</div><div className="muted" style={{ marginTop: 6 }}>One moment…</div></div>
+      <div><div className="h1">Flint</div><div className="muted" style={{ marginTop: 6 }}>One moment…</div></div>
     </div>
   );
 }
@@ -81,7 +81,7 @@ export function AppV2() {
 
   useGardenSync(phase === 'in');
   useEffect(() => { document.documentElement.dataset.reduce = reduce ? 'true' : ''; }, [reduce]);
-  useEffect(() => { document.title = discreet ? 'Calm' : 'Saathi'; }, [discreet]);
+  useEffect(() => { document.title = discreet ? 'Calm' : 'Flint'; }, [discreet]);
   // Screens pushed on top of the tabs belong to the tab they were opened from: leaving for anywhere else closes them.
   useEffect(() => { clearStack(); }, [screen]);
   useEffect(() => { const t = TAB_OF[screen]; if (t) setV2({ lastTab: t }); }, [screen]);

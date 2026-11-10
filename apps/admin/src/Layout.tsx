@@ -50,7 +50,7 @@ export function Layout({ children }: { children: ReactNode }) {
   return (
     <div className="app">
       <aside className={`side${open ? ' open' : ''}`} aria-label="Sections">
-        <div className="brand"><span className="logo"><svg width="16" height="16" viewBox="0 0 64 64" aria-hidden><circle cx="32" cy="32" r="18" fill="#FBF7F0" /><circle cx="32" cy="32" r="7" fill="#2F6F66" /></svg></span><div>Saathi<small>Control room</small></div></div>
+        <div className="brand"><span className="logo"><svg width="16" height="16" viewBox="0 0 64 64" aria-hidden><circle cx="32" cy="32" r="18" fill="#FBF7F0" /><circle cx="32" cy="32" r="7" fill="#2F6F66" /></svg></span><div>Flint<small>Control room</small></div></div>
         <nav className="nav">
           {GROUPS.map(g => {
             const items = g.items.filter(i => !i.perm || can(i.perm));

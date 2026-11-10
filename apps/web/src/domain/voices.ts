@@ -7,7 +7,12 @@ export const LEGACY: Persona[] = ['warm', 'steady', 'bright'];
 export const isLegacy = (v: string): v is Persona => (LEGACY as string[]).includes(v);
 export const isServerVoice = (v: string) => !isLegacy(v) && v.includes(':');
 
+const GOOGLE_NAMES: Record<string, string> = { 'en-in': 'Indian English', 'hi-in': 'Hindi', 'en-us': 'American English', 'en-gb': 'British English' };
+
 export function voiceLabel(v: string): string {
+  // google:en-in-wavenet-a reads as “Indian English A”.
+  const g = /^google:([a-z]{2}-[a-z]{2})-[a-z]+-([a-z])$/.exec(v);
+  if (g) return `${GOOGLE_NAMES[g[1]] ?? g[1]} ${g[2].toUpperCase()}`;
   const name = isLegacy(v) ? v : v.split(':')[1] ?? v;
   return name ? name[0].toUpperCase() + name.slice(1) : 'Warm';
 }

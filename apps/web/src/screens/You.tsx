@@ -48,7 +48,7 @@ export function You() {
     { title: 'Account', items: [
       { label: 'Subscription', value: me?.subscription === 'plus' ? 'Plus' : 'Basic', tap: openPaywall },
       { label: 'Health data', desc: 'Sleep and steps from your phone.', value: health ? 'On' : 'Off', tap: () => void updateConsent({ healthData: !health }) },
-      { label: 'How Saathi uses AI', tap: na('This page') },
+      { label: 'How Flint uses AI', tap: na('This page') },
       { label: 'About', tap: na('This page') },
     ] },
   ];
@@ -166,8 +166,8 @@ export function Privacy() {
   if (!priv) return null;
   const rows = [
     { on: priv.discreetMode, tap: () => void updatePrivacy({ discreetMode: !priv.discreetMode }), label: 'Discreet mode', desc: 'Neutral tab title. Notifications say nothing personal.' },
-    { on: priv.quickHide, tap: () => void updatePrivacy({ quickHide: !priv.quickHide }), label: 'Quick hide', desc: 'Triple-tap the Saathi name to switch to a breathing screen.' },
-    { on: analyticsOn, tap: () => void updateConsent({ analytics: !analyticsOn }), label: 'Share how I use Saathi', desc: 'Which screens and buttons get used, never what you write or say.' },
+    { on: priv.quickHide, tap: () => void updatePrivacy({ quickHide: !priv.quickHide }), label: 'Quick hide', desc: 'Triple-tap the Flint name to switch to a breathing screen.' },
+    { on: analyticsOn, tap: () => void updateConsent({ analytics: !analyticsOn }), label: 'Share how I use Flint', desc: 'Which screens and buttons get used, never what you write or say.' },
     { on: remember, tap: () => void updateConsent({ remember: !remember }), label: 'Remember conversations', desc: 'So I can ask how things went. Safety checks run either way.' },
     { on: priv.lockScreenPreviews, tap: () => void updatePrivacy({ lockScreenPreviews: !priv.lockScreenPreviews }), label: 'Lock-screen previews', desc: 'Off means notifications only say “A quiet moment for you?”' },
   ];

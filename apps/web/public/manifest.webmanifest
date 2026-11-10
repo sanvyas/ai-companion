@@ -1,6 +1,6 @@
 {
-  "name": "Saathi",
-  "short_name": "Saathi",
+  "name": "Flint",
+  "short_name": "Flint",
   "description": "An AI companion to talk to, journal with, and step outside with.",
   "start_url": "/",
   "display": "standalone",

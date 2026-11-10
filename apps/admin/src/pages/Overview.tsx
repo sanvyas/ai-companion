@@ -29,7 +29,7 @@ export function Overview() {
 
   return (
     <>
-      <PageHead title="Overview" sub="Everything in one place: who is using Saathi, what it costs, and whether each part is healthy." />
+      <PageHead title="Overview" sub="Everything in one place: who is using Flint, what it costs, and whether each part is healthy." />
 
       {needsAttention.length > 0 && (
         <Banner tone={needsAttention.some(s => s.status === 'down') ? 'bad' : 'warn'}>

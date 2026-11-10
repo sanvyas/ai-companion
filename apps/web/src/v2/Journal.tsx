@@ -20,7 +20,7 @@ const KIND: Record<Kind, { icon: IconName; bg: string; label: string }> = {
 };
 const kindOfConversation = (m: ConversationItem['mode']): Kind => (m === 'video' ? 'video' : m === 'text' || m === 'checkin' ? 'chat' : 'voice');
 
-interface Item { id: string; kind: Kind; at: string; text: string; /** Only things they let Saathi learn from get themes. */ themes: ThemeKey[]; entry?: JournalEntry; convo?: ConversationItem; mood?: number }
+interface Item { id: string; kind: Kind; at: string; text: string; /** Only things they let Flint learn from get themes. */ themes: ThemeKey[]; entry?: JournalEntry; convo?: ConversationItem; mood?: number }
 
 function useTimeline(): Item[] {
   const entries = useStore(s => s.jEntries);
@@ -140,7 +140,7 @@ function Progress() {
       <div className="card">
         <b className="h3">What came up</b>
         {!remember
-          ? <p className="muted small" style={{ marginTop: 8 }}>Turn on “Remember things from our chats” in You, and Saathi can show what you talk about. Your pages marked “just for you” are never read.</p>
+          ? <p className="muted small" style={{ marginTop: 8 }}>Turn on “Remember things from our chats” in You, and Flint can show what you talk about. Your pages marked “just for you” are never read.</p>
           : keys.length
             ? keys.map(k => { const h = themeDef(k), a = wk[k] ?? 0, b = (two[k] ?? 0) - a; return (
               <div key={k} style={{ margin: '12px 0' }}>
@@ -148,13 +148,13 @@ function Progress() {
                 <div className="bar" style={{ marginTop: 6, height: 8 }}><i style={{ width: `${Math.round((a / max) * 100)}%`, background: h.color }} /></div>
               </div>
             ); })
-            : <p className="muted small" style={{ marginTop: 8 }}>Saathi will show what you talk about once you have written or talked a few times.</p>}
+            : <p className="muted small" style={{ marginTop: 8 }}>Flint will show what you talk about once you have written or talked a few times.</p>}
       </div>
       <div className="card">
         <b className="h3">What seems to help you</b>
         {enough && ins && ins.rhythms.length > 0
           ? <ul className="list" style={{ marginTop: 4 }}>{ins.rhythms.map(r => <li key={r}><span className="ico" style={{ background: 'var(--t-sage)' }}><Ic n="leaf" color="#2F7A49" /></span><div className="grow1">{r}</div></li>)}</ul>
-          : <p className="muted small" style={{ marginTop: 6 }}>Saathi needs a couple of weeks of check-ins to see what helps you. Nothing to do, just keep showing up.</p>}
+          : <p className="muted small" style={{ marginTop: 6 }}>Flint needs a couple of weeks of check-ins to see what helps you. Nothing to do, just keep showing up.</p>}
       </div>
       {(ins?.wins.length ?? 0) > 0 && (
         <div className="card">
@@ -170,7 +170,7 @@ function Progress() {
       )}
       <button className="mode" onClick={() => push({ id: 'why' })}>
         <span className="ico" style={{ background: 'var(--t-sand)' }}><Ic n="star" /></span>
-        <span className="grow1"><b style={{ display: 'block' }}>How Saathi uses this</b><span className="muted small">See how today’s plan, stories, messages and events are chosen</span></span><Ic n="chev" />
+        <span className="grow1"><b style={{ display: 'block' }}>How Flint uses this</b><span className="muted small">See how today’s plan, stories, messages and events are chosen</span></span><Ic n="chev" />
       </button>
     </div>
   );

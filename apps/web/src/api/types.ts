@@ -7,7 +7,7 @@ import type {
 export type { Companion, Consent, ConsentUpdate, ConversationItem, ConversationMode, EndConversationResponse, Helpline, Insights, JournalAnalysis, JournalCreateBody, JournalEntry, MemoryItem, Me, MeUpdate, NotificationPrefs, OtpStartResponse, OutsideEvent, PlanItem, Privacy, PrivacyUpdate, SafetyPlan, StoryResponse, StoryTheme, Theme, TrustedContact, Letter, Garden, GardenPlant, Creation, JarItem, MonthT, ActivityBodyT };
 
 export interface CalmNarration { server: boolean; voice: { id: string; label: string } | null; pace: number; mood: string; reason: string }
-export interface VoiceItem { id: string; label: string; gender: 'female' | 'male' | null; provider: 'device' | 'sarvam' }
+export interface VoiceItem { id: string; label: string; gender: 'female' | 'male' | null; provider: 'device' | 'sarvam' | 'google' }
 export interface VoiceList { language: string; serverVoices: boolean; items: VoiceItem[] }
 export interface PublicConfig { otp: boolean; google: boolean; googleClientId: string | null; llm: boolean; stt: boolean; tts: boolean; push: boolean; /** Server speech-to-text for the journal is connected. */ dictation?: boolean; signupsOpen?: boolean; voicePaused?: boolean; analytics?: boolean; /** The new design is switched on for everyone. */ uiV2?: boolean; /** The third design is switched on for everyone. */ uiV3?: boolean }
 

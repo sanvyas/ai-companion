@@ -1,4 +1,4 @@
-# Render Blueprint for the Saathi API. New > Blueprint > pick this repository and branch.
+# Render Blueprint for the Flint API. New > Blueprint > pick this repository and branch.
 # Secrets that Render generates (JWT_SECRET, DATA_KEK, PHONE_HASH_KEY, OTP_PEPPER) can be read later in the service's
 # Environment tab. Copy DATA_KEK somewhere safe: without it nobody's stored data can be decrypted.
 services:

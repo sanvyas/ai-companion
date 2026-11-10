@@ -111,7 +111,7 @@ export function SignInV3({ step }: { step: 'name' | 'otp' }) {
 
         {x.err && <div role="alert" style={s('font-size:15px;color:#8A2D1A;margin-top:12px;line-height:1.4')}>{x.err}</div>}
         {off && <div role="status" style={s('font-size:15px;color:#5E4A26;background:#FFF1D6;border-radius:16px;padding:12px 14px;margin-top:12px;line-height:1.4')}>Sign-in by phone isn’t switched on yet.</div>}
-        {x.cfg === null && <div role="status" style={s('font-size:15px;color:#5E4A26;background:#FFF1D6;border-radius:16px;padding:12px 14px;margin-top:12px')}>I can’t reach Saathi right now. Check your internet.</div>}
+        {x.cfg === null && <div role="status" style={s('font-size:15px;color:#5E4A26;background:#FFF1D6;border-radius:16px;padding:12px 14px;margin-top:12px')}>I can’t reach Flint right now. Check your internet.</div>}
 
         <div style={s('margin-top:auto;padding-top:24px;display:flex;flex-direction:column;gap:14px')}>
           <Primary type="submit" disabled={x.busy || off}>{x.busy ? (sent ? 'Checking…' : 'Sending…') : sent ? 'Continue' : 'Send me a code'}</Primary>
@@ -149,7 +149,7 @@ export function CompanionV3() {
       <VoicePicker value={voice} onPick={v => set({ voice: v })} accent={INDIGO} soft="#FFFFFF" />
       <label htmlFor="cname" style={s('font-size:15px;font-weight:600;margin:24px 0 10px')}>Name <span style={s(`font-weight:400;color:${MUTED}`)}>You can change it any time.</span></label>
       <input id="cname" value={name} maxLength={24} onChange={e => setName(e.target.value)} style={s(field)} />
-      <div style={s('margin-top:28px')}><Primary onClick={() => { stopSpeech(); void updateCompanion({ name: name.trim() || 'Saathi', look, voice }); go('consent'); }}>Continue</Primary></div>
+      <div style={s('margin-top:28px')}><Primary onClick={() => { stopSpeech(); void updateCompanion({ name: name.trim() || 'Flint', look, voice }); go('consent'); }}>Continue</Primary></div>
     </main>
   );
 }

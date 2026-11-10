@@ -4,6 +4,7 @@ import { withSystem } from '../../db/pool.js';
 import { INTEGRATIONS } from '../../runtime/integrations.js';
 import { PROMPT_DEFS } from '../../runtime/promptDefs.js';
 import { liveSessionCount } from '../../services/conversations.js';
+import { vendorsOf } from '../../services/voices.js';
 import { guard } from './util.js';
 
 const started = Date.now();
@@ -42,7 +43,7 @@ export async function systemCards(ctx: Ctx): Promise<SystemCard[]> {
   const calls = dbOk ? (await q<{ ok: number; bad: number }>(`SELECT count(*) FILTER (WHERE ok)::int AS ok, count(*) FILTER (WHERE NOT ok)::int AS bad FROM usage_events WHERE kind IN ('companion','classify') AND created_at > now() - interval '1 hour'`))[0] : { ok: 0, bad: 0 };
   const why = dbOk && calls.bad ? (await q<{ message: string }>(`SELECT message FROM error_log WHERE route LIKE 'llm/%' AND last_seen > now() - interval '1 hour' ORDER BY last_seen DESC LIMIT 1`))[0]?.message : undefined;
   const failing = calls.bad > 0 && calls.ok === 0;
-  const who = `${ctx.rt.llmProvider() === 'openrouter' ? 'OpenRouter' : 'Anthropic'} · ${ctx.rt.model('companion')} · safety ${ctx.rt.model('safety')}`;
+  const who = `${{ openrouter: 'OpenRouter', groq: 'Groq', anthropic: 'Anthropic' }[ctx.rt.llmProvider()]} · ${ctx.rt.model('companion')} · safety ${ctx.rt.model('safety')}`;
   // Free models queue, rate-limit and fail at busy times. The safety check on a model that fails falls back to keywords only.
   const freeSlots = (['companion', 'safety', 'analysis'] as const).filter(slot => /:free$/i.test(ctx.rt.model(slot)));
   cards.push({ group: 'AI', name: 'Language model', status: !llm.configured || failing ? 'down' : calls.bad > calls.ok || freeSlots.length ? 'warn' : 'ok',
@@ -53,6 +54,14 @@ export async function systemCards(ctx: Ctx): Promise<SystemCard[]> {
   const felt = dbOk ? (await q<{ n: number; wait50: number | null; reply50: number | null; reply90: number | null }>(`SELECT count(*)::int AS n, percentile_cont(0.5) WITHIN GROUP (ORDER BY units) AS wait50, percentile_cont(0.5) WITHIN GROUP (ORDER BY latency_ms) AS reply50, percentile_cont(0.9) WITHIN GROUP (ORDER BY latency_ms) AS reply90 FROM usage_events WHERE kind = 'client_turn' AND created_at > now() - interval '24 hours'`))[0] : { n: 0, wait50: null, reply50: null, reply90: null };
   cards.push({ group: 'AI', name: 'Reply speed', status: !speed.n ? 'off' : (speed.p50 ?? 0) > 4000 || (speed.p90 ?? 0) > 9000 ? 'warn' : 'ok',
     detail: !speed.n ? 'No conversations in the last day.' : `First words after ${((speed.p50 ?? 0) / 1000).toFixed(1)} s typically, ${((speed.p90 ?? 0) / 1000).toFixed(1)} s for the slowest tenth (${speed.n} replies in 24 hours). Measured on the server.${felt.n ? ` On spoken turns, the phone waited ${((felt.wait50 ?? 0) / 1000).toFixed(1)} s typically before deciding the person had finished, then ${((felt.reply50 ?? 0) / 1000).toFixed(1)} s (slowest tenth ${((felt.reply90 ?? 0) / 1000).toFixed(1)} s) to the first sound (${felt.n} turns).` : ''}`, link: 'infra' });
+  // Listening and speaking: which engine is doing it, and whether it has a key.
+  const sttChoice = ctx.rt.settings.str('voice.stt_provider');
+  const live = !!ctx.stt?.configured, dictation = !!ctx.transcriber?.configured;
+  cards.push({ group: 'AI', name: 'Listening', status: live ? 'ok' : dictation ? 'warn' : 'off',
+    detail: live ? `Groq Whisper hears calls and journal dictation (${ctx.rt.settings.str('voice.groq_stt_model')}).` : sttChoice === 'groq' ? 'Groq speech is selected but has no key. Calls use the phone’s own listening.' : dictation ? `Server listening is off for calls (${sttChoice === 'sarvam' ? 'Sarvam handles journal dictation only' : 'phone only'}).` : 'No speech service. The phone listens on its own.', link: live ? 'settings' : 'integrations' });
+  const vend = vendorsOf(ctx.tts);
+  cards.push({ group: 'AI', name: 'Voices', status: vend.google || vend.sarvam ? 'ok' : 'off',
+    detail: vend.google || vend.sarvam ? `${[vend.google && 'Google', vend.sarvam && 'Sarvam'].filter(Boolean).join(' and ')} voices available${vend.google && vend.sarvam ? '' : ` · add ${vend.google ? 'Sarvam' : 'a Google key'} for ${vend.google ? 'more Indian voices' : 'English voices'}`}.` : 'No voice service connected. The companion speaks with the phone’s own voices.', link: 'integrations' });
   cards.push({ group: 'AI', name: 'Prompts', status: 'ok', detail: `${PROMPT_DEFS.length} prompts · ${custom} customised`, link: 'prompts' });
   cards.push({ group: 'AI', name: 'Safety evaluation', status: !lastEval ? 'warn' : lastEval.failed ? 'warn' : 'ok', detail: lastEval ? `${lastEval.suite}: ${lastEval.total - lastEval.failed}/${lastEval.total} passed, ${new Date(lastEval.created_at).toISOString().slice(0, 10)}` : 'Never run. Run the safety suites before inviting people.', link: 'evals' });
   const open2 = dbOk ? (await q<{ n: number }>(`SELECT count(*)::int AS n FROM safety_events e WHERE e.level >= 2 AND e.created_at > now() - interval '7 days' AND NOT EXISTS (SELECT 1 FROM safety_reviews r WHERE r.event_id = e.id)`))[0].n : 0;

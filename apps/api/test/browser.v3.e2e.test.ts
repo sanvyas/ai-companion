@@ -128,7 +128,7 @@ describe('the third design', () => {
       await page.getByRole('button', { name: 'Back', exact: true }).click();
     }
 
-    // Journal: write a page, let Saathi read it, keep it.
+    // Journal: write a page, let Flint read it, keep it.
     await tab('Journal');
     await page.getByRole('heading', { level: 1 }).filter({ hasText: 'Journal' }).waitFor();
     problems.push(...await scan(page, 'journal'));

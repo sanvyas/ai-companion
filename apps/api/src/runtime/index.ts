@@ -35,11 +35,11 @@ export class Runtime {
   }
 
   /** Which vendor serves every model call right now. */
-  llmProvider(): 'anthropic' | 'openrouter' { return this.settings.str('llm.provider') === 'openrouter' ? 'openrouter' : 'anthropic'; }
+  llmProvider(): 'anthropic' | 'openrouter' | 'groq' { const p = this.settings.str('llm.provider'); return p === 'openrouter' || p === 'groq' ? p : 'anthropic'; }
 
   /** The model for a purpose, from whichever vendor is active. Call sites never need to know which. */
   model(slot: 'companion' | 'safety' | 'analysis'): string {
-    const id = this.settings.str(this.llmProvider() === 'openrouter' ? `openrouter.models.${slot}` : `models.${slot}`);
+    const id = this.settings.str(`${{ anthropic: 'models', openrouter: 'openrouter.models', groq: 'groq.models' }[this.llmProvider()]}.${slot}`);
     // A “:batch” id (which OpenRouter lists, and which only its batch interface accepts) would fail every chat request.
     // The same model without the suffix is the one meant.
     return id.replace(/:batch\b/i, '');

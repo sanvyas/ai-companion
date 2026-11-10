@@ -50,7 +50,7 @@ describe('prompt definitions', () => {
   });
 
   it('the companion prompt carries the six-way playbook and the safe-language rules', () => {
-    const stable = stableSystem({ companionName: 'Saathi', nickname: 'Asha', language: 'en', voice: 'warm' }, get);
+    const stable = stableSystem({ companionName: 'Flint', nickname: 'Asha', language: 'en', voice: 'warm' }, get);
     expect(stable).toContain('SAFE LANGUAGE');
     expect(stable).toContain('Asha');
     for (const s of ['listen', 'energise', 'ground', 'celebrate', 'steady', 'play']) expect(stable.toLowerCase(), s).toContain(s);

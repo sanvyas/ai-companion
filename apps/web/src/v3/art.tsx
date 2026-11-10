@@ -75,7 +75,7 @@ function Bubble({ style, children }: { style: string; children: React.ReactNode 
   return <span aria-hidden="true" style={{ ...s(`position:absolute;display:grid;place-items:center;background:#FFFFFF;border-radius:18px;box-shadow:0 8px 20px rgba(30,36,48,.1);animation:kBob 4.2s ease-in-out infinite;${style}`) }}>{children}</span>;
 }
 
-/** Saathi, with a soft glow behind and a few quiet words floating near, so Talk opens like a friend's doorstep. */
+/** Flint, with a soft glow behind and a few quiet words floating near, so Talk opens like a friend's doorstep. */
 export function TalkHero({ look }: { look: Look }) {
   return (
     <div style={s('position:relative;height:214px;display:grid;place-items:center')}>

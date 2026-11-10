@@ -1,6 +1,6 @@
-# v3: the third design, from "Saathi Fresh"
+# v3: the third design, from "Flint Fresh"
 
-Source: the Claude Design prototype `Saathi Fresh.dc.html` (handoff bundle). v1 and v2 stay as they are: see [RELEASES.md](RELEASES.md).
+Source: the Claude Design prototype `Flint Fresh.dc.html` (handoff bundle). v1 and v2 stay as they are: see [RELEASES.md](RELEASES.md).
 
 ## Status: built, behind its own switch
 
@@ -12,7 +12,7 @@ Source: the Claude Design prototype `Saathi Fresh.dc.html` (handoff bundle). v1 
 Five tabs: **Home, Relax, Talk, Journal, Month**.
 
 - **How are you, right now?** One tap, once a day (Skip is always there), then an optional "what's it about". The answer decides what Home leads with: heavy day offers talk, anxious offers a breath, meh offers a small distraction, okay a tiny step, great a note of what went well.
-- **Home**: a check-in card from Saathi, one adaptive hero, three nearby suggestions, tiny steps as paper notes, nearby events, and a small card for the month. Nudges at the top come only from real unread inbox cards.
+- **Home**: a check-in card from Flint, one adaptive hero, three nearby suggestions, tiny steps as paper notes, nearby events, and a small card for the month. Nudges at the top come only from real unread inbox cards.
 - **Relax**: filter by how you want to feel; one-minute breathing (three cycles), meditations, sleep stories, a story written for tonight, and four quiet games (rangoli, balloon pop, fruit slice, cozy room: no timers, no scores to beat).
 - **Talk**: voice, video, text; sit together; walk with me.
 - **Journal**: today by part of the day, a book of earlier days, write or speak, and the same review step as v2 (what to remember, a tiny step).
@@ -26,7 +26,7 @@ Nothing in Month is invented or scored.
 
 - What a day held is worked out on the server from the same activity the garden uses (`actDays`), plus `activity_log` for things only the person can say: a friend called, a game played, a day they showed up, and whether a breath or story **helped**. "Helped" is only ever a tap.
 - A day with only a check-in is "showed up". A quiet day is only a quiet day.
-- Saathi's "did you…?" notes are questions; nothing is added without a tap.
+- Flint's "did you…?" notes are questions; nothing is added without a tap.
 - No step counts: the app does not have them.
 - Song titles, styles and rewritten lines live only on the phone (`localStorage`, `saathi.v3.song`).
 
@@ -48,9 +48,9 @@ Nothing in Month is invented or scored.
 The third design now borrows what worked from the first two: the first design's room and type (24 px gutters, 17 px text, 34 to 38 px serif titles, 56 px buttons, soft white cards), the third design's colour and grouping, and a touch of the second design's garden, without its progress.
 
 - **Colour follows the day.** `v3/theme.ts` sets the colour at the top of every screen from the hour (morning peach, afternoon sky, evening apricot, night soft lavender) and leans it warmer and brighter on a heavy or flat day, to lift rather than match. It never goes dark and never strays far from the base paper colour.
-- **Sign-up is the first design's flow in the third design's colours.** One picture-led welcome screen says what Saathi does. Language, name, number and code share one screen (the code box opens in place). Anyone who taps "I already have an account" is not asked their age, name or language: the server takes `returning` on `/auth/otp/start`, `/auth/otp/verify` and `/auth/google`, never creates an account on that path, and answers `no_account` so the app can hand them to sign-up (where age is asked). The under-18 path is unchanged.
+- **Sign-up is the first design's flow in the third design's colours.** One picture-led welcome screen says what Flint does. Language, name, number and code share one screen (the code box opens in place). Anyone who taps "I already have an account" is not asked their age, name or language: the server takes `returning` on `/auth/otp/start`, `/auth/otp/verify` and `/auth/google`, never creates an account on that path, and answers `no_account` so the app can hand them to sign-up (where age is asked). The under-18 path is unchanged.
 - **How are you, again and again, but not nagging.** After three or more hours away (`GAP_MS` in `v3/ui.ts`), opening the app asks first, by name, with a face and a word for each of five feelings, and mentions what they said last time. Answering and skipping count the same. It only appears on a tab, never over a call or a breath. Kept on the phone (`saathi.v3.asked`, `saathi.v3.last`).
-- **Home**: greeting, how you are, a small living garden (sky of the hour, swaying flowers, a butterfly; touch it and petals lift; nothing is counted), Saathi checking on you, one thing for right now with a few lighter options, tiny steps with a progress bar, nearby events, This month.
+- **Home**: greeting, how you are, a small living garden (sky of the hour, swaying flowers, a butterfly; touch it and petals lift; nothing is counted), Flint checking on you, one thing for right now with a few lighter options, tiny steps with a progress bar, nearby events, This month.
 - **Relax** is laid out like a meditation app: one pick for how you are and the hour, quick resets, meditations, sleep stories, tales made for tonight, and last of all a little play with one game picked for the month (`pickFor` in `v3/Relax.tsx`; the month's game is `GAMES[month % 4]`).
 - **Month** shows only this month's way up front (song, letters, future you, what works, by months since joining); the other ways are one tap away. Tiny steps are a checklist.
 - **For you** (the bell on Home) replaces guessing what needs attention: your check-in, a heavy-day nudge that offers what has helped you before, your next tiny step, something near you, a Sunday letter, an empty month. Each is a button that does the thing. Built only from what is true today.
@@ -61,13 +61,13 @@ The third design now borrows what worked from the first two: the first design's 
 - **Type**: Fraunces (soft) for headlines and Plus Jakarta Sans for everything else. Both are bundled, so nothing is fetched at run time. Headlines use `font-size-adjust` so Hindi and English lines stay the same size.
 - **Colour**: thirteen palettes (`v3/palette.ts`): six light (Indigo Dusk, Garden Teal, Sunrise Terracotta, Rose and Plum, Ocean Mist, Forest Sage), four with a wash of colour across the page (Peach Sorbet, Lavender Sky, Mango Lassi, Mint Aurora) and three dark (Midnight Indigo, Deep Forest, Ember Night). A palette sets the main colour and its readable twin for text, a lighter one, a highlight, the paper, card, field and line colours, the ink and the quieter ink, the tile tint, the Talk card, and the top-of-screen colour for each part of the day. Moods, warnings and words never change. Pick under You, then Colours (each choice shows a picture of itself); it is kept on the phone, and `?palette=<id>` sets it for a link. Every pair that carries words is checked in `palette.test.ts`, and the browser tests run an accessibility scan on the main screens in every palette.
 - **Month** opens on letters, always (`FEATURED_MODE` in the domain package). Each stamp is a small drawing of what the day held. Song, future you and what works are one tap away.
-- **Pictures**: Talk and Journal are drawn, not iconed (`v3/art.tsx`): Saathi with a glow and a few quiet words, a bench under a tree, a path through hills, a notebook with a pen, and a small picture for morning, afternoon and evening. How you felt is shown with the same five faces everywhere.
+- **Pictures**: Talk and Journal are drawn, not iconed (`v3/art.tsx`): Flint with a glow and a few quiet words, a bench under a tree, a path through hills, a notebook with a pen, and a small picture for morning, afternoon and evening. How you felt is shown with the same five faces everywhere.
 
 ## Name, words and the first screen
 
-- The app's name, its one-line promise and its pitch live in `v3/brand.ts` (`BRAND`, `TAGLINE`, `PITCH`), so a rename is one edit there plus the places listed in `docs/RENAME.md`. The companion keeps its own name (Saathi by default, changeable in sign-up and You).
+- The app's name, its one-line promise and its pitch live in `v3/brand.ts` (`BRAND`, `TAGLINE`, `PITCH`), so a rename is one edit there plus the places listed in `docs/RENAME.md`. The companion keeps its own name (Flint by default, changeable in sign-up and You).
 - Words say what the app does as a whole and that it is a two-way conversation: "Feel lighter, every day." and "Talk with a companion who listens and answers, calm your mind, write it out, and watch yourself grow." Talk opens with "Talk to me about anything." and "I listen, and I talk back."
-- The first screen is a garden with Saathi standing in it, a real three-line exchange above (so it is plain that this is a conversation), and four drawn pictures for Talk, Relax, Write and Grow. It fits one phone screen and reads in every palette (tested).
+- The first screen is a garden with Flint standing in it, a real three-line exchange above (so it is plain that this is a conversation), and four drawn pictures for Talk, Relax, Write and Grow. It fits one phone screen and reads in every palette (tested).
 
 ## Known limits
 

@@ -1,6 +1,8 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { testOpenRouter } from './openrouter.js';
 import { testSarvam } from '../providers/sarvam.js';
+import { testGroq } from '../providers/groq.js';
+import { testGoogleTts } from '../providers/google.js';
 
 // Every outside service the platform can use. The portal lists these, stores the credentials sealed in the database,
 // and the live app reads them from there (falling back to the environment variable if none is saved).
@@ -31,7 +33,7 @@ export interface IntegrationDef {
   /** Hosts to allow in a locked-down environment. */
   hosts: string[];
   /** `ctx.companionModel` lets a test try the model people actually talk to, not only whether the key is accepted. */
-  test?: (v: Record<string, string>, fetchImpl: typeof fetch, ctx?: { companionModel?: string; anthropicModel?: string }) => Promise<TestResult>;
+  test?: (v: Record<string, string>, fetchImpl: typeof fetch, ctx?: { companionModel?: string; anthropicModel?: string; groqModel?: string }) => Promise<TestResult>;
 }
 
 async function testAnthropic(v: Record<string, string>, _f?: typeof fetch, ctx?: { anthropicModel?: string }): Promise<TestResult> {
@@ -81,8 +83,18 @@ export const INTEGRATIONS: IntegrationDef[] = [
     fields: [key('api_key', 'OPENROUTER_API_KEY', { pattern: /^sk-or-[\w-]{20,}$/, hint: 'Starts with sk-or-' })], test: (v, f, c) => testOpenRouter(v, f, c?.companionModel),
   },
   {
+    id: 'groq', label: 'Groq', category: 'AI', purpose: 'Fast open models for conversations (GPT-OSS) and Whisper speech-to-text for calls and journal dictation. One key does both.',
+    status: 'live', statusNote: 'Used when “AI provider” is Groq (Settings) for conversations, and for listening unless “Listening” is changed. Change the key and the next message uses it.', docsUrl: 'https://console.groq.com/keys', hosts: ['api.groq.com'],
+    fields: [key('api_key', 'GROQ_API_KEY', { pattern: /^gsk_[\w-]{20,}$/, hint: 'Starts with gsk_' })], test: (v, f, c) => testGroq(v, f, { groqModel: c?.groqModel }),
+  },
+  {
+    id: 'google_tts', label: 'Google Cloud Text-to-Speech', category: 'Voice', purpose: 'Natural WaveNet voices for the companion in Indian, American and British English and Hindi. People pick one in the app by language.',
+    status: 'live', statusNote: 'Speaks the companion’s replies for anyone who picks a Google voice, and powers the voice previews. The Cloud Text-to-Speech API must be enabled for the key’s project.', docsUrl: 'https://console.cloud.google.com/apis/library/texttospeech.googleapis.com', hosts: ['texttospeech.googleapis.com'],
+    fields: [key('api_key', 'GOOGLE_TTS_API_KEY', { pattern: /^AIza[\w-]{30,}$/, hint: 'Starts with AIza' })], test: testGoogleTts,
+  },
+  {
     id: 'sarvam', label: 'Sarvam', category: 'Voice', purpose: 'Natural Indian voices for the companion (Hindi, Hinglish, English). People pick one in the app by language.',
-    status: 'live', statusNote: 'Speaks the companion’s replies for anyone who picks a Sarvam voice, and powers the voice previews. Listening (speech-to-text) still uses the phone.', docsUrl: 'https://dashboard.sarvam.ai', hosts: ['api.sarvam.ai'],
+    status: 'live', statusNote: 'Speaks the companion’s replies for anyone who picks a Sarvam voice, and powers the voice previews. Journal dictation can use it too (Settings → Listening).', docsUrl: 'https://dashboard.sarvam.ai', hosts: ['api.sarvam.ai'],
     fields: [key('api_key', 'SARVAM_API_KEY')], test: testSarvam,
   },
   {

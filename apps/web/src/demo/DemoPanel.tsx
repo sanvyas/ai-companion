@@ -25,7 +25,7 @@ export function DemoPanel() {
     { group: 'Outside', desc: 'Small steps, walks, meetups.', items: [['Outside', () => go('outside')], ['Event detail', () => { go('outside'); void loadOutside().then(() => { const e = getState().events[0]; if (e) set({ sheet: 'event', eventId: e.id, eventStage: 'detail' }); }); }], ['Walk with me', () => void startWalkFlow()]] },
     { group: 'Journal', desc: 'Entries, dictation, insights.', items: [['Journal entries', () => go('journal')], ['Write an entry', () => startJournal('write')], ['Talk it out (dictation)', () => startJournal('speak')], ['Journal with sample text', () => go('jcompose', { jMode: 'write', jText: SAMPLE, jStage: 'edit', jShare: true })], ['Insights', () => go('journey')], ['Weekly letter', () => { go('journey'); set({ sheet: 'letter' }); }]] },
     { group: 'You', desc: 'Companion, reminders, privacy.', items: [['You', () => go('you')], ['Memory', () => go('memory')], ['Avatar and voice studio', () => go('studio')], ['Reminder settings', () => go('notifs')], ['Privacy Center', () => go('privacy')], ['Paywall', openPaywall]] },
-    { group: 'Notifications', desc: 'What arrives outside the app.', items: [['Check-in notification', sim('checkin')], ['Plan reminder', sim('plan')], ['Event: time to leave', sim('leave')], ['Follow-up after a hard day', sim('followup')], ['After a quiet week', sim('quietweek')], ['Saathi is calling', () => go('incoming')], [`Lock-screen previews: ${preview ? 'on' : 'off'}`, () => void updatePrivacy({ lockScreenPreviews: !preview })]] },
+    { group: 'Notifications', desc: 'What arrives outside the app.', items: [['Check-in notification', sim('checkin')], ['Plan reminder', sim('plan')], ['Event: time to leave', sim('leave')], ['Follow-up after a hard day', sim('followup')], ['After a quiet week', sim('quietweek')], ['Flint is calling', () => go('incoming')], [`Lock-screen previews: ${preview ? 'on' : 'off'}`, () => void updatePrivacy({ lockScreenPreviews: !preview })]] },
     { group: 'Calm', desc: 'Meditations, sleep stories, sounds.', items: [['Calm hub', () => go('calm', { calmTab: 'meditate' })], ['Sleep stories', () => go('calm', { calmTab: 'sleep' })], ['Sounds', () => go('calm', { calmTab: 'sounds' })]] },
     { group: 'Safety', desc: 'Always one tap away.', items: [['Support sheet', () => set({ sheet: 'support' })], ['Level 2 in chat', () => go('chat', { careCard: true })], ['Crisis screen (level 3)', showCrisis], ['Breathe with me', openBreathe]] },
   ];
@@ -37,10 +37,10 @@ export function DemoPanel() {
   return (
     <aside aria-label="Prototype navigator" style={{ position: 'fixed', left: 0, top: 0, bottom: 0, width: 280, maxWidth: '86vw', zIndex: 100, overflow: 'auto', background: 'rgba(233,226,214,.97)', padding: '20px 18px 40px', display: 'flex', flexDirection: 'column', gap: 18, boxShadow: '8px 0 30px rgba(42,46,69,.12)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-        <div style={{ fontFamily: serif, fontSize: 30 }}>Saathi</div>
+        <div style={{ fontFamily: serif, fontSize: 30 }}>Flint</div>
         <button onClick={() => setOpen(false)} style={{ background: 'none', border: 'none', color: C.teal, fontSize: 14, fontWeight: 600 }}>Hide</button>
       </div>
-      <div style={{ fontSize: 14, lineHeight: 1.5, color: C.muted }}>Jump to any screen. Try the safety layer: in Text chat, type “I feel hopeless” (level 2) or “I have a plan for tonight” (level 3). Triple-tap the Saathi wordmark on Today for quick hide.</div>
+      <div style={{ fontSize: 14, lineHeight: 1.5, color: C.muted }}>Jump to any screen. Try the safety layer: in Text chat, type “I feel hopeless” (level 2) or “I have a plan for tonight” (level 3). Triple-tap the Flint wordmark on Today for quick hide.</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <div style={{ fontSize: 13, fontWeight: 600 }}>Time of day</div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>

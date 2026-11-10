@@ -11,7 +11,10 @@ export interface SttSession {
 }
 export interface SttProvider {
   readonly name: string;
-  open(opts: { language: 'en-IN' | 'hi-IN'; signal?: AbortSignal }): Promise<SttSession>;
+  /** False until a vendor is connected and chosen; the app then listens with the phone's own speech engine. */
+  readonly configured: boolean;
+  /** `hinglish` asks for Hindi written in English letters, which is how most people type it. */
+  open(opts: { language: 'en-IN' | 'hi-IN'; hinglish?: boolean; userId?: string; signal?: AbortSignal }): Promise<SttSession>;
 }
 
 /** Speech-to-text for a short recording (up to about 30 s), used for the journal's “Talk it out”. */
@@ -34,6 +37,8 @@ export interface TtsProvider {
   readonly name: string;
   /** False until the vendor's key has been added; the app then speaks with the device's own voices. */
   readonly configured: boolean;
+  /** Whether the vendor behind voices of this kind (`sarvam`, `google`) is connected. Absent means the one vendor is the answer. */
+  has?(vendor: string): boolean;
   /** Whole utterance, for previews. */
   synthesize(opts: TtsOptions): Promise<Synthesis>;
   /** The same audio as PCM chunks, for a live conversation. */

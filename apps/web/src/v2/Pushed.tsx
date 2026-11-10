@@ -88,25 +88,25 @@ export function WhyScreen() {
     <li style={{ alignItems: 'flex-start' }}><span className="ico" style={{ background: color }}><Ic n={icon} /></span><div className="grow1"><b>{title}</b><div className="small">{body}</div>{why && <div className="fine" style={{ marginTop: 2 }}>{why}</div>}</div></li>
   );
   return (
-    <ScreenFrame title="How Saathi plans" onBack={pop}>
-      <p className="muted" style={{ margin: '6px 0 12px' }}>Saathi notices the pattern in what you chose to share, and uses it to decide what to offer. It all happens on your phone. Nothing is posted anywhere, and you can switch it off.</p>
+    <ScreenFrame title="How Flint plans" onBack={pop}>
+      <p className="muted" style={{ margin: '6px 0 12px' }}>Flint notices the pattern in what you chose to share, and uses it to decide what to offer. It all happens on your phone. Nothing is posted anywhere, and you can switch it off.</p>
       <div className="card">
-        <b className="h3">What Saathi noticed this week</b>
+        <b className="h3">What Flint noticed this week</b>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
           {keys.length ? keys.map(k => { const h = themeDef(k); return <span key={k} className="pill" style={{ background: `${h.color}33` }}><span className="dot" style={{ width: 9, height: 9, background: h.color }} />{h.label} · {wk[k]}</span>; })
             : <span className="muted small">{remember ? 'Nothing yet. Write or talk a little, and this fills in.' : 'Using conversations is off, so suggestions only use how you feel today.'}</span>}
         </div>
       </div>
-      <div className="sec-h" style={{ marginTop: 20 }}><h2 className="h2">So Saathi suggests</h2></div>
+      <div className="sec-h" style={{ marginTop: 20 }}><h2 className="h2">So Flint suggests</h2></div>
       <ul className="list card" style={{ padding: '4px 16px' }}>
-        {row('check', '#DDF0DC', 'Today’s small thing', one?.title ?? 'Check in first, and Saathi picks one.', one?.why)}
+        {row('check', '#DDF0DC', 'Today’s small thing', one?.title ?? 'Check in first, and Flint picks one.', one?.why)}
         {story && row('moon', '#C9CDF0', 'A story or meditation', story.item.title, story.why)}
         {ev && row('pin', '#F9DCC0', 'Something near you', `${ev.item.title} · ${dayOf(ev.item.when)}`, ev.why || 'Because it is a gentle way to be around people.')}
       </ul>
       <div className="sec-h" style={{ marginTop: 20 }}><h2 className="h2">Messages coming up</h2></div>
       {notes.length
         ? <ul className="list card" style={{ padding: '4px 16px' }}>{notes.map(nn => row('bell', 'var(--t-sand)', nn.text, nn.when, nn.why))}</ul>
-        : <div className="card"><p className="muted small">Check-ins are off. Saathi won’t send anything unless you turn them on in You.</p></div>}
+        : <div className="card"><p className="muted small">Check-ins are off. Flint won’t send anything unless you turn them on in You.</p></div>}
       <div className="sec-h" style={{ marginTop: 20 }}><h2 className="h2">You are in control</h2></div>
       <div className="card">
         <p className="small muted">Pages marked “just for you” are never used. To stop all of this, turn off “Remember things from our chats” in You, under Memory.</p>
@@ -123,7 +123,7 @@ export function LetterScreen() {
   const letter = useStore(s => s.letter);
   useEffect(() => { if (letter) local(LETTER_SEEN, letter.id); }, [letter]);
   return (
-    <ScreenFrame title="A letter from Saathi" onBack={pop}>
+    <ScreenFrame title="A letter from Flint" onBack={pop}>
       {letter ? (
         <div className="card" style={{ padding: 22, background: 'var(--t-sand)' }}>
           <p className="muted small">{dayOf(letter.createdAt)}</p>

@@ -60,7 +60,7 @@ export function Toast() {
   );
 }
 
-/** A nudge from Saathi that drops in, says one thing, and leaves. Tapping it goes where it points. */
+/** A nudge from Flint that drops in, says one thing, and leaves. Tapping it goes where it points. */
 export function BannerView({ onGo }: { onGo: (b: Banner) => void }) {
   const b = useV3(x => x.banner);
   useEffect(() => { if (!b) return; const t = setTimeout(() => setV3({ banner: null }), 6500); return () => clearTimeout(t); }, [b]);

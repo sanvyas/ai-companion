@@ -94,7 +94,7 @@ const HELPED_LINE: Record<NonNullable<NotifContext['helped']>, string> = {
  * it names the person, mentions what they told us, and offers one thing to tap. Never a streak, never guilt.
  */
 export function buildContent(kind: NotifKind, o: { previews: boolean; discreet: boolean; companionName: string; eventTitle?: string; eventTime?: string; ctx?: NotifContext }): NotifContent {
-  const title = o.discreet ? 'Calm' : o.previews ? o.companionName : 'Saathi';
+  const title = o.discreet ? 'Calm' : o.previews ? o.companionName : 'Flint';
   const base = { title, tag: kind, timeSensitive: kind === 'leave' };
   const c = o.ctx ?? {};
   const you = c.nick?.trim() ? `${c.nick.trim()}, ` : '';
@@ -112,7 +112,7 @@ export function buildContent(kind: NotifKind, o: { previews: boolean; discreet: 
     plan: { body: c.stepLabel ? `A small one for today: “${c.stepLabel}”. Want company while you do it?` : 'The 10-minute walk you picked. Whenever you’re ready.', route: 'plan', actions: [{ action: 'walk', title: 'Walk with me' }, { action: 'done', title: 'Did it' }, { action: 'skip', title: 'Not today' }] },
     leave: { body: `${o.eventTitle ?? 'Your plan'}${o.eventTime ? ` at ${o.eventTime}` : ''}. Leave in ten minutes? I can keep you company.`, route: 'walk', actions: [{ action: 'company', title: 'Keep me company' }, { action: 'later', title: 'I’m fine' }] },
     followup: { body: `${cap(you)}thinking of you after yesterday. Want to talk, or just breathe for a minute?`, route: 'talk', actions: [{ action: 'talk', title: 'Talk' }, { action: 'breathe', title: 'Breathe' }, { action: 'later', title: 'Not now' }] },
-    quietweek: { body: `${cap(you)}no pressure. Your little garden is still here, and so am I.`, route: 'today', actions: [{ action: 'open', title: 'Open Saathi' }] },
+    quietweek: { body: `${cap(you)}no pressure. Your little garden is still here, and so am I.`, route: 'today', actions: [{ action: 'open', title: 'Open Flint' }] },
     letter: { body: `${cap(you)}your Sunday letter is here. A few kind lines about your week.`, route: 'letter', actions: [{ action: 'open', title: 'Open' }] },
   };
   const r = rich[kind];

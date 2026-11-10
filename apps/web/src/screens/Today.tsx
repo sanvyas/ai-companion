@@ -45,7 +45,7 @@ export function Today() {
   return (
     <main aria-label="Today" style={{ position: 'absolute', inset: 0, ...flex('column'), background: t.bg }}>
       <div style={{ ...flex('row'), alignItems: 'center', justifyContent: 'space-between', padding: 'var(--head-pad) 24px 0' }}>
-        <button onClick={onLogo} aria-label="Saathi" style={{ background: 'none', border: 'none', padding: 0, fontFamily: serif, fontSize: 22 }}>Saathi</button>
+        <button onClick={onLogo} aria-label="Flint" style={{ background: 'none', border: 'none', padding: 0, fontFamily: serif, fontSize: 22 }}>Flint</button>
         <HelpPill />
       </div>
       <Scroll pad="28px 24px var(--scroll-bottom)" gap={0}>

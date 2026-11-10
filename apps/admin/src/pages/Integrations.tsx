@@ -24,26 +24,72 @@ function SetKey({ it, field, onClose, done }: { it: Integration; field: FieldSta
   );
 }
 
-interface SettingRow { def: { key: string; label: string }; value: unknown }
+interface SettingRow { def: { key: string; label: string; options?: { value: string; label: string }[] }; value: unknown }
+type Vendor = 'groq' | 'anthropic' | 'openrouter';
+const VENDOR_NAME: Record<Vendor, string> = { groq: 'Groq', anthropic: 'Anthropic', openrouter: 'OpenRouter' };
+
+/** Which vendor serves the app, with a confirmed switch (a different model can judge risky messages differently). */
+function useProvider() {
+  const { data, reload } = useLoad<{ items: SettingRow[] }>('/settings');
+  const act = useAction();
+  const [switching, setSwitching] = useState<Vendor | null>(null);
+  const get = (k: string) => data?.items.find(i => i.def.key === k);
+  const provider = ((get('llm.provider')?.value as string | undefined) ?? 'anthropic') as Vendor;
+  const dialog = switching && (
+    <Confirm title={`Serve the app from ${VENDOR_NAME[switching]}?`} confirmLabel="Yes, switch" danger onClose={() => setSwitching(null)} onConfirm={async () => { await act(() => api.put('/settings/llm.provider', { value: switching }).then(() => { void reload(); return true; }), 'Saved. The next message uses it.'); }}>
+      <p>Every reply, safety check, journal reading and letter will use the {VENDOR_NAME[switching]} models set in Settings, starting with the next message.</p>
+      <p><b>Then run the safety evaluations</b> (Evaluations page). A different model can judge risky messages differently, and they are the check that it still catches the ones that matter.</p>
+    </Confirm>
+  );
+  return { data, reload, act, get, provider, setSwitching, dialog };
+}
+
+function ProviderRow({ vendor, provider, setSwitching }: { vendor: Vendor; provider: Vendor; setSwitching: (v: Vendor) => void }) {
+  return (
+    <div className="row" style={{ justifyContent: 'space-between' }}>
+      <div><b>AI provider</b><div className="muted" style={{ fontSize: 12.5 }}>Right now the app’s replies come from <b>{VENDOR_NAME[provider]}</b>.</div></div>
+      {provider === vendor ? <Badge tone="ok">In use</Badge> : <Button size="sm" variant="primary" onClick={() => setSwitching(vendor)}>Use {VENDOR_NAME[vendor]} for the app</Button>}
+    </div>
+  );
+}
+
+/** A setting with a fixed list of choices, saved as soon as one is picked. */
+function ChoiceRow({ row, label, hint, onSaved, act }: { row: SettingRow; label: string; hint?: string; onSaved: () => void; act: ReturnType<typeof useAction> }) {
+  const id = `choice-${row.def.key}`;
+  return (
+    <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div style={{ minWidth: 0 }}><label htmlFor={id}><b>{label}</b></label>{hint && <div className="muted" style={{ fontSize: 12.5 }}>{hint}</div>}</div>
+      <select id={id} className="input" style={{ maxWidth: 300 }} value={String(row.value)} onChange={e => void act(() => api.put(`/settings/${row.def.key}`, { value: e.target.value }).then(() => { onSaved(); return true; }), 'Saved. The app picks it up within seconds.')}>
+        {(row.def.options ?? []).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+    </div>
+  );
+}
+
+/** Everything about using Groq: whether it serves the app, which model does each job, and how it listens. */
+function GroqPanel() {
+  const { data, reload, act, get, provider, setSwitching, dialog } = useProvider();
+  if (!data) return null;
+  const rows = [['groq.models.companion', 'Companion model', 'Writes the live replies.'], ['groq.models.safety', 'Safety model', 'Checks every message. Run the safety evaluation after changing it.'], ['groq.models.analysis', 'Analysis model', 'Journal reading, summaries, memories and letters.'], ['groq.reasoning', 'Thinking effort', 'Low keeps replies quick in a live call.'], ['voice.stt_provider', 'Listening', 'Who turns speech into text for calls and journal dictation.'], ['voice.groq_stt_model', 'Speech model', 'The Whisper model used when listening is Groq.']]
+    .map(([k, label, hint]) => ({ row: get(k), label, hint })).filter((x): x is { row: SettingRow; label: string; hint: string } => !!x.row);
+  return (
+    <div className="stack" style={{ borderTop: '1px solid var(--line-2)', paddingTop: 12 }}>
+      <ProviderRow vendor="groq" provider={provider} setSwitching={setSwitching} />
+      {rows.map(r => <ChoiceRow key={r.row.def.key} {...r} onSaved={() => void reload()} act={act} />)}
+      {dialog}
+    </div>
+  );
+}
 
 /** Everything about using OpenRouter: which vendor serves the app, and which model does each job. */
 function OpenRouterPanel() {
-  const { data, reload } = useLoad<{ items: SettingRow[] }>('/settings');
-  const act = useAction();
+  const { data, reload, act, get, provider, setSwitching, dialog } = useProvider();
   const [picking, setPicking] = useState<SettingRow | null>(null);
-  const [switching, setSwitching] = useState<'openrouter' | 'anthropic' | null>(null);
-  const get = (k: string) => data?.items.find(i => i.def.key === k);
-  const provider = (get('llm.provider')?.value as string | undefined) ?? 'anthropic';
   const slots = ['companion', 'safety', 'analysis'].map(s => get(`openrouter.models.${s}`)).filter((x): x is SettingRow => !!x);
   if (!data) return null;
   return (
     <div className="stack" style={{ borderTop: '1px solid var(--line-2)', paddingTop: 12 }}>
-      <div className="row" style={{ justifyContent: 'space-between' }}>
-        <div><b>AI provider</b><div className="muted" style={{ fontSize: 12.5 }}>Right now the app’s replies come from <b>{provider === 'openrouter' ? 'OpenRouter' : 'Anthropic'}</b>.</div></div>
-        {provider === 'openrouter'
-          ? <Button size="sm" onClick={() => setSwitching('anthropic')}>Switch back to Anthropic</Button>
-          : <Button size="sm" variant="primary" onClick={() => setSwitching('openrouter')}>Use OpenRouter for the app</Button>}
-      </div>
+      <ProviderRow vendor="openrouter" provider={provider} setSwitching={setSwitching} />
       <div className="muted" style={{ fontSize: 12.5 }}>Models used when OpenRouter is the provider:</div>
       {slots.map(s => (
         <div key={s.def.key} className="row" style={{ justifyContent: 'space-between' }}>
@@ -52,12 +98,7 @@ function OpenRouterPanel() {
         </div>
       ))}
       {picking && <ModelPicker title={picking.def.label} current={String(picking.value)} onClose={() => setPicking(null)} onChoose={id => act(() => api.put(`/settings/${picking.def.key}`, { value: id }).then(() => { void reload(); return true; }), 'Saved. The app picks it up within seconds.')} />}
-      {switching && (
-        <Confirm title={switching === 'openrouter' ? 'Serve the app from OpenRouter?' : 'Go back to Anthropic?'} confirmLabel="Yes, switch" danger onClose={() => setSwitching(null)} onConfirm={async () => { await act(() => api.put('/settings/llm.provider', { value: switching }).then(() => { void reload(); return true; }), 'Saved. The next message uses it.'); }}>
-          <p>{switching === 'openrouter' ? 'Every reply, safety check, journal reading and letter will use the OpenRouter models above, starting with the next message.' : 'Every reply, safety check, journal reading and letter will use the Claude models set under Settings.'}</p>
-          <p><b>Then run the safety evaluations</b> (Evaluations page). A different model can judge risky messages differently, and they are the check that it still catches the ones that matter.</p>
-        </Confirm>
-      )}
+      {dialog}
     </div>
   );
 }
@@ -91,6 +132,7 @@ function Card1({ it, reload }: { it: Integration; reload: () => void }) {
         ))}
         {test && <div className="row tight"><Badge tone={test.lastTestOk ? 'ok' : 'bad'}>{test.lastTestOk ? 'Test passed' : 'Test failed'}</Badge><span className="muted" style={{ fontSize: 12.5 }}>{test.lastTestNote} · {ago(test.lastTestAt)}</span></div>}
         {it.id === 'openrouter' && allSet && write && <OpenRouterPanel />}
+        {it.id === 'groq' && allSet && write && <GroqPanel />}
         {it.hosts.length > 0 && <div className="row tight faint" style={{ fontSize: 12 }}>Hosts to allow: <span className="mono">{it.hosts.join(', ')}</span><Copy text={it.hosts.join('\n')} label="Copy" /></div>}
       </div>
       {editing && <SetKey it={it} field={editing} onClose={() => setEditing(null)} done={reload} />}
@@ -105,12 +147,12 @@ export function Integrations() {
   if (!data) return <Loading />;
   const cats = [...new Set(data.items.map(i => i.category))];
   const set = (id: string) => !!data.items.find(i => i.id === id)?.fields.every(f => f.source !== 'none');
-  const aiOff = !set('anthropic') && !set('openrouter');
+  const aiOff = !set('anthropic') && !set('openrouter') && !set('groq');
   return (
     <>
-      <PageHead title="Integrations and keys" sub="Connect the outside services Saathi uses. Keys are encrypted, never shown again, and take effect without a restart where the app already uses them." />
-      {aiOff && <Banner tone="bad"><span><b>The AI isn’t connected.</b> Conversations are off until the Anthropic or OpenRouter key is added below.</span></Banner>}
-      <Banner tone="info"><span><b>Used by the app</b> means the app already reads that key. <b>Key stored only</b> means you can save it now, but the part of the app that would use it (speech, SMS) hasn’t been built yet, so saving it changes nothing for users.</span></Banner>
+      <PageHead title="Integrations and keys" sub="Connect the outside services Flint uses. Keys are encrypted, never shown again, and take effect without a restart where the app already uses them." />
+      {aiOff && <Banner tone="bad"><span><b>The AI isn’t connected.</b> Conversations are off until the Groq, Anthropic or OpenRouter key is added below.</span></Banner>}
+      <Banner tone="info"><span><b>Used by the app</b> means the app already reads that key. <b>Key stored only</b> means you can save it now, but the part of the app that would use it (SMS and some speech vendors) hasn’t been built yet, so saving it changes nothing for users.</span></Banner>
       {cats.map(c => <div key={c} className="stack"><h2>{c}</h2><div className="grid g2">{data.items.filter(i => i.category === c).map(i => <Card1 key={i.id} it={i} reload={reload} />)}</div></div>)}
     </>
   );

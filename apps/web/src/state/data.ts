@@ -111,7 +111,7 @@ export async function saveJournal() {
     if (a.riskLevel === 3) crisisFn();
     set({ jStage: 'review', jResult: { ...a, hookOn: true, stepOn: false, entryId: created.entry.id, keep: a.memories.filter(m => !m.sensitive).map(m => m.id) } });
   } catch (e) {
-    // The entry is saved. Reading it failed, so it goes back to private rather than claiming Saathi learned from it.
+    // The entry is saved. Reading it failed, so it goes back to private rather than claiming Flint learned from it.
     await api.setJournalShared(created.entry.id, false).catch(swallow);
     set(st => ({ jEntries: st.jEntries.map(x => (x.id === created.entry.id ? { ...x, shared: false } : x)) }));
     navigateFn('journal');

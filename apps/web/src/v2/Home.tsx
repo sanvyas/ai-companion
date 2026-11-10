@@ -42,13 +42,13 @@ const PLACES: { k: PerchKey; label: string; icon: IconName; tone: string; go: ()
 ];
 
 const TILES: { id: string; label: string; sub: string; icon: IconName; bg: string; go: () => void }[] = [
-  { id: 'voice', label: 'Talk', sub: 'Voice with Saathi', icon: 'mic', bg: 'var(--t-sky)', go: () => void startCall('voice') },
+  { id: 'voice', label: 'Talk', sub: 'Voice with Flint', icon: 'mic', bg: 'var(--t-sky)', go: () => void startCall('voice') },
   { id: 'write', label: 'Write', sub: 'Today’s page', icon: 'pen', bg: 'var(--t-rose)', go: () => startJournal('write') },
   { id: 'breathe', label: 'Breathe', sub: '1 minute', icon: 'wave', bg: 'var(--t-sky)', go: openBreathe },
   { id: 'meditate', label: 'Meditate', sub: 'Guided calm', icon: 'lotus', bg: 'var(--t-lilac)', go: () => go('calm', { calmTab: 'meditate' }) },
   { id: 'sleep', label: 'Sleep', sub: 'Stories to drift off', icon: 'moon', bg: 'var(--t-lilac)', go: () => go('calm', { calmTab: 'sleep' }) },
   { id: 'plant', label: 'Plant', sub: 'Grow something new', icon: 'flower', bg: 'var(--t-sage)', go: () => openPlant('auto') },
-  { id: 'walk', label: 'Walk', sub: 'Fresh air with Saathi', icon: 'pin', bg: 'var(--t-clay)', go: () => void startWalkFlow() },
+  { id: 'walk', label: 'Walk', sub: 'Fresh air with Flint', icon: 'pin', bg: 'var(--t-clay)', go: () => void startWalkFlow() },
   { id: 'plan', label: 'Plan', sub: 'Tiny steps for today', icon: 'list', bg: 'var(--t-sage)', go: () => push({ id: 'plan' }) },
 ];
 
@@ -88,14 +88,14 @@ export function Home() {
     if (!garden) return null;
     const last = local(LAST_VISIT);
     const gap = last ? daysBetween(new Date(last), new Date()) : 0;
-    if (garden.activeDays > 0 && gap >= 2 && !checked) return { title: `Welcome back${nick ? `, ${nick}` : ''}`, sub: 'Nothing wilted while you were away. Your garden rested, and Saathi saved your seat.', cta: 'Check in', icon: 'heart', color: 'var(--t-sand)', run: () => openSheet({ id: 'checkin' }) };
+    if (garden.activeDays > 0 && gap >= 2 && !checked) return { title: `Welcome back${nick ? `, ${nick}` : ''}`, sub: 'Nothing wilted while you were away. Your garden rested, and Flint saved your seat.', cta: 'Check in', icon: 'heart', color: 'var(--t-sand)', run: () => openSheet({ id: 'checkin' }) };
     const ready = garden.plants.find(p => p.ready);
     if (ready) return { title: `Your ${ready.kind} is ready`, sub: 'Pick it, and it starts growing again.', cta: 'Pick it', icon: 'star', color: 'var(--t-clay)', run: () => void pickPlantNow(ready.id) };
-    if (letter && local(LETTER_SEEN) !== letter.id && Date.now() - new Date(letter.createdAt).getTime() < 4 * 86_400_000) return { title: 'A letter from Saathi', sub: 'Your week, in a few kind lines.', cta: 'Read it', icon: 'pen', color: 'var(--t-rose)', run: () => push({ id: 'letter' }) };
+    if (letter && local(LETTER_SEEN) !== letter.id && Date.now() - new Date(letter.createdAt).getTime() < 4 * 86_400_000) return { title: 'A letter from Flint', sub: 'Your week, in a few kind lines.', cta: 'Read it', icon: 'pen', color: 'var(--t-rose)', run: () => push({ id: 'letter' }) };
     const game = garden.tokens.gold > 0 ? 'game-pot' : garden.tokens.thread > 0 ? 'game-thread' : garden.tokens.sky > 0 ? 'game-stars' : null;
     if (game && checked) return { title: 'A quiet game is ready', sub: 'You earned it by looking after yourself. No timer, no score.', cta: 'Play', icon: 'star', color: 'var(--t-lilac)', run: () => push({ id: game }) };
     const e = entries.find(x => x.shared && new Date(x.createdAt).toDateString() !== new Date().toDateString());
-    if (e && !words) return { title: 'Saathi remembers', sub: `You wrote: “${e.text.length > 60 ? `${e.text.slice(0, 58)}…` : e.text}” How is it today?`, cta: 'Tell Saathi', icon: 'mic', color: 'var(--t-sky)', run: () => void startCall('voice') };
+    if (e && !words) return { title: 'Flint remembers', sub: `You wrote: “${e.text.length > 60 ? `${e.text.slice(0, 58)}…` : e.text}” How is it today?`, cta: 'Tell Flint', icon: 'mic', color: 'var(--t-sky)', run: () => void startCall('voice') };
     if (garden.plants.length < garden.slots && checked) return { title: 'Room to grow', sub: `You have ${garden.slots - garden.plants.length} free plot${garden.slots - garden.plants.length === 1 ? '' : 's'}. Plant something, and it grows on the days you show up.`, cta: 'Choose a plant', icon: 'flower', color: 'var(--t-sage)', run: () => openPlant('auto') };
     return null;
   }, [garden, checked, words, entries, letter, nick, cards]);
@@ -157,7 +157,7 @@ export function Home() {
           {body
             ? li(2, 'done', 'One small thing', 'Done. Every small thing counts.')
             : li(2, next === 2 ? 'next' : 'later', 'One small thing',
-              one ? <>{one.title}. <span className="muted">{one.sub}</span><br /><button className="link" onClick={() => push({ id: 'why' })}>Why this?</button></> : 'Saathi suggests one after you check in.',
+              one ? <>{one.title}. <span className="muted">{one.sub}</span><br /><button className="link" onClick={() => push({ id: 'why' })}>Why this?</button></> : 'Flint suggests one after you check in.',
               next === 2 && one && <><button className="btn sm" onClick={() => doOneThing(one.id)}>{one.cta}</button><button className="btn sm ghost" onClick={() => document.getElementById('v2more')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>Pick another</button></>)}
           {words
             ? li(3, 'done', 'Put it into words', 'Done. Thank you for sharing.')

@@ -5,7 +5,7 @@ import { withSystem, withUser } from '../db/pool.js';
 import { parse, uid } from '../http.js';
 import { assertAdult } from '../services/users.js';
 
-// Product analytics ingestion. Collected only from people who switched on "Share how I use Saathi", and only things
+// Product analytics ingestion. Collected only from people who switched on "Share how I use Flint", and only things
 // that cannot hold personal content: a screen name, a tagged button id, a named step, a duration. Free text is
 // refused by the shape of the schema, not by trust.
 

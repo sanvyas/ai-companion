@@ -31,10 +31,10 @@ export function paceFor(kind: NarrationKind, mood: MoodLabel): number {
 export function chooseNarration(o: { kind: NarrationKind; mood: MoodLabel; chosenVoice: string | null }): Narration {
   const chosen = o.chosenVoice ? voiceById(o.chosenVoice) : undefined;
   const gender: 'female' | 'male' = chosen?.gender === 'male' ? 'male' : 'female';
-  const keep = chosen?.provider === 'sarvam';
+  const keep = chosen?.provider === 'sarvam' || chosen?.provider === 'google';
   // Sleep stories always use the calmest of the mood voices, whatever the mood: nobody needs brightness at bedtime.
   const speaker = keep ? chosen!.speaker! : BY_MOOD[gender][o.kind === 'sleep' && o.mood === 'lighter' ? 'in between' : o.mood];
-  const v = SARVAM_VOICES.find(x => x.speaker === speaker)!;
+  const v = keep ? chosen! : SARVAM_VOICES.find(x => x.speaker === speaker)!;
   return {
     voice: v.id, label: v.label, pace: paceFor(o.kind, o.mood), mood: o.mood,
     reason: keep ? 'your companion’s voice, paced to how you have been feeling' : `a ${o.mood === 'unknown' ? 'steady' : o.mood === 'heavier' ? 'soft' : o.mood === 'lighter' ? 'brighter' : 'steady'} voice for how you have been feeling`,

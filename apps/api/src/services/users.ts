@@ -31,13 +31,13 @@ export async function resolveUser(ctx: Ctx, id: Identity, opts: { ageConfirmed18
   return withSystem(ctx.db, async tx => {
     const existing = (await find(tx)).rows[0];
     if (existing && !existing.deleted_at) {
-      if (!existing.age_confirmed_18) throw forbidden('under18', 'Saathi is for adults. This account is paused.');
+      if (!existing.age_confirmed_18) throw forbidden('under18', 'Flint is for adults. This account is paused.');
       if (existing.suspended_at) throw forbidden('suspended', 'This account is paused. Please contact support.');
       return { userId: existing.id, isNew: false, pendingDeletion: !!existing.deletion_requested_at };
     }
     // Signing back in never makes an account: someone who says they have one and does not is sent to sign-up, where the age question is asked.
     if (opts.existingOnly) throw forbidden('no_account', 'I couldn’t find an account for that. Let’s set you up.');
-    if (!opts.ageConfirmed18) throw forbidden('under18', 'Saathi is for adults.');
+    if (!opts.ageConfirmed18) throw forbidden('under18', 'Flint is for adults.');
     if (!ctx.rt.settings.bool('access.signups_open')) throw forbidden('signups_closed', 'New sign-ups are paused right now. Please try again later.');
 
     const userId = randomUUID();
@@ -76,5 +76,5 @@ export async function pauseAsMinor(ctx: Ctx, userId: string): Promise<void> {
 
 export async function assertAdult(ctx: Ctx, userId: string): Promise<void> {
   const ok = await withUser(ctx.db, userId, async tx => (await tx.query('SELECT age_confirmed_18 AND deleted_at IS NULL AS ok FROM users WHERE id = $1', [userId])).rows[0]?.ok);
-  if (!ok) throw forbidden('under18', 'Saathi is for adults. This account is paused.');
+  if (!ok) throw forbidden('under18', 'Flint is for adults. This account is paused.');
 }

@@ -14,7 +14,7 @@ class UnconfiguredOtp implements OtpProvider {
   readonly name = 'none';
   readonly canSend = false;
   async send(): Promise<void> {
-    throw unavailable('otp_unavailable', 'Saathi is invite-only for now. Ask the person who invited you for your sign-in code, or check back soon.');
+    throw unavailable('otp_unavailable', 'Flint is invite-only for now. Ask the person who invited you for your sign-in code, or check back soon.');
   }
 }
 

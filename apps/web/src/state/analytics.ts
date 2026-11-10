@@ -1,7 +1,7 @@
 import { api, isDemo, type AnalyticsEvent } from '../api';
 import { getState, subscribe, type Screen } from './store';
 
-// Product analytics, only for people who switched on "Share how I use Saathi". It records which screen is open and for
+// Product analytics, only for people who switched on "Share how I use Flint". It records which screen is open and for
 // how long, which tagged buttons are tapped, and named steps. It never reads text from the page: a button is only
 // reported if it carries an explicit data-track id, so nothing a person wrote can end up in an event.
 

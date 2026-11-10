@@ -1,6 +1,6 @@
 # Admin portal and developer platform
 
-One place for the founders to see and control Saathi: people, cost, AI prompts, safety, settings, API keys, infrastructure and code. It is a separate web app (`apps/admin`) that talks to the API under `/admin/api`. It has its own sign-in and its own sessions, and shares nothing with the citizen app's login.
+One place for the founders to see and control Flint: people, cost, AI prompts, safety, settings, API keys, infrastructure and code. It is a separate web app (`apps/admin`) that talks to the API under `/admin/api`. It has its own sign-in and its own sessions, and shares nothing with the citizen app's login.
 
 ## Start it
 
@@ -124,6 +124,15 @@ Model settings are dropdowns, validated against the list in `apps/api/src/runtim
 4. **Then run the Evaluations.** A different model can judge risky messages differently, and the safety suites are how you check that it still catches the ones that matter before you invite people.
 
 OpenRouter reports the exact cost of each call, which the Cost page records as-is (converted at the rate under Settings → Cost). The default OpenRouter model ids are starting points: choose the ones you actually want from the live list. Prompt caching is not used through OpenRouter, so long conversations can cost more per message than through Anthropic directly.
+
+
+## Groq (AI and listening) and Google voices
+
+1. **Integrations and keys → Groq → Set**: paste the key from console.groq.com/keys (starts with `gsk_`). **Test connection** checks the key, that the companion model is on it, and one real reply. If `GROQ_API_KEY` is already in the server's environment the card says so; a key saved in the portal wins.
+2. Under the Groq card, **Use Groq for the app** switches every reply, safety check and letter to Groq (with a reminder to run the safety evaluations). The same card sets the model for each job (companion, safety, analysis), the thinking effort (low keeps calls quick), who does **Listening** (Groq Whisper for calls and dictation, Sarvam for dictation only, or the phone only) and which Whisper model.
+3. **Integrations and keys → Google Cloud Text-to-Speech → Set**: paste an API key from a Google Cloud project where the Cloud Text-to-Speech API is enabled. **Test connection** speaks one line and says plainly if the API is not enabled for the key.
+4. Google voices (WaveNet: Indian, American and British English, and Hindi) then appear in the app's voice picker next to Sarvam's. Hinglish uses the Indian English voices. The Overview shows which engine is listening and which voices are available.
+5. Prices for Groq models and speech and Google voices are pre-filled on the Cost page, marked as not yet checked. Compare them with each vendor's price page and tick “Checked” once you have.
 
 ## Voices and avatars
 

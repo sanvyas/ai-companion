@@ -40,7 +40,7 @@ export function WelcomeV2() {
             <div style={{ position: 'absolute', bottom: 18, width: 210, height: 44, borderRadius: '50%', background: 'radial-gradient(#9AD27C,#74BB5F)' }} />
             <div style={{ position: 'relative', width: 170, height: 170, marginTop: 10 }}><Bird size={170} /></div>
           </div></div>
-          <h1 className="h1" style={{ fontSize: 34, textAlign: 'center', marginTop: 6 }}>Hi, I’m Saathi.</h1>
+          <h1 className="h1" style={{ fontSize: 34, textAlign: 'center', marginTop: 6 }}>Hi, I’m Flint.</h1>
           <p className="muted" style={{ textAlign: 'center', fontSize: 17, margin: '12px auto 0', maxWidth: 300 }}>A calm place to talk, write and breathe. Whenever you need it, at any hour.</p>
         </div>
       </div>
@@ -54,7 +54,7 @@ export function WelcomeV2() {
 }
 
 const HOW: { i: 'mic' | 'pen' | 'lotus' | 'leaf'; bg: string; t: string; d: string }[] = [
-  { i: 'mic', bg: 'var(--t-sky)', t: 'Talk', d: 'Say what’s on your mind. Saathi listens, day or night.' },
+  { i: 'mic', bg: 'var(--t-sky)', t: 'Talk', d: 'Say what’s on your mind. Flint listens, day or night.' },
   { i: 'pen', bg: 'var(--t-rose)', t: 'Write', d: 'A private journal. Type it or speak it.' },
   { i: 'lotus', bg: 'var(--t-sky)', t: 'Calm', d: 'Breathing, meditation and sleep stories.' },
   { i: 'leaf', bg: 'var(--t-sage)', t: 'Your garden', d: 'Everything you do grows a little garden. It never wilts.' },
@@ -63,13 +63,13 @@ const HOW: { i: 'mic' | 'pen' | 'lotus' | 'leaf'; bg: string; t: string; d: stri
 export function IntroV2() {
   return (
     <Frame step={1} back={() => go('welcome')} foot={<button className="btn block" onClick={() => go('age')}>Next</button>}>
-      <h1 className="h1" style={{ marginTop: 12 }}>Here’s how Saathi helps</h1>
+      <h1 className="h1" style={{ marginTop: 12 }}>Here’s how Flint helps</h1>
       <div className="how stg">
         {HOW.map(x => (
           <div key={x.t}><span className="ico" style={{ background: x.bg, width: 50, height: 50, borderRadius: 16 }}><Ic n={x.i} /></span><div><b className="h3" style={{ display: 'block' }}>{x.t}</b><span className="muted small">{x.d}</span></div></div>
         ))}
       </div>
-      <p className="note" style={{ marginTop: 16 }}><b>Saathi is an AI companion, not a doctor or therapist.</b> If you’re ever in danger, it will help you reach real people.</p>
+      <p className="note" style={{ marginTop: 16 }}><b>Flint is an AI companion, not a doctor or therapist.</b> If you’re ever in danger, it will help you reach real people.</p>
     </Frame>
   );
 }
@@ -105,7 +105,7 @@ export function UnderV2() {
   return (
     <Frame step={2} back={() => go('welcome')} foot={<button className="btn soft block" onClick={() => go('welcome')}>Back</button>}>
       <h1 className="h1" style={{ marginTop: 12, fontSize: 25 }}>Thank you for being honest. You deserve support too.</h1>
-      <p className="muted" style={{ margin: '10px 0 16px' }}>Saathi isn’t built for under-18s yet, so we won’t create an account, and nothing is stored. Talking to an adult you trust, like a family member or teacher, can really help.</p>
+      <p className="muted" style={{ margin: '10px 0 16px' }}>Flint isn’t built for under-18s yet, so we won’t create an account, and nothing is stored. Talking to an adult you trust, like a family member or teacher, can really help.</p>
       <div style={{ display: 'grid', gap: 10 }}>
         {YOUTH_HELPLINES.map(h => (
           <div key={h.id} className="card row" style={{ gap: 12, background: 'var(--t-sand)' }}>
@@ -131,7 +131,7 @@ export function SignInV2() {
       </form>
       {s.err && <div role="alert" className="err">{s.err}</div>}
       {s.cfg && !s.cfg.otp && <div role="status" className="note">Sign-in by phone isn’t switched on yet. Please check back soon.</div>}
-      {s.cfg === null && <div role="status" className="note">I can’t reach Saathi right now. Check your internet.</div>}
+      {s.cfg === null && <div role="status" className="note">I can’t reach Flint right now. Check your internet.</div>}
       {s.cfg?.google && s.cfg.googleClientId && <>
         <div className="row" aria-hidden="true" style={{ gap: 12, margin: '22px 0 14px', color: 'var(--ink2)', fontSize: 13 }}><span style={{ flex: 1, height: 1, background: 'var(--line)' }} />or<span style={{ flex: 1, height: 1, background: 'var(--line)' }} /></div>
         <GoogleV2 clientId={s.cfg.googleClientId} />
@@ -176,14 +176,14 @@ export function OtpV2() {
   );
 }
 
-/** Who Saathi is: name, look and voice. */
+/** Who Flint is: name, look and voice. */
 export function CompanionV2() {
   const look = useStore(s => s.look);
   const voice = useStore(s => s.voice);
   const compName = useStore(s => s.compName);
   const [name, setName] = useState(compName);
   return (
-    <Frame step={4} foot={<button className="btn block" onClick={() => { stopSpeech(); void updateCompanion({ name: name.trim() || 'Saathi', look, voice }); go('consent'); }}>Next</button>}>
+    <Frame step={4} foot={<button className="btn block" onClick={() => { stopSpeech(); void updateCompanion({ name: name.trim() || 'Flint', look, voice }); go('consent'); }}>Next</button>}>
       <h1 className="h1" style={{ marginTop: 12 }}>Choose your companion</h1>
       <p className="muted" style={{ margin: '6px 0 14px' }}>How it looks and sounds when you talk. You can change this any time.</p>
       <label className="f">Look</label>
@@ -208,11 +208,11 @@ const CONSENTS: { k: 'remember' | 'notifications' | 'city' | 'analytics'; label:
   { k: 'remember', label: 'Remember things from our chats', desc: 'So I can ask how things went. You can see, edit and delete everything.' },
   { k: 'notifications', label: 'Notifications and check-ins', desc: 'Gentle, private, never more than twice a day.' },
   { k: 'city', label: 'Your city', desc: 'To suggest small things nearby. Never your exact location.' },
-  { k: 'analytics', label: 'Share how I use Saathi', desc: 'Which screens get used, never what you write or say.' },
+  { k: 'analytics', label: 'Share how I use Flint', desc: 'Which screens get used, never what you write or say.' },
 ];
 const CHECKIN: { v: 'morning' | 'evening' | 'off'; label: string }[] = [{ v: 'morning', label: 'Morning' }, { v: 'evening', label: 'Evening' }, { v: 'off', label: 'No check-ins' }];
 
-/** What Saathi is, what it will and won't do, and what the person is okay with. Nothing is switched on for them. */
+/** What Flint is, what it will and won't do, and what the person is okay with. Nothing is switched on for them. */
 export function ConsentV2() {
   const [ai, setAi] = useState(false);
   const [priv, setPriv] = useState(false);
@@ -235,7 +235,7 @@ export function ConsentV2() {
       <h1 className="h1" style={{ marginTop: 12 }}>Before we begin</h1>
       <p className="muted" style={{ margin: '6px 0 14px' }}>Two things worth knowing, then what you’re okay with.</p>
       <div style={{ display: 'grid', gap: 10 }}>
-        <button className="check" role="checkbox" aria-checked={ai} onClick={() => setAi(!ai)}><i><Ic n="check" /></i><span><b>Saathi is an AI companion.</b><br /><span className="muted small">Not a doctor or a therapist, and not for emergencies. If you are in danger, the Help button is on every screen.</span></span></button>
+        <button className="check" role="checkbox" aria-checked={ai} onClick={() => setAi(!ai)}><i><Ic n="check" /></i><span><b>Flint is an AI companion.</b><br /><span className="muted small">Not a doctor or a therapist, and not for emergencies. If you are in danger, the Help button is on every screen.</span></span></button>
         <button className="check" role="checkbox" aria-checked={priv} onClick={() => setPriv(!priv)}><i><Ic n="check" /></i><span><b>Your words stay private.</b><br /><span className="muted small">Encrypted, readable only by you, and you can delete everything any time.</span></span></button>
       </div>
       <h2 className="h3" style={{ margin: '22px 0 8px' }}>What you’re okay with</h2>

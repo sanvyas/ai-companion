@@ -54,7 +54,7 @@ export function DaySheet({ entryId }: { entryId: string }) {
       <p className="serif" style={s('font-size:28px;line-height:1.15;margin:0')}>{daySummary(es)}</p>
       {es.map(e => (
         <div key={e.id} style={s('background:var(--card);border-radius:20px;padding:14px 16px;display:flex;flex-direction:column;gap:6px')}>
-          <span style={s('font-size:12px;color:var(--muted);font-weight:700')}>{new Date(e.createdAt).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })} · {e.mode === 'spoken' ? 'Spoken' : 'Written'}{e.shared ? ' · Saathi can learn from this' : ' · just for you'}</span>
+          <span style={s('font-size:12px;color:var(--muted);font-weight:700')}>{new Date(e.createdAt).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })} · {e.mode === 'spoken' ? 'Spoken' : 'Written'}{e.shared ? ' · Flint can learn from this' : ' · just for you'}</span>
           <span style={s('font-size:16px;line-height:1.45;white-space:pre-wrap')}>{e.text}</span>
         </div>
       ))}

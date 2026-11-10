@@ -109,7 +109,7 @@ export function LanguageScreen({ onBack }: { onBack: () => void }) {
   };
   return (
     <ScreenFrame title="Language" onBack={onBack}>
-      <p className="muted" style={{ margin: '6px 0 14px' }}>The language Saathi speaks and writes in. You can switch any time, and mix words however you like.</p>
+      <p className="muted" style={{ margin: '6px 0 14px' }}>The language Flint speaks and writes in. You can switch any time, and mix words however you like.</p>
       <div style={{ display: 'grid', gap: 10 }} role="radiogroup" aria-label="Language">
         {(Object.keys(LANG_LABEL) as Language[]).map(l => (
           <button key={l} role="radio" aria-checked={language === l} className="mode" lang={l === 'hi' ? 'hi' : 'en'} onClick={() => void pick(l)} style={language === l ? { boxShadow: '0 0 0 2.5px var(--leaf),var(--sh1)' } : undefined}>
@@ -239,7 +239,7 @@ export function PrivacyScreen() {
       <ul className="list card" style={{ padding: '2px 16px', marginTop: 12 }}>
         <Toggle on={priv.discreetMode} tap={() => void updatePrivacy({ discreetMode: !priv.discreetMode })} label="Discreet mode" desc="Neutral tab title. Notifications say nothing personal." />
         <Toggle on={priv.quickHide} tap={() => void updatePrivacy({ quickHide: !priv.quickHide })} label="Quick hide" desc="Triple-tap the date on Home to switch to a breathing screen." />
-        <Toggle on={analyticsOn} tap={() => void updateConsent({ analytics: !analyticsOn })} label="Share how I use Saathi" desc="Which screens and buttons get used, never what you write or say." />
+        <Toggle on={analyticsOn} tap={() => void updateConsent({ analytics: !analyticsOn })} label="Share how I use Flint" desc="Which screens and buttons get used, never what you write or say." />
         <Toggle on={remember} tap={() => void updateConsent({ remember: !remember })} label="Remember conversations" desc="So I can ask how things went. Safety checks run either way." />
         <Toggle on={priv.lockScreenPreviews} tap={() => void updatePrivacy({ lockScreenPreviews: !priv.lockScreenPreviews })} label="Lock-screen previews" desc="Off means notifications only say “A quiet moment for you?”" />
       </ul>
@@ -266,7 +266,7 @@ export function NotifScreen() {
   useEffect(() => { void loadYou(); detectPushState(); }, []);
   if (!prefs || !priv) return <ScreenFrame title="Reminders and calls" onBack={backToYou} right={<span style={{ width: 44 }} />}><p className="muted" role="status" style={{ marginTop: 20 }}>One moment…</p></ScreenFrame>;
   const checkin = prefs.checkinTime;
-  const app = priv.discreetMode ? 'Calm' : priv.lockScreenPreviews ? compName : 'Saathi';
+  const app = priv.discreetMode ? 'Calm' : priv.lockScreenPreviews ? compName : 'Flint';
   const body = priv.lockScreenPreviews ? 'Ready for your evening check-in? Two minutes, whenever suits.' : 'A quiet moment for you?';
 
   const togglePush = async () => {

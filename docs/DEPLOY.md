@@ -1,4 +1,4 @@
-# Deploying Saathi (closed beta)
+# Deploying Flint (closed beta)
 
 One Docker image does everything: the API, the scheduler, the citizen app (at `/`) and the admin portal (at `/portal/`). The app, the portal and the API share one origin, so there is no CORS to configure and the portal's `SameSite=Strict` cookie works as is.
 

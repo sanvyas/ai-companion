@@ -66,7 +66,7 @@ describe('sending', () => {
     await runDue(t.ctx, EVENING_IST, 1000);
     const mine = push.sent.filter(s => (s.to as { endpoint: string }).endpoint.endsWith(a.userId));
     expect(mine).toHaveLength(1);
-    expect(mine[0].payload).toMatchObject({ title: 'Saathi', body: 'A quiet moment for you?', actions: [] });
+    expect(mine[0].payload).toMatchObject({ title: 'Flint', body: 'A quiet moment for you?', actions: [] });
   });
 
   it('uses the approved copy with previews on, and renames the app in discreet mode', async () => {
@@ -76,7 +76,7 @@ describe('sending', () => {
     await runDue(t.ctx, EVENING_IST, 1000);
     const to = (u: Auth) => push.sent.find(s => (s.to as { endpoint: string }).endpoint.endsWith(u.userId))!.payload;
     expect(to(a).body).toBe('Ready for your evening check-in? Two minutes, whenever suits.');
-    expect(to(a).title).toBe('Saathi');
+    expect(to(a).title).toBe('Flint');
     expect(to(b).title).toBe('Calm');
   });
 

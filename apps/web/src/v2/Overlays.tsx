@@ -322,9 +322,9 @@ export function PaywallOverlay() {
   const compName = useStore(s => s.compName);
   const ref = useDialog<HTMLDivElement>(() => set({ paywall: false }));
   return (
-    <div ref={ref} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Saathi Plus" className="screen" style={{ zIndex: 50, outline: 'none' }}>
+    <div ref={ref} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Flint Plus" className="screen" style={{ zIndex: 50, outline: 'none' }}>
       <div className="sc-body" style={{ padding: '80px 22px 24px', display: 'flex', flexDirection: 'column' }}>
-        <h1 className="h1" style={{ fontSize: 32 }}>Saathi Plus</h1>
+        <h1 className="h1" style={{ fontSize: 32 }}>Flint Plus</h1>
         <p className="muted" style={{ fontSize: 16.5, marginTop: 14 }}>Unlimited voice and video, full memory you can edit, and calls from {compName} when you’d like them.</p>
         <div className="card" style={{ marginTop: 24 }}><b className="h2">₹499 a month</b><p className="muted small" style={{ marginTop: 6 }}>Free for 7 days. We’ll remind you two days before the trial ends. Cancel or pause in the app.</p></div>
         <p className="muted small" style={{ marginTop: 14 }}>Crisis support and helplines are always free.</p>

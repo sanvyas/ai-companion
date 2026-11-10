@@ -1,6 +1,6 @@
-# Saathi — Product Requirements Document (v2)
+# Flint — Product Requirements Document (v2)
 
-> Source of truth for engineering, backend and AI. Pairs with the clickable prototype `Saathi App v2.dc.html`.
+> Source of truth for engineering, backend and AI. Pairs with the clickable prototype `Flint App v2.dc.html`.
 > Written to be pasted into an AI coding agent: every section states **what**, **why**, **data**, **API**, **AI behaviour** and **acceptance criteria**.
 > Keywords: **MUST** = launch blocker, **SHOULD** = launch target, **MAY** = later.
 
@@ -9,7 +9,7 @@
 ## 0. How to use this document (instructions for an AI coding agent)
 
 1. Build the backend and AI layer described in §4–§7 first; screens in §8 depend on them.
-2. Never invent clinical features. Saathi is a **wellness companion, not a therapist, doctor or crisis service**.
+2. Never invent clinical features. Flint is a **wellness companion, not a therapist, doctor or crisis service**.
 3. Every AI output that reaches the user MUST pass the Safety Pipeline (§6) first.
 4. Every piece of personal data MUST respect the Consent and Memory rules (§5). When unsure, do **not** store.
 5. Copy tone (§3.3) is part of the spec. Do not "improve" it into marketing language.
@@ -19,7 +19,7 @@
 
 ## 1. Product summary
 
-**Saathi** ("companion" in Hindi) is a mobile app for adults (18+) in India who feel lonely, stressed or low. It offers an AI companion you can talk to by voice, video avatar or text; a private journal; gentle daily plans; guided meditations and sleep stories; low-pressure ways to get outside and meet people; and always-visible routes to real human help.
+**Flint** ("companion" in Hindi) is a mobile app for adults (18+) in India who feel lonely, stressed or low. It offers an AI companion you can talk to by voice, video avatar or text; a private journal; gentle daily plans; guided meditations and sleep stories; low-pressure ways to get outside and meet people; and always-visible routes to real human help.
 
 **Primary user:** 18–35, urban/semi-urban India, English/Hinglish/Hindi, lives alone or away from family (students, early-career workers). Example persona: *Aarav, 26, Bengaluru, software tester, moved cities, sleeps badly, sister Priya is his closest contact.*
 
@@ -54,7 +54,7 @@
 2. **Gentle, never pushy:** no streaks, no guilt, max 2 notifications + 1 call per day, back off when ignored.
 3. **User owns memory:** nothing personal is remembered without a visible, reversible choice.
 4. **Help is one tap away:** "Need help?" appears on every primary screen.
-5. **Outward-facing:** success = user needs Saathi a little less over time (more people, more outside).
+5. **Outward-facing:** success = user needs Flint a little less over time (more people, more outside).
 6. **Local:** Indian context, languages, helplines, places, food, festivals.
 
 ### 3.2 Accessibility
@@ -116,11 +116,11 @@ AI layer
 User { id, phone|email|googleId, createdAt, ageConfirmed18: boolean, dobYear?, language: 'en'|'hinglish'|'hi',
        nickname, timezone, city?, subscription: 'basic'|'plus', deletedAt? }
 
-Companion { userId, name (default 'Saathi'), look: 'orb'|'asha'|'dev'|'noor'|'kabir',
+Companion { userId, name (default 'Flint'), look: 'orb'|'asha'|'dev'|'noor'|'kabir',
             voice: 'warm'|'steady'|'bright', deviceVoiceOverride? }
 
 Consent { userId, version, acceptedAt,
-          remember: boolean,          // may Saathi remember things from chats
+          remember: boolean,          // may Flint remember things from chats
           notifications: boolean, calls: boolean,
           healthData: boolean,        // sleep/steps from OS
           location: 'off'|'city'|'precise',
@@ -159,7 +159,7 @@ Mood scale (0..4) labels and shapes — used everywhere:
 - Memories are created **only** when `consent.remember = true` AND (user explicitly saves, OR AI proposes and user does not reject within the end-of-session review, depending on setting). For journal entries, user must tap **Save** per memory.
 - **Sensitive** = health, mental-health history, trauma, sexuality, religion, caste, politics, finances, details about third parties beyond first name + relation. Sensitive memories default to **not saved**; must be explicitly chosen.
 - Never store: passwords, ID numbers, addresses of others, self-harm method details.
-- User can view, edit text, hide, or delete any memory (You → What Saathi remembers). Delete = hard delete within 24h from all stores incl. vector index and backups rotation ≤ 30 days.
+- User can view, edit text, hide, or delete any memory (You → What Flint remembers). Delete = hard delete within 24h from all stores incl. vector index and backups rotation ≤ 30 days.
 - "Forget everything" = deletes all memories; conversations retained only as summaries if user chose; account delete removes all within 30 days.
 - Memory retrieval: top-k (k ≤ 5) relevant memories injected into prompt per turn; never quote a hidden memory.
 
@@ -177,7 +177,7 @@ Mood scale (0..4) labels and shapes — used everywhere:
 Use this as the base system prompt for all conversational modes. Insert variables in `{{ }}`.
 
 ```
-You are {{companion_name}}, an AI companion in the Saathi app. You are talking with {{nickname}}, an adult in India.
+You are {{companion_name}}, an AI companion in the Flint app. You are talking with {{nickname}}, an adult in India.
 Language: reply in {{language}} ("hinglish" = natural Hindi-English code-mixing in Latin script).
 
 WHO YOU ARE
@@ -251,10 +251,10 @@ Safety copy for Level 3 (fixed, not AI-generated):
 
 **Red-team requirement:** monthly evaluation set (≥ 500 prompts across EN/Hinglish/Hindi, slang, indirect phrasing). Recall for level 3 ≥ 0.98.
 
-### 6.5 Journal analysis prompt (used after user saves with "Saathi can learn from this" ON)
+### 6.5 Journal analysis prompt (used after user saves with "Flint can learn from this" ON)
 
 ```
-You help Saathi, a warm AI wellness companion (not a therapist), learn from a user's private journal entry, with their consent.
+You help Flint, a warm AI wellness companion (not a therapist), learn from a user's private journal entry, with their consent.
 User's name: {{nickname}}. Language: {{language}}.
 Journal entry:
 """{{entry_text}}"""
@@ -344,7 +344,7 @@ Order: Welcome → Honest intro → Age check → Language → Name & sign-in �
 
 | Screen | Purpose | Elements | Backend | Acceptance |
 |---|---|---|---|---|
-| **Welcome** | Warm first impression | Orb animation, "Hi, I'm Saathi", [Get started], [I already have an account] | — | Loads < 2s offline |
+| **Welcome** | Warm first impression | Orb animation, "Hi, I'm Flint", [Get started], [I already have an account] | — | Loads < 2s offline |
 | **Honest intro** | Set expectations | 3 short points: I'm an AI · I'm not a therapist or crisis service · You control what I remember. [Okay] | — | Must be shown before any chat |
 | **Age check** | 18+ gate | "Are you 18 or older?" [Yes] [No] (+ optional birth year) | `PUT /me/age` | "No" → **Under-18 exit**: kind message + youth helplines (KIRAN, Childline 1098), no account created, no data stored |
 | **Language** | Pick language | English / Hinglish / हिन्दी (segmented) | `PATCH /me` | Changes UI copy + AI language immediately |
@@ -357,7 +357,7 @@ Order: Welcome → Honest intro → Age check → Language → Name & sign-in �
 Layout top → bottom:
 1. Greeting by time of day ("Good evening, Aarav.") + one line context ("It's been a long week. No rush tonight.").
 2. **In-app quiet card** (conditional, from scheduler): "A quiet moment for you? Your evening check-in is here whenever you are." [Check in] [Not now].
-3. **Companion card:** avatar/orb, "Saathi is here — Your AI companion. Voice, video or text." [Talk] → Talk tab; [Just sit] → Sit mode.
+3. **Companion card:** avatar/orb, "Flint is here — Your AI companion. Voice, video or text." [Talk] → Talk tab; [Just sit] → Sit mode.
 4. **Feel better now** (2×2 tiles, each icon + title + one line):
    - **Calm** (dark, featured) → Calm hub (evening opens Sleep tab, day opens Meditate)
    - **Breathe** → Breathe overlay
@@ -372,7 +372,7 @@ Backend: `GET /plan/today`, `POST /mood`, scheduler for in-app card. Acceptance:
 ### 8.3 Talk
 **Purpose:** choose how to connect.
 - Intro line: "Talk however feels easiest. You can switch any time."
-- **Talk now:** Voice call ("Like a phone call. Captions on.") · Video call ("See Saathi while you talk.") · Text.
+- **Talk now:** Voice call ("Like a phone call. Captions on.") · Video call ("See Flint while you talk.") · Text.
 - **Quieter ways:** Meditate and sleep → Calm · Just sit with me · Breathe · Talk it out → Journal dictation.
 - **Recent conversations:** cards with date, mode, AI summary; tap → continue in same mode with summary as context.
 
@@ -402,7 +402,7 @@ Backend: `GET /plan/today`, `POST /mood`, scheduler for in-app card. Acceptance:
 ### 8.4 Outside
 **Purpose:** small, low-pressure steps back into the world.
 - Intro: "Gentle ways to step out, only when you want to."
-- **Walk with me** hero card: 10-minute walk with Saathi in your ear → walk session (mode `walk`): timer, route-free, simple prompts ("Notice three colours"), end summary → adds win.
+- **Walk with me** hero card: 10-minute walk with Flint in your ear → walk session (mode `walk`): timer, route-free, simple prompts ("Notice three colours"), end summary → adds win.
 - **Near you, soon:** beginner-friendly events (book clubs, park walks, pottery, board games) with date, place, group size, "beginner friendly" tag. Tap → **Event detail**: what to expect, who goes, how to get there, [I'm interested] (adds reminder + "time to leave" notification), [Keep me company] (walk mode to venue). Source: curated partner feed + manual ops; city from consent.
 - **Hobbies to try:** home-friendly starters (sketching, cooking a new dish, a plant) → adds to plan.
 - Acceptance: no location → city picker; no events → kind empty state + hobbies.
@@ -412,9 +412,9 @@ Header: "Journal" + Need help?; segmented **Entries | Insights**.
 
 #### 8.5.1 Entries
 - Two tiles: **Write** ("Type at your own pace, with a prompt if you like.") · **Talk it out** ("Just speak. I'll write it down for you.").
-- Privacy note: "Private by default. For each entry, you choose what Saathi learns."
-- **Recent entries** list: date, mood shape, Written/Spoken, preview, share status ("Saathi can learn from this" / "Just for you").
-- Tap entry → read sheet: full text, toggle "Saathi can learn from this", [Delete this entry] (confirm, hard delete).
+- Privacy note: "Private by default. For each entry, you choose what Flint learns."
+- **Recent entries** list: date, mood shape, Written/Spoken, preview, share status ("Flint can learn from this" / "Just for you").
+- Tap entry → read sheet: full text, toggle "Flint can learn from this", [Delete this entry] (confirm, hard delete).
 
 #### 8.5.2 Compose
 - Top: Cancel · date/time · Need help?
@@ -422,13 +422,13 @@ Header: "Journal" + Need help?; segmented **Entries | Insights**.
 - Prompt chips (optional): "What's taking up space today?", "One thing that felt okay", "Something I didn't say", "What I need right now".
 - Large serif writing area.
 - Talk it out: big mic button; live streaming transcription into the text area (editable after); state labels "Tap to start talking / Listening. Tap to stop."
-- Bottom: toggle **Saathi can learn from this** (default = `consent.remember`) with explainer; [Save].
+- Bottom: toggle **Flint can learn from this** (default = `consent.remember`) with explainer; [Save].
 - Save with toggle OFF → saved privately, toast "Saved, just for you." No AI processing at all.
 - Save with toggle ON → "Reading it gently…" → **What I noticed** review.
 
 #### 8.5.3 What I noticed (review)
 - Mood shape + one reflective sentence.
-- Care card if risk ≥ 2 (helplines / talk with Saathi). Risk 3 → crisis screen.
+- Care card if risk ≥ 2 (helplines / talk with Flint). Risk 3 → crisis screen.
 - **Remember this?** list of proposed memories, each with theme + text + [Save]; sensitive ones off by default with note "This feels personal, so it's off unless you choose it."
 - **Next time we talk** toggle (default on) with the hook question.
 - **A small step for tomorrow** toggle (default off).
@@ -450,19 +450,19 @@ Header "Calm" + Need help?; tabs **Meditate | Sleep | Sounds**, each with one-li
 - **Meditate:** featured card (time-of-day aware), category chips (All, Stress, Anxiety, Focus, Self-kindness), list: Breathe with me (3), When it feels like too much (5), Body scan (8), Morning reset (5), Kindness for yourself (10).
 - **Sleep:** featured story, list: Wind-down for sleep (10), Monsoon on the hills (24), The night train south (30), A tea garden at dusk (20). Note about timer + background sound.
 - **Sounds:** mixable grid — Rain on a tin roof, Waves at night, Ceiling fan hum, Crickets, Distant temple bells, Soft brown noise. Multiple can play; keep playing across app (mini Sound bar with Stop); [Stop all sounds].
-- **Player** (full-screen, dark): kicker, breathing visual, current line as caption, title + "N min · Narrated by Saathi, warm voice", progress, elapsed, Prev / Play-Pause / Next part, **Sound underneath** chips (None/Rain/Ocean/Fan/Crickets), **Sleep timer** (End of story / 15 / 30 / 60 min) for sleep items. End screen: "Sleep well, Aarav." / "Nicely done." + [Done] [Play again]; completion adds a Win.
+- **Player** (full-screen, dark): kicker, breathing visual, current line as caption, title + "N min · Narrated by Flint, warm voice", progress, elapsed, Prev / Play-Pause / Next part, **Sound underneath** chips (None/Rain/Ocean/Fan/Crickets), **Sleep timer** (End of story / 15 / 30 / 60 min) for sleep items. End screen: "Sleep well, Aarav." / "Nicely done." + [Done] [Play again]; completion adds a Win.
 - Content: professionally recorded narration in each voice persona and language (production); prototype uses TTS. Background audio via OS media session (lock-screen controls), continues with screen off, ducks for calls.
 - Acceptance: gapless loops; timer fades audio over 30s; works offline for downloaded items (Plus).
 
 ### 8.7 You
 Header + companion card ("See and hear your companion" → Studio). Grouped list:
-- **Your companion:** What Saathi remembers (count) → Memory screen · Look and voice → Studio.
+- **Your companion:** What Flint remembers (count) → Memory screen · Look and voice → Studio.
 - **Reminders and calls:** Check-ins and reminders → Notification settings · Check-in time · Quiet hours.
 - **Privacy and safety:** Privacy Center · My safety plan · Trusted contact · Helplines.
-- **Account:** Subscription · Health data · How Saathi uses AI · About · Sign out · Delete account.
+- **Account:** Subscription · Health data · How Flint uses AI · About · Sign out · Delete account.
 
 #### 8.7.1 Memory screen
-Explainer ("This is what lets Saathi ask how things went…"), list grouped by theme, each with edit / hide / delete; "Remember things from our chats" master toggle; [Forget everything] (double confirm).
+Explainer ("This is what lets Flint ask how things went…"), list grouped by theme, each with edit / hide / delete; "Remember things from our chats" master toggle; [Forget everything] (double confirm).
 
 #### 8.7.2 Look and voice studio
 Large avatar with live expression preview chips (idle/listening/thinking/concerned/smiling); look picker; voice persona segmented; sample language (English/Hinglish/हिन्दी); device-voice override (dev only); sample text; [Play sample] with lip-sync. Note that avatars are stylised (never photoreal).
@@ -471,7 +471,7 @@ Large avatar with live expression preview chips (idle/listening/thinking/concern
 Plain list of what's stored and for how long; toggles: Remember, Lock-screen previews, Discreet mode (app shows as "Calm", neutral icon), App lock (biometric/PIN), Quick hide (shake/swipe to cover screen); transcript retention selector; Download my data; Delete account.
 
 #### 8.7.4 Safety plan
-Co-created (with Saathi in chat or manually): warning signs, things that help, people to contact, safe places, professional contacts, helplines. Viewable offline; shareable to trusted contact (optional).
+Co-created (with Flint in chat or manually): warning signs, things that help, people to contact, safe places, professional contacts, helplines. Viewable offline; shareable to trusted contact (optional).
 
 #### 8.7.5 Subscription / Paywall
 - **Basic (free):** text chat, limited voice minutes/day, journal, mood, core Calm items, safety features (always free — MUST never be paywalled).
@@ -488,9 +488,9 @@ Types:
 | Plan reminder | "The 10-minute walk you picked. Whenever you're ready." | Walk with me · Did it · Not today |
 | Event: time to leave (Time Sensitive) | "Cubbon Park walk at 7:30. Leave in ten minutes? I can keep you company." | Keep me company · On my way · Skip it |
 | Follow-up after a hard day | "Thinking of you after yesterday. Want to talk?" | Talk · Not now |
-| After a quiet week | "No pressure. I'm here when you want." | Open Saathi |
+| After a quiet week | "No pressure. I'm here when you want." | Open Flint |
 | Sunday letter | "Your Sunday letter is here." | Open |
-| **Incoming call** (VoIP/CallKit, opt-in) | "Saathi is calling — Your evening check-in. A few minutes, or less." | Answer → check-in · In an hour · Not today, thanks |
+| **Incoming call** (VoIP/CallKit, opt-in) | "Flint is calling — Your evening check-in. A few minutes, or less." | Answer → check-in · In an hour · Not today, thanks |
 | In-app quiet card | On Today, no buzz | Check in · Not now |
 
 - **Discreet mode** → app name "Calm", plain grey icon, generic copy.
@@ -543,7 +543,7 @@ Full-screen, animated circle (in 4 · hold 2 · out 6), captions, cycles counter
 
 ---
 
-## 12. Prototype map (screens in `Saathi App v2.dc.html`)
+## 12. Prototype map (screens in `Flint App v2.dc.html`)
 
 Side rail groups → PRD sections:
 - First open → §8.1 · Today → §8.2 · Talk → §8.3 · Outside → §8.4 · Journal → §8.5 · Calm → §8.6 · You → §8.7 · Notifications → §8.8 · Safety → §8.9–8.10

@@ -4,7 +4,7 @@ import { useStore } from '../state/store';
 import { useSkyPhase } from './hooks';
 
 /**
- * What Saathi noticed this week and the one small thing it suggests. Uses only what the person has chosen to let Saathi learn from:
+ * What Flint noticed this week and the one small thing it suggests. Uses only what the person has chosen to let Flint learn from:
  * pages they shared with it and conversation summaries, and only when "remember" is on.
  */
 export function useSaid(): { remember: boolean; said: Said[] } {

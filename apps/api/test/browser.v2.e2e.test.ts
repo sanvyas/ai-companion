@@ -117,7 +117,7 @@ describe('the new design', () => {
     expect((await get(user, '/garden')).counts.plan).toBe(1); // what it earned stays earned
     await page.getByRole('button', { name: 'Back' }).click();
 
-    // Journal: write a page, let Saathi read it, keep it.
+    // Journal: write a page, let Flint read it, keep it.
     await nav('journal');
     await page.getByRole('heading', { level: 1 }).filter({ hasText: 'Your story' }).waitFor();
     problems.push(...await scan(page, 'journal'));
@@ -169,7 +169,7 @@ describe('the new design', () => {
     await page.getByRole('button', { name: 'Keep going' }).click();
     await nav('you');
     problems.push(...await scan(page, 'you'));
-    for (const [row, heading] of [['What Saathi remembers', 'Memory'], ['Privacy Center', 'Privacy Center'], ['Check-ins and reminders', 'Reminders and calls'], ['Avatar and voice', 'Your companion'], ['Language', 'Language']] as const) {
+    for (const [row, heading] of [['What Flint remembers', 'Memory'], ['Privacy Center', 'Privacy Center'], ['Check-ins and reminders', 'Reminders and calls'], ['Avatar and voice', 'Your companion'], ['Language', 'Language']] as const) {
       await calm();
       await page.getByRole('button', { name: new RegExp(`^${row}`) }).click();
       await page.getByRole('main', { name: heading }).waitFor();
@@ -191,10 +191,10 @@ describe('the new design', () => {
   run('welcomes someone new: age, name, phone code, companion, what they are okay with, the first seed, then a quiet Home', async () => {
     const { page, ctx, errors } = await open(null);
     const problems: string[] = [];
-    await page.getByRole('heading', { name: /Hi, I.m Saathi/ }).waitFor();
+    await page.getByRole('heading', { name: /Hi, I.m Flint/ }).waitFor();
     problems.push(...await scan(page, 'welcome'));
     await page.getByRole('button', { name: 'Get started' }).click();
-    await page.getByRole('heading', { name: /how Saathi helps/ }).waitFor();
+    await page.getByRole('heading', { name: /how Flint helps/ }).waitFor();
     problems.push(...await scan(page, 'intro'));
     await page.getByRole('button', { name: 'Next' }).click();
     await page.getByLabel('Your name').fill('Meera');

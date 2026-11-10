@@ -46,5 +46,5 @@ export function verifyTotp(secret: string, code: string, now = Date.now()): numb
   return null;
 }
 
-export const otpauthUri = (email: string, secret: string, issuer = 'Saathi Admin') =>
+export const otpauthUri = (email: string, secret: string, issuer = 'Flint Admin') =>
   `otpauth://totp/${encodeURIComponent(issuer)}:${encodeURIComponent(email)}?secret=${secret}&issuer=${encodeURIComponent(issuer)}&algorithm=SHA1&digits=6&period=30`;

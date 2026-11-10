@@ -38,7 +38,7 @@ export function Login() {
   return (
     <main className="login">
       <div className="card">
-        <div className="row"><span className="logo" style={{ width: 32, height: 32, borderRadius: 9, background: '#2F6F66', display: 'grid', placeItems: 'center' }}><svg width="18" height="18" viewBox="0 0 64 64" aria-hidden><circle cx="32" cy="32" r="18" fill="#FBF7F0" /><circle cx="32" cy="32" r="7" fill="#2F6F66" /></svg></span><div><h1>Saathi Control Room</h1></div></div>
+        <div className="row"><span className="logo" style={{ width: 32, height: 32, borderRadius: 9, background: '#2F6F66', display: 'grid', placeItems: 'center' }}><svg width="18" height="18" viewBox="0 0 64 64" aria-hidden><circle cx="32" cy="32" r="18" fill="#FBF7F0" /><circle cx="32" cy="32" r="7" fill="#2F6F66" /></svg></span><div><h1>Flint Control Room</h1></div></div>
 
         {step.kind === 'password' && (
           <form className="stack" onSubmit={submitPassword}>

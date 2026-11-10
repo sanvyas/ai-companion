@@ -32,7 +32,7 @@ export interface LlmUsage {
 }
 
 export interface LlmProvider {
-  readonly name: 'anthropic' | 'openrouter' | 'mock' | 'none';
+  readonly name: 'anthropic' | 'openrouter' | 'groq' | 'mock' | 'none';
   readonly configured: boolean;
   stream(req: LlmBase): AsyncGenerator<string, void, void>;
   text(req: LlmBase): Promise<string>;
@@ -57,7 +57,7 @@ function sys(s: LlmBase['system']): Anthropic.TextBlockParam[] {
   return blocks;
 }
 
-function msgs(m: LlmMessage[]): Anthropic.MessageParam[] {
+export function msgs(m: LlmMessage[]): Anthropic.MessageParam[] {
   const out: Anthropic.MessageParam[] = m.map(x => ({ role: x.role, content: x.content }));
   if (!out.length || out[0].role !== 'user') out.unshift({ role: 'user', content: '(The conversation has just opened.)' });
   return out;
@@ -157,7 +157,7 @@ export class OpenRouterLlm implements LlmProvider {
   constructor(private readonly apiKey: string, private readonly onUsage: (u: LlmUsage) => void, private readonly f: typeof fetch = fetch, private readonly referer = 'https://saathi.app') {}
 
   private headers() {
-    return { Authorization: `Bearer ${this.apiKey}`, 'Content-Type': 'application/json', 'HTTP-Referer': this.referer, 'X-Title': 'Saathi' };
+    return { Authorization: `Bearer ${this.apiKey}`, 'Content-Type': 'application/json', 'HTTP-Referer': this.referer, 'X-Title': 'Flint' };
   }
 
   private payload(req: LlmBase, extra: Record<string, unknown> = {}) {
@@ -273,11 +273,155 @@ export function extractJson(text: string): string {
   return text.slice(a, b + 1);
 }
 
-function wrapOr(e: unknown): Error {
+export function wrapOr(e: unknown): Error {
   if (e instanceof LlmRefusal || e instanceof LlmFailure || e instanceof LlmUnavailable) return e;
   if (e instanceof Error && (e.name === 'AbortError' || e.name === 'TimeoutError')) return e.name === 'AbortError' ? e : new LlmFailure('The model took too long to answer.');
   if (e instanceof SyntaxError) return new LlmFailure('the model did not return valid JSON');
   return new LlmFailure(e instanceof Error ? e.message : 'model call failed');
+}
+
+// ------------------------------------------------------------------------------------------ Groq
+// Fast open models (gpt-oss) behind an OpenAI-compatible API. Two things are particular to them. gpt-oss spends part of
+// max_tokens thinking before it writes, so a short spoken reply can come back empty unless it is given headroom and told to
+// think briefly (`reasoning_effort`). And not every model accepts structured-output settings, so a refusal of those is
+// answered by asking for JSON in words, the same fallback OpenRouter uses.
+export const GROQ_BASE = 'https://api.groq.com/openai/v1';
+const REASONING_HEADROOM = 480;
+
+interface GqBody { choices?: OrChoice[]; usage?: OrUsage; x_groq?: { usage?: OrUsage }; error?: { message?: string; code?: string; type?: string } }
+
+export class GroqLlm implements LlmProvider {
+  readonly name = 'groq' as const;
+  readonly configured = true;
+  constructor(private readonly apiKey: string, private readonly onUsage: (u: LlmUsage) => void, private readonly f: typeof fetch = fetch, private readonly effort: 'low' | 'medium' | 'high' = 'low') {}
+
+  private thinks(model: string) { return /gpt-oss/i.test(model); }
+
+  private payload(req: LlmBase, extra: Record<string, unknown> = {}, plain = false) {
+    const system = req.system.dynamic ? `${req.system.stable}\n\n${req.system.dynamic}` : req.system.stable;
+    const reasoning = this.thinks(req.model) && !plain;
+    return {
+      model: req.model,
+      messages: [{ role: 'system', content: system }, ...msgs(req.messages).map(m => ({ role: m.role, content: m.content as string }))],
+      max_completion_tokens: req.maxTokens + (reasoning ? REASONING_HEADROOM : 0),
+      ...(reasoning ? { reasoning_effort: req.effort ?? this.effort, include_reasoning: false } : {}),
+      ...extra,
+    };
+  }
+
+  private async post(body: Record<string, unknown>, signal?: AbortSignal, attempt = 0): Promise<Response> {
+    const res = await this.f(`${GROQ_BASE}/chat/completions`, { method: 'POST', headers: { Authorization: `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(60_000)]) : AbortSignal.timeout(60_000) });
+    if ((res.status === 429 || res.status >= 500) && attempt < 2) {
+      const wait = Number(res.headers.get('retry-after'));
+      await new Promise(r => setTimeout(r, Number.isFinite(wait) && wait > 0 ? Math.min(wait, 8) * 1000 : 400 * 2 ** attempt));
+      return this.post(body, signal, attempt + 1);
+    }
+    if (!res.ok) {
+      const err = await this.failure(res);
+      // A model that does not know the reasoning settings is asked again without them, rather than failing a conversation.
+      if (res.status === 400 && 'reasoning_effort' in body && /reasoning|include_reasoning/i.test(err.message)) {
+        const { reasoning_effort: _a, include_reasoning: _b, ...plain } = body;
+        return this.post(plain, signal, attempt + 1);
+      }
+      throw err;
+    }
+    return res;
+  }
+
+  private async failure(res: Response): Promise<Error> {
+    let msg = `Groq answered ${res.status}.`;
+    try { const j = (await res.json()) as GqBody; if (j.error?.message) msg = j.error.message; } catch { /* keep the status message */ }
+    if (res.status === 401 || res.status === 403) return new LlmUnavailable('The Groq API key was rejected.');
+    if (res.status === 404) return new LlmFailure(`Groq doesn’t have that model (${msg}).`);
+    if (res.status === 429) return new LlmFailure('The model is busy right now.');
+    return new LlmFailure(msg);
+  }
+
+  private usage(req: LlmBase, started: number, ok: boolean, u?: OrUsage): LlmUsage {
+    const inTokens = u?.prompt_tokens ?? 0, outTokens = u?.completion_tokens ?? 0;
+    return { provider: `groq:${req.model}`, model: req.model, kind: req.task, units: ok ? inTokens + outTokens : 0, inTokens: ok ? inTokens : undefined, outTokens: ok ? outTokens : undefined, latencyMs: Date.now() - started, ok, userId: req.userId };
+  }
+
+  async *stream(req: LlmBase): AsyncGenerator<string, void, void> {
+    const started = Date.now();
+    let usage: OrUsage | undefined, ok = false, spoke = false, finish: string | null | undefined;
+    try {
+      const res = await this.post(this.payload(req, { stream: true, stream_options: { include_usage: true } }), req.signal);
+      const reader = res.body!.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        let nl: number;
+        while ((nl = buf.indexOf('\n')) >= 0) {
+          const line = buf.slice(0, nl).trim(); buf = buf.slice(nl + 1);
+          if (!line.startsWith('data:')) continue;
+          const data = line.slice(5).trim();
+          if (data === '[DONE]') continue;
+          let j: GqBody; try { j = JSON.parse(data); } catch { continue; }
+          if (j.error) throw new LlmFailure(j.error.message ?? 'The model stopped midway.');
+          if (j.usage ?? j.x_groq?.usage) usage = j.usage ?? j.x_groq?.usage;
+          const c = j.choices?.[0];
+          if (c?.finish_reason) finish = c.finish_reason;
+          if (c?.finish_reason === 'content_filter') throw new LlmRefusal(null);
+          const t = c?.delta?.content;
+          if (t) { spoke = true; yield t; }
+        }
+      }
+      if (!spoke) throw new LlmFailure(finish === 'length' ? 'The model ran out of room before it answered.' : 'The model gave an empty answer.');
+      ok = true;
+      this.onUsage(this.usage(req, started, true, usage));
+    } catch (e) {
+      if (!ok) this.onUsage(this.usage(req, started, false));
+      throw wrapOr(e);
+    }
+  }
+
+  private async complete(req: LlmBase, extra?: Record<string, unknown>): Promise<{ text: string; usage?: OrUsage; finish?: string | null }> {
+    const res = await this.post(this.payload(req, extra), req.signal);
+    const j = (await res.json()) as GqBody;
+    if (j.error) throw new LlmFailure(j.error.message ?? 'The model failed.');
+    const c = j.choices?.[0];
+    if (c?.finish_reason === 'content_filter') throw new LlmRefusal(null);
+    return { text: c?.message?.content ?? '', usage: j.usage ?? j.x_groq?.usage, finish: c?.finish_reason };
+  }
+
+  async text(req: LlmBase): Promise<string> {
+    const started = Date.now();
+    try {
+      const r = await this.complete(req);
+      if (!r.text.trim()) throw new LlmFailure(r.finish === 'length' ? 'The model ran out of room before it answered.' : 'The model gave an empty answer.');
+      this.onUsage(this.usage(req, started, true, r.usage));
+      return r.text;
+    } catch (e) {
+      this.onUsage(this.usage(req, started, false));
+      throw wrapOr(e);
+    }
+  }
+
+  async json<T>(req: LlmJson<T>): Promise<T> {
+    const started = Date.now();
+    try {
+      let r: Awaited<ReturnType<GroqLlm['complete']>>;
+      try {
+        r = await this.complete(req, { response_format: { type: 'json_schema', json_schema: { name: req.schemaName, strict: true, schema: req.jsonSchema } } });
+        if (!r.text.trim()) throw new LlmFailure('empty');
+      } catch (e) {
+        if (!(e instanceof LlmFailure) || e instanceof LlmRefusal) throw e;
+        const ask = { ...req, system: { ...req.system, dynamic: `${req.system.dynamic ?? ''}\n\nReply with only a JSON object that matches this JSON schema, with no other text:\n${JSON.stringify(req.jsonSchema)}` } };
+        r = await this.complete(ask);
+      }
+      if (r.finish === 'length') throw new LlmFailure('structured output was cut off');
+      const out = req.parse(JSON.parse(extractJson(r.text)));
+      this.onUsage(this.usage(req, started, true, r.usage));
+      return out;
+    } catch (e) {
+      this.onUsage(this.usage(req, started, false));
+      throw wrapOr(e);
+    }
+  }
 }
 
 // ------------------------------------------------------------------------------------------ none / mock
@@ -357,9 +501,12 @@ export class MockLlm implements LlmProvider {
  * Chooses the vendor at call time: the key and the “AI provider” setting are read from the live runtime, so changing
  * either in the admin portal takes effect on the next message with no restart.
  */
+export type LlmVendor = 'anthropic' | 'openrouter' | 'groq';
 export interface LiveLlmSource {
-  provider(): 'anthropic' | 'openrouter';
-  key(provider: 'anthropic' | 'openrouter'): string | undefined;
+  provider(): LlmVendor;
+  key(provider: LlmVendor): string | undefined;
+  /** How hard Groq's reasoning models think before answering. Low keeps a spoken reply fast. */
+  groqEffort?(): 'low' | 'medium' | 'high';
   fetchImpl?: typeof fetch;
 }
 
@@ -367,16 +514,17 @@ class LiveLlm implements LlmProvider {
   private cache = new Map<string, LlmProvider>();
   constructor(private readonly src: LiveLlmSource, private readonly onUsage: (u: LlmUsage) => void) {}
   get configured() { return !!this.src.key(this.src.provider()); }
-  get name(): 'anthropic' | 'openrouter' | 'none' { return this.configured ? this.src.provider() : 'none'; }
+  get name(): LlmVendor | 'none' { return this.configured ? this.src.provider() : 'none'; }
   private use(): LlmProvider {
     const p = this.src.provider();
     const key = this.src.key(p);
-    if (!key) throw new LlmUnavailable(p === 'openrouter' ? 'OpenRouter is selected but has no API key.' : undefined);
-    const id = `${p}:${key}`;
+    if (!key) throw new LlmUnavailable(p === 'openrouter' ? 'OpenRouter is selected but has no API key.' : p === 'groq' ? 'Groq is selected but has no API key.' : undefined);
+    const effort = p === 'groq' ? this.src.groqEffort?.() ?? 'low' : '';
+    const id = `${p}:${key}:${effort}`;
     let inner = this.cache.get(id);
     if (!inner) {
       this.cache.clear();
-      inner = p === 'openrouter' ? new OpenRouterLlm(key, this.onUsage, this.src.fetchImpl) : new AnthropicLlm(key, this.onUsage);
+      inner = p === 'openrouter' ? new OpenRouterLlm(key, this.onUsage, this.src.fetchImpl) : p === 'groq' ? new GroqLlm(key, this.onUsage, this.src.fetchImpl, effort as 'low' | 'medium' | 'high') : new AnthropicLlm(key, this.onUsage);
       this.cache.set(id, inner);
     }
     return inner;

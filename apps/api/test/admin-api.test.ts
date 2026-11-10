@@ -372,9 +372,9 @@ describe('prompts', () => {
     const d = await call(owner, 'POST', '/prompts/companion.stable/drafts', { body });
     await sql(`INSERT INTO eval_runs (suite, prompt_key, prompt_version_id, passed, failed, total, results) VALUES ('replies','companion.stable',$1,1,0,1,$2)`, [d.json().id, JSON.stringify([{ pass: true, critical: true }])]);
     expect((await call(owner, 'POST', `/prompts/versions/${d.json().id}/publish`)).statusCode).toBe(200);
-    const s = stableSystem({ companionName: 'Saathi', nickname: 'Asha', language: 'en', voice: 'warm' });
+    const s = stableSystem({ companionName: 'Flint', nickname: 'Asha', language: 'en', voice: 'warm' });
     expect(s).toContain('gently funny');
-    expect(s).toContain('You are Saathi');
+    expect(s).toContain('You are Flint');
     expect(s).toContain('talking with Asha');
     await call(owner, 'POST', '/prompts/companion.stable/revert');
   });
@@ -447,7 +447,7 @@ describe('evaluations and the test bench', () => {
     expect(r.json().text).toBe('Okay, one gentle step at a time.');
     expect(r.json().outputRule).toBe('ok');
     expect(t.llm.calls.at(-1)!.system).toContain('Text reply, at most 20 words.');
-    expect(t.llm.calls.at(-1)!.system).toContain('You are Saathi');
+    expect(t.llm.calls.at(-1)!.system).toContain('You are Flint');
     expect(prompt('mode.text')).toBe('Text reply, at most 60 words, no markdown headings. Fewer words when they wrote few.');
     void before;
   });

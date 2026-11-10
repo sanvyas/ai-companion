@@ -6,7 +6,7 @@ import { s } from './css';
 import { paletteById } from './palette';
 import { useV3 } from './ui';
 
-// The first screen. A garden at the edge of morning, Saathi standing in it, a real exchange floating above (so it is plain that this is
+// The first screen. A garden at the edge of morning, Flint standing in it, a real exchange floating above (so it is plain that this is
 // a conversation and not a list of tools), and the four things the app does drawn as little pictures. It fits one phone screen.
 
 const glass = 'background:color-mix(in srgb,var(--card) 84%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 12px 28px rgba(30,36,48,.12),0 0 0 1px color-mix(in srgb,var(--card) 60%,transparent)';

@@ -8,7 +8,7 @@ import { LanguageScreen, MemoryScreen, NotifScreen, PrivacyScreen, StudioScreen 
 import { go } from '../state/actions';
 import type { Screen } from '../state/store';
 
-// Screens the third design does not redraw (what Saathi remembers, privacy, voices, the safety plan) are shown as the
+// Screens the third design does not redraw (what Flint remembers, privacy, voices, the safety plan) are shown as the
 // second design draws them, over this one. They load only when asked for, so nobody downloads them to look at Home.
 // They are the older screens, doing the same jobs against the same app, so nothing about safety or privacy is lost.
 

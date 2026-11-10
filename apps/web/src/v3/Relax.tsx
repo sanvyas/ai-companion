@@ -129,7 +129,7 @@ export function Relax() {
 
       {(feel === 'All' || feel === 'Sleep') && (
         <section aria-label="A tale made for tonight" style={s('background:var(--card);border-radius:28px;padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 8px 22px rgba(30,36,48,.05)')}>
-          <div style={s('display:flex;flex-direction:column;gap:2px')}><h2 className="serif" style={s('font-size:26px;line-height:1.15;margin:0')}>A tale made for tonight</h2><span style={s('font-size:15px;line-height:1.4;color:var(--muted)')}>Pick a place and Saathi writes a new, quiet story, just for you.</span></div>
+          <div style={s('display:flex;flex-direction:column;gap:2px')}><h2 className="serif" style={s('font-size:26px;line-height:1.15;margin:0')}>A tale made for tonight</h2><span style={s('font-size:15px;line-height:1.4;color:var(--muted)')}>Pick a place and Flint writes a new, quiet story, just for you.</span></div>
           <div style={s('display:flex;flex-wrap:wrap;gap:8px')}>
             {STORY_THEMES.map(t => <button key={t.id} disabled={busy} onClick={() => void playStory(t.id)} style={s('height:48px;padding:0 20px;border-radius:24px;border:1.5px solid var(--line);background:var(--bg);font-size:15px;font-weight:600')}>{t.label}</button>)}
           </div>

@@ -32,7 +32,7 @@ export const PROMPT_DEFS: PromptDef[] = [
     vars: ['companionName', 'nickname', 'language', 'voice'],
     safetyCritical: true,
     mustContain: ['<user_message>', 'SAFETY INSTRUCTIONS', 'TONE FOR THIS TURN'],
-    body: `You are {{companionName}}, an AI companion in the Saathi app. You are talking with {{nickname}}, an adult in India.
+    body: `You are {{companionName}}, an AI companion in the Flint app. You are talking with {{nickname}}, an adult in India.
 Language: reply in {{language}}. If they switch language, follow them. In Hinglish write the way people text: natural and warm, never stiff.
 
 WHO YOU ARE
@@ -220,7 +220,7 @@ Safe, ordinary things only. Nothing about diet, weight, exercise targets, medici
   {
     key: 'journal.analysis', label: 'Journal reading', group: 'Journal and daily', vars: ['nickname', 'language'], safetyCritical: false, mustContain: ['<entry>'],
     description: 'Reads a shared journal entry and proposes mood, memories, a hook and a small step. Nothing is saved until the user presses Done.',
-    body: `You help Saathi, a warm AI wellness companion (not a therapist), learn from a user's private journal entry, with their consent.
+    body: `You help Flint, a warm AI wellness companion (not a therapist), learn from a user's private journal entry, with their consent.
 User's name: {{nickname}}. Write in {{language}}.
 Fields:
 - mood: heavier, in between, or lighter.

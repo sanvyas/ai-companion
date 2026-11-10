@@ -32,7 +32,7 @@ const signedIn = (role = 'owner', perms = ALL) => { routes['GET /auth/me'] = () 
 describe('sign-in', () => {
   it('asks for the password, then shows a QR code to set up the authenticator, then signs in', async () => {
     routes['GET /auth/me'] = () => ({ status: 401, json: { error: { code: 'unauthorized', message: 'no' } } });
-    routes['POST /auth/login'] = () => ({ json: { step: 'enrol', enrol: { secret: 'JBSWY3DPEHPK3PXP', uri: 'otpauth://totp/Saathi:founder@example.com?secret=JBSWY3DPEHPK3PXP' } } });
+    routes['POST /auth/login'] = () => ({ json: { step: 'enrol', enrol: { secret: 'JBSWY3DPEHPK3PXP', uri: 'otpauth://totp/Flint:founder@example.com?secret=JBSWY3DPEHPK3PXP' } } });
     routes['POST /auth/totp'] = () => ({ json: { csrf: 'csrf-token' } });
     routes['GET /overview'] = () => ({ json: { users: { total: 0 }, series: [], systems: [], conversations: { byMode: [] }, safety: [], today: {}, cost: {}, consent: {} } });
     render(<App />);
@@ -281,5 +281,36 @@ describe('OpenRouter', () => {
     expect(saved).toBeUndefined();
     fireEvent.click(within(dlg).getByRole('button', { name: 'Yes, switch' }));
     await waitFor(() => expect(saved).toEqual({ value: 'openrouter' }));
+  });
+});
+
+describe('Groq', () => {
+  const field = { name: 'api_key', label: 'API key', secret: true, source: 'env', last4: 'oklo', value: null, updatedAt: null, updatedBy: null, lastTestAt: null, lastTestOk: null, lastTestNote: null };
+  const groq = { id: 'groq', label: 'Groq', category: 'AI', purpose: 'Fast models and Whisper.', status: 'live', statusNote: 'Used when selected.', docsUrl: 'https://console.groq.com/keys', hosts: ['api.groq.com'], testable: true, fields: [field] };
+  const opts = [{ value: 'openai/gpt-oss-20b', label: 'GPT-OSS 20B' }, { value: 'openai/gpt-oss-120b', label: 'GPT-OSS 120B' }];
+
+  it('shows the Groq key, who serves the app, and saves a model, the listening engine and the provider switch', async () => {
+    signedIn();
+    routes['GET /settings'] = () => ({ json: { items: [
+      { def: { key: 'llm.provider', label: 'AI provider' }, value: 'anthropic' },
+      { def: { key: 'groq.models.companion', label: 'Groq: companion model', options: opts }, value: 'openai/gpt-oss-20b' },
+      { def: { key: 'voice.stt_provider', label: 'Listening', options: [{ value: 'groq', label: 'Groq Whisper' }, { value: 'browser', label: 'Phone only' }] }, value: 'groq' },
+    ] } });
+    routes['GET /integrations'] = () => ({ json: { items: [groq] } });
+    const saved: Record<string, unknown> = {};
+    routes['PUT /settings/groq.models.companion'] = b => { saved.model = b; return { json: { ok: true } }; };
+    routes['PUT /settings/voice.stt_provider'] = b => { saved.stt = b; return { json: { ok: true } }; };
+    routes['PUT /settings/llm.provider'] = b => { saved.provider = b; return { json: { ok: true } }; };
+    location.hash = '#/integrations';
+    render(<App />);
+    fireEvent.change(await screen.findByLabelText('Companion model'), { target: { value: 'openai/gpt-oss-120b' } });
+    await waitFor(() => expect(saved.model).toEqual({ value: 'openai/gpt-oss-120b' }));
+    fireEvent.change(screen.getByLabelText('Listening'), { target: { value: 'browser' } });
+    await waitFor(() => expect(saved.stt).toEqual({ value: 'browser' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Use Groq for the app' }));
+    const dlg = await screen.findByRole('dialog');
+    expect(within(dlg).getByText(/run the safety evaluations/i)).toBeInTheDocument();
+    fireEvent.click(within(dlg).getByRole('button', { name: 'Yes, switch' }));
+    await waitFor(() => expect(saved.provider).toEqual({ value: 'groq' }));
   });
 });

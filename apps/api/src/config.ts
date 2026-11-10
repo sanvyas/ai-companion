@@ -51,6 +51,13 @@ const schema = z.object({
   /** Journal analysis, summaries, memory proposals, weekly letter. */
   MODEL_ANALYSIS: z.string().default('claude-opus-5-5'),
 
+  /** Groq (fast open models plus Whisper speech-to-text). The key is normally set in the admin portal; this is the fallback. */
+  GROQ_API_KEY: z.string().optional(),
+  /** The Groq chat model used for every purpose until the portal says otherwise. */
+  GROQ_MODEL: z.string().default('openai/gpt-oss-20b'),
+  /** Google Cloud Text-to-Speech key, also settable in the portal. */
+  GOOGLE_TTS_API_KEY: z.string().optional(),
+
   STT_PROVIDER: z.enum(['none']).default('none'),
   TTS_PROVIDER: z.enum(['none']).default('none'),
   TELEPHONY_PROVIDER: z.enum(['none']).default('none'),

@@ -6,6 +6,7 @@ import { makeApp, signIn, type TestApp } from './app-helpers.js';
 
 // Fake vendors: prove the pipeline end to end without any real speech service.
 class FakeStt implements SttProvider {
+  readonly configured = true;
   name = 'fake';
   opened = 0;
   async open(): Promise<SttSession> {
