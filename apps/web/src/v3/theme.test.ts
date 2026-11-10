@@ -10,14 +10,12 @@ describe('the colour of the day', () => {
   it('never goes dark in the light palettes, at any hour or mood', () => {
     for (let h = 0; h < 24; h++) for (const m of [null, 0, 1, 2, 3, 4]) expect(lum(themeFor(h, m as number | null).tint)).toBeGreaterThan(0.82);
   });
-  it('leans warmer when the day is heavy, without leaving the time of day behind', () => {
-    const calm = themeFor(21, null).tint, heavy = themeFor(21, 0).tint;
-    const [r1, , b1] = [1, 3, 5].map(i => parseInt(calm.slice(i, i + 2), 16)), [r2, , b2] = [1, 3, 5].map(i => parseInt(heavy.slice(i, i + 2), 16));
-    expect(r2 - b2).toBeGreaterThan(r1 - b1);
-    expect(heavy).not.toBe(themeFor(9, 0).tint);
+  it('does not change with the mood: the chosen palette stays itself on a rough day and a great one', () => {
+    for (const h of [3, 9, 13, 18, 22]) for (const m of [0, 1, 2, 3, 4]) expect(themeFor(h, m)).toEqual(themeFor(h, null));
+    for (const m of [0, 4]) expect(themeFor(9, m, undefined, true)).toEqual(themeFor(9, null, undefined, true));
   });
-  it('changes with the mood and the hour, and the same inputs always give the same colour', () => {
+  it('still follows the time of day, and the same inputs always give the same colour', () => {
     expect(themeFor(9, 1)).toEqual(themeFor(9, 1));
-    expect(themeFor(9, 1).tint).not.toBe(themeFor(9, 4).tint);
+    expect(themeFor(9, 1).tint).not.toBe(themeFor(13, 1).tint);
   });
 });

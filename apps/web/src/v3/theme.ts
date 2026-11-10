@@ -3,9 +3,9 @@ import { useStore } from '../state/store';
 import { paletteById } from './palette';
 import { useV3 } from './ui';
 
-// The colour at the top of every screen. It follows the time of day, and when someone says they are having a heavy or flat day it
-// leans warmer and brighter, to lift rather than to match. It stays light all through the night (a dark screen at bedtime is worse
-// for tired eyes than a soft one) and never moves far from the base paper colour, so the app always looks like itself.
+// The colour at the top of every screen. It follows the time of day inside the chosen palette and does not change with mood, so
+// the app always looks like itself. It stays light all through the night in the light palettes (a dark screen at bedtime is worse
+// for tired eyes than a soft one).
 
 export interface Theme { tint: string; wash: string }
 
@@ -16,17 +16,12 @@ export type Part = 'morning' | 'afternoon' | 'evening' | 'night';
 export const partOf = (h: number): Part => (h >= 5 && h < 11 ? 'morning' : h >= 11 && h < 16 ? 'afternoon' : h >= 16 && h < 20 ? 'evening' : 'night');
 
 export const DEFAULT_TINTS: Record<Part, string> = { morning: '#F9DFCB', afternoon: '#D3E8EA', evening: '#F1D9C6', night: '#DCE7E8' };
-/** What each mood leans toward. Heavy and flat days get warmth and light; steady and good days get something fresh. */
-const BY_MOOD = ['#FADAB9', '#FBDDBD', '#FBE7C2', '#E8F2DC', '#FCECC6'];
-/** How far the mood pulls the colour. The heaviest days pull the most, and never all the way. */
-const PULL = [0.62, 0.55, 0.45, 0.35, 0.4];
-
-/** The same idea for the dark palettes: a heavy day glows a little warmer and lighter, never bright. */
-const DARK_BY_MOOD = ['#5C406E', '#6D4253', '#40506B', '#2F6058', '#6B5C3A'];
-
-export function themeFor(hour: number, mood: number | null, tints: Record<Part, string> = DEFAULT_TINTS, dark = false): Theme {
-  const base = tints[partOf(hour)];
-  const tint = mood === null ? base : dark ? mix(base, DARK_BY_MOOD[mood], 0.3) : mix(base, BY_MOOD[mood], PULL[mood]);
+/**
+ * The colours are the chosen palette's, whatever the mood: Garden Teal stays Garden Teal on a rough day. Only the time of day
+ * moves the tint. (The mood is still shown, as weather, and still shapes what Flint suggests and says.)
+ */
+export function themeFor(hour: number, _mood: number | null, tints: Record<Part, string> = DEFAULT_TINTS, dark = false): Theme {
+  const tint = tints[partOf(hour)];
   return { tint, wash: dark ? mix(tint, '#000000', 0.2) : mix(tint, '#FFFFFF', 0.45) };
 }
 

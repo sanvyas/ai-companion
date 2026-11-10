@@ -24,10 +24,10 @@ export type SuggestId = 'sit' | 'write' | 'speak' | 'rain' | 'balloon' | 'racing
 export interface Hero { title: string; sub: string; cta: string; bg: string; fg: string; id: 'talk' | 'breathe' | 'rangoli' | 'step' | 'write' | 'checkin'; more: [SuggestId, SuggestId, SuggestId] }
 export const HEROES: Hero[] = [
   { title: 'Want to get it off your chest?', sub: 'Talk to me about anything. I’m listening.', cta: 'Talk to me', bg: 'var(--hero1)', fg: '#FFFFFF', id: 'talk', more: ['sit', 'write', 'rain'] },
-  { title: 'Let’s slow your breath.', sub: 'One minute. Just follow the circle.', cta: 'Breathe with me', bg: '#B04F36', fg: '#FFFFFF', id: 'breathe', more: ['balloon', 'racing', 'walk'] },
-  { title: 'A small distraction?', sub: 'Make a rangoli. No rules.', cta: 'Play', bg: '#6F5F48', fg: '#FFFFFF', id: 'rangoli', more: ['walk', 'fruit', 'speak'] },
-  { title: 'One tiny step?', sub: '', cta: 'Done it', bg: '#34703F', fg: '#FFFFFF', id: 'step', more: ['room', 'event', 'speak'] },
-  { title: 'Keep this feeling.', sub: 'Note what went well today.', cta: 'Write it down', bg: '#F0B93A', fg: '#1E2430', id: 'write', more: ['event', 'fruit', 'month'] },
+  { title: 'Let’s slow your breath.', sub: 'One minute. Just follow the circle.', cta: 'Breathe with me', bg: 'var(--hero1)', fg: '#FFFFFF', id: 'breathe', more: ['balloon', 'racing', 'walk'] },
+  { title: 'A small distraction?', sub: 'Make a rangoli. No rules.', cta: 'Play', bg: 'var(--hero1)', fg: '#FFFFFF', id: 'rangoli', more: ['walk', 'fruit', 'speak'] },
+  { title: 'One tiny step?', sub: '', cta: 'Done it', bg: 'var(--hero1)', fg: '#FFFFFF', id: 'step', more: ['room', 'event', 'speak'] },
+  { title: 'Keep this feeling.', sub: 'Note what went well today.', cta: 'Write it down', bg: 'var(--hero1)', fg: '#FFFFFF', id: 'write', more: ['event', 'fruit', 'month'] },
 ];
 export const CHECKIN_HERO: Hero = { title: 'How are you, right now?', sub: 'One tap, and I’ll suggest what might help.', cta: 'Check in', bg: 'var(--accent)', fg: '#FFFFFF', id: 'checkin', more: ['breathe', 'walk', 'write'] };
 
