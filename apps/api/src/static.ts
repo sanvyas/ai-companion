@@ -4,7 +4,7 @@ import fastifyStatic from '@fastify/static';
 import type { Config } from './config.js';
 
 /** Paths that must stay reachable in maintenance mode so the UI can show its own message. */
-export const STATIC_OPEN_DURING_MAINTENANCE = /^\/(portal|assets|sw\.js|manifest\.webmanifest|icon\.svg)(\/|\?|$)|^\/(\?.*)?$/;
+export const STATIC_OPEN_DURING_MAINTENANCE = /^\/(portal|assets|sw\.js|manifest\.webmanifest|icon\.svg|icon-[\w-]+\.png|\.well-known)(\/|\?|$)|^\/(\?.*)?$/;
 
 const HASHED = /\/assets\//;
 

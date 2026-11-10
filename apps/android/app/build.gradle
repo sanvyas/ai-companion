@@ -1,0 +1,42 @@
+plugins { id 'com.android.application' }
+
+// The site this app opens. Change it here (and in the manifest placeholders) to point the app at another server.
+def siteHost = project.findProperty('flintHost') ?: 'saathi-api-mpdh.onrender.com'
+def startPath = project.findProperty('flintStartPath') ?: '/?ui=3'
+
+android {
+    namespace 'app.flint.companion'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'app.flint.companion'
+        minSdk 24
+        targetSdk 34
+        versionCode Integer.parseInt((project.findProperty('flintVersionCode') ?: '1').toString())
+        versionName (project.findProperty('flintVersionName') ?: '1.0').toString()
+        manifestPlaceholders = [hostName: siteHost, startPath: startPath]
+        resValue 'string', 'asset_statements', """[{\\"relation\\": [\\"delegate_permission/common.handle_all_urls\\"], \\"target\\": {\\"namespace\\": \\"web\\", \\"site\\": \\"https://${siteHost}\\"}}]"""
+    }
+    signingConfigs {
+        release {
+            // The key lives outside the repository; pass it on the command line: -PflintKeystore=... -PflintStorePass=...
+            if (project.hasProperty('flintKeystore')) {
+                storeFile file(project.property('flintKeystore'))
+                storePassword project.property('flintStorePass')
+                keyAlias project.findProperty('flintKeyAlias') ?: 'flint'
+                keyPassword project.property('flintStorePass')
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig project.hasProperty('flintKeystore') ? signingConfigs.release : null
+        }
+    }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}
+
+dependencies {
+    // Opens the site in Chrome's own engine as a full-screen app (a Trusted Web Activity).
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
+}

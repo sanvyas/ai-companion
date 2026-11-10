@@ -58,6 +58,11 @@ const schema = z.object({
   /** Google Cloud Text-to-Speech key, also settable in the portal. */
   GOOGLE_TTS_API_KEY: z.string().optional(),
 
+  /** The Android app (a Trusted Web Activity) is proven to own this site by /.well-known/assetlinks.json; that makes it open full screen. */
+  ANDROID_PACKAGE: z.string().default('app.flint.companion'),
+  /** SHA-256 fingerprint(s) of the key the Android app is signed with, comma separated. Public information. */
+  ANDROID_CERT_SHA256: z.string().default('8F:74:BD:0D:50:EC:85:D2:08:71:52:91:03:05:FD:2B:6C:C2:48:79:0C:A8:0C:C9:F5:67:26:A4:83:CE:98:13'),
+
   STT_PROVIDER: z.enum(['none']).default('none'),
   TTS_PROVIDER: z.enum(['none']).default('none'),
   TELEPHONY_PROVIDER: z.enum(['none']).default('none'),

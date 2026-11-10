@@ -19,6 +19,11 @@ export function publicRoutes(app: FastifyInstance, ctx: Ctx) {
     req.log.warn({ diag: 'google_sign_in', stage, note, origin: req.headers.origin ?? null, ua: String(req.headers['user-agent'] ?? '').slice(0, 160) }, 'google sign-in problem reported by the page');
     return { ok: true };
   });
+  // Tells Android this site and the installed app belong together, so the app opens full screen without a browser bar.
+  app.get('/.well-known/assetlinks.json', async (_req, reply) => {
+    reply.header('Cache-Control', 'public, max-age=3600');
+    return [{ relation: ['delegate_permission/common.handle_all_urls'], target: { namespace: 'android_app', package_name: ctx.cfg.ANDROID_PACKAGE, sha256_cert_fingerprints: ctx.cfg.ANDROID_CERT_SHA256.split(',').map(s => s.trim()).filter(Boolean) } }];
+  });
   app.get('/healthz', async () => ({ ok: true }));
   // Which build is running. No secrets; used by the admin portal's environment checks.
   app.get('/version', async () => ({ ...buildInfo(), environment: ctx.cfg.NODE_ENV }));

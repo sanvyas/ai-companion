@@ -1,0 +1,10 @@
+<resources>
+    <color name="flint_bg">#FBF7F0</color>
+    <style name="Theme.Flint" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@color/flint_bg</item>
+        <item name="android:windowBackground">@color/flint_bg</item>
+    </style>
+    <style name="Theme.Flint.Launcher" parent="Theme.Flint">
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
+</resources>

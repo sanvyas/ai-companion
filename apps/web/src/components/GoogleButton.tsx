@@ -40,6 +40,28 @@ export function inAppBrowser(ua = navigator.userAgent): boolean {
   return /FBAN|FBAV|FB_IAB|Instagram|WhatsApp|Line\/|MicroMessenger|Snapchat|Twitter|LinkedInApp|; wv\)|GSA\//.test(ua);
 }
 
+/**
+ * A link that opens this page in the phone's own browser, for the times Google's sign-in is refused inside another app's
+ * built-in browser. Android can be sent straight to Chrome. iPhone has no such link, so the page address is copied instead.
+ */
+export function openInBrowserHref(url = location.href, ua = navigator.userAgent): string | null {
+  if (!/Android/i.test(ua)) return null;
+  const u = new URL(url);
+  const fallback = encodeURIComponent(u.href);
+  return `intent://${u.host}${u.pathname}${u.search}#Intent;scheme=${u.protocol.replace(':', '')};package=com.android.chrome;S.browser_fallback_url=${fallback};end`;
+}
+
+/** Shown under the message when Google's sign-in can't run in this browser: one tap to carry on in a browser that can. */
+export function BrowserEscape({ state, style }: { state: string; style?: React.CSSProperties }) {
+  const [copied, setCopied] = useState(false);
+  if (state !== 'in_app_browser') return null;
+  const href = openInBrowserHref();
+  const btn: React.CSSProperties = { display: 'inline-block', marginTop: 8, padding: '10px 16px', borderRadius: 999, border: 0, background: C.ink, color: C.white, fontWeight: 600, fontSize: 15, textDecoration: 'none', cursor: 'pointer', ...style };
+  return href
+    ? <a href={href} style={btn}>Open in Chrome</a>
+    : <button type="button" style={btn} onClick={() => { void navigator.clipboard?.writeText(location.href).then(() => setCopied(true)).catch(() => undefined); }}>{copied ? 'Link copied. Paste it in Safari.' : 'Copy link to open in Safari'}</button>;
+}
+
 type State = 'loading' | 'ready' | 'script_failed' | 'button_not_drawn' | 'origin_rejected' | 'in_app_browser';
 
 /** Words for each way sign-in can be stuck. Short, kind, and always with another way forward. */
@@ -108,7 +130,7 @@ export function GoogleButton({ clientId }: { clientId: string }) {
         {/* When Google's button can't be used, our own button says why instead of doing nothing. */}
         {stuck && <button type="button" aria-label="Continue with Google" onClick={g.tappedWhileStuck} style={{ position: 'absolute', inset: 0, background: 'transparent', border: 0, cursor: 'pointer' }} />}
       </div>
-      {g.message && <div role="status" style={{ fontSize: 14, color: C.amberText, background: C.amber, borderRadius: 14, padding: '10px 12px', marginTop: 10, lineHeight: 1.4 }}>{g.message}</div>}
+      {g.message && <div role="status" style={{ fontSize: 14, color: C.amberText, background: C.amber, borderRadius: 14, padding: '10px 12px', marginTop: 10, lineHeight: 1.4 }}>{g.message}<div><BrowserEscape state={g.state} /></div></div>}
     </div>
   );
 }
