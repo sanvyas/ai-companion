@@ -1,5 +1,4 @@
-import { useRef, useState } from 'react';
-import { s } from './css';
+import { useEffect, useRef, useState } from 'react';
 import { SCENE_NAMES, isDark, isSceneId, scenesFor, type SceneId } from './scenes';
 
 // A small illustrated view for Home. A different place each time the app is opened; a tap shows the next one. Each is drawn
@@ -251,45 +250,50 @@ export const ART: Record<SceneId, (n: boolean) => React.ReactElement> = {
 let opens = (() => { try { const n = Number(localStorage.getItem('saathi.v3.view') ?? '-1') + 1; localStorage.setItem('saathi.v3.view', String(n)); return n; } catch { return Math.floor(Math.random() * 100); } })();
 
 const mod = (n: number, m: number) => ((n % m) + m) % m;
+const CHANGE_EVERY = 20_000;
+const FADE = 1400;
+const calm = () => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.dataset.reduce === 'true'; } catch { return false; } };
 
-export function Scene({ mood, height = 150 }: { mood: number | null; height?: number }) {
-  const [extra, setExtra] = useState(0);
-  const [dir, setDir] = useState<1 | -1>(1);
-  const [petals, setPetals] = useState<{ id: number; x: number }[]>([]);
-  const down = useRef<number | null>(null);
+/**
+ * The view behind the top of Home: edge to edge, fading into the page, with the greeting resting below it. It changes by itself
+ * (a slow cross-fade about every twenty seconds) and starts on a different place each time the app opens. Scrolling moves it away.
+ */
+export function SceneBackdrop({ mood, scrollY = 0, height = 210 }: { mood: number | null; scrollY?: number; height?: number }) {
   const hour = new Date().getHours();
   const pool = scenesFor({ hour, mood });
-  // ?scene=desert shows that place first (for trying them out); the arrows and swiping carry on from there.
+  // ?scene=desert shows that place first (for trying them out); after that it carries on as usual.
   const asked = new URLSearchParams(location.search).get('scene');
-  const id: SceneId = asked && isSceneId(asked) && extra === 0 ? asked : pool[mod(opens + extra, pool.length)];
-  const pos = Math.max(0, pool.indexOf(id));
-  const name = SCENE_NAMES[id];
+  const first: SceneId = asked && isSceneId(asked) ? asked : pool[mod(opens, pool.length)];
+  const [layers, setLayers] = useState<{ key: number; id: SceneId }[]>([{ key: 0, id: first }]);
+  const tick = useRef(0);
+  useEffect(() => {
+    if (calm()) return undefined;
+    const t = setInterval(() => {
+      if (document.hidden) return;
+      tick.current += 1;
+      const key = tick.current;
+      setLayers(ls => {
+        const cur = ls[ls.length - 1].id;
+        const at = pool.indexOf(cur);
+        const next = pool[mod((at < 0 ? opens : at) + 1, pool.length)];
+        return [...ls.slice(-1), { key, id: next }];
+      });
+      setTimeout(() => setLayers(ls => (ls.length > 1 && ls[ls.length - 1].key === key ? ls.slice(-1) : ls)), FADE + 100);
+    }, CHANGE_EVERY);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pool.join(',')]);
+  const current = layers[layers.length - 1].id;
   const night = isDark(hour);
-  const go = (d: 1 | -1) => { setDir(d); setExtra(n => n + d); };
-  const sparkle = (clientX: number, el: HTMLElement) => {
-    const r = el.getBoundingClientRect();
-    const pid = Date.now();
-    setPetals(p => [...p.slice(-2), { id: pid, x: ((clientX - r.left) / r.width) * 100 }]);
-    setTimeout(() => setPetals(p => p.filter(q => q.id !== pid)), 1500);
-  };
-  const arrow = (d: 1 | -1) => (
-    <button onClick={e => { e.stopPropagation(); go(d); }} aria-label={d === 1 ? 'Next view' : 'Previous view'} data-track={d === 1 ? 'home.view.next' : 'home.view.prev'} style={s(`position:absolute;${d === 1 ? 'right' : 'left'}:8px;top:50%;margin-top:-20px;width:40px;height:40px;border-radius:50%;border:none;background:rgba(255,255,255,.78);display:grid;place-items:center;box-shadow:0 4px 12px rgba(30,36,48,.15);padding:0`)}>
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1E2430" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d === 1 ? 'M9 5 L16 12 L9 19' : 'M15 5 L8 12 L15 19'} /></svg>
-    </button>
-  );
+  const away = Math.min(1, Math.max(0, scrollY / 170));
   return (
-    <div role="group" aria-roledescription="carousel" aria-label={`${name}. Swipe or use the arrows for another view`}
-      onPointerDown={e => { down.current = e.clientX; }}
-      onPointerUp={e => { if (down.current === null) return; const dx = e.clientX - down.current; down.current = null; if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1); else if (!(e.target as HTMLElement).closest('button')) sparkle(e.clientX, e.currentTarget); }}
-      onPointerCancel={() => { down.current = null; }}
-      style={s(`position:relative;width:100%;height:${height}px;border-radius:28px;overflow:hidden;background:#DDE7E2;box-shadow:0 10px 26px rgba(30,36,48,.08);touch-action:pan-y;user-select:none`)}>
-      <svg key={`${id}-${extra}`} className={dir === 1 ? 'm-slide-next' : 'm-slide-prev'} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" width="100%" height="100%" aria-hidden="true" focusable="false" style={{ position: 'absolute', inset: 0 }}>{ART[id](night)}</svg>
-      {petals.map(p => <span key={p.id} aria-hidden="true" className="v3-petal" style={{ left: `${p.x}%`, bottom: 28, ['--dx' as string]: `${(p.x % 2 ? 1 : -1) * 22}px`, background: '#F7C948' }} />)}
-      {arrow(-1)}{arrow(1)}
-      <div aria-hidden="true" style={s('position:absolute;left:0;right:0;top:10px;display:flex;justify-content:center;gap:5px')}>
-        {pool.map((_, i) => <span key={i} style={{ width: i === pos ? 16 : 6, height: 6, borderRadius: 3, background: '#FFFFFF', opacity: i === pos ? 0.95 : 0.55, boxShadow: '0 1px 3px rgba(30,36,48,.25)', transition: 'width 240ms, opacity 240ms' }} />)}
+    <>
+      <div role="img" aria-label={`${SCENE_NAMES[current]}, a view that changes by itself`} style={{ position: 'absolute', left: 0, right: 0, top: 0, height, pointerEvents: 'none', transform: `translateY(${scrollY * 0.45}px)`, opacity: 1 - away, WebkitMaskImage: 'linear-gradient(#000 0, #000 52%, transparent 100%)', maskImage: 'linear-gradient(#000 0, #000 52%, transparent 100%)', zIndex: 0 }}>
+        {layers.map((l, i) => (
+          <svg key={l.key} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" width="100%" height="100%" aria-hidden="true" focusable="false" style={{ position: 'absolute', inset: 0, animation: i > 0 ? `kFade ${FADE}ms ease-in-out` : undefined }}>{ART[l.id](night)}</svg>
+        ))}
       </div>
-      <span style={s('position:absolute;left:50%;transform:translateX(-50%);bottom:10px;padding:5px 14px;border-radius:14px;background:rgba(255,255,255,.88);color:#1E2430;font-size:13px;font-weight:600;white-space:nowrap')}>{name}</span>
-    </div>
+      <span style={{ position: 'absolute', right: 24, top: height - 62, transform: `translateY(${scrollY * 0.45}px)`, opacity: 1 - away, padding: '4px 11px', borderRadius: 12, background: 'rgba(255,255,255,.86)', color: '#1E2430', fontSize: 12, fontWeight: 600, pointerEvents: 'none', zIndex: 1 }}>{SCENE_NAMES[current]}</span>
+    </>
   );
 }

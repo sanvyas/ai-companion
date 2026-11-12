@@ -8,7 +8,7 @@ import { I, Svg } from './icons';
 import { HelpButton } from './Chrome';
 import { Weather } from './weather';
 import { BellButton } from './Inbox';
-import { Scene } from './Scenes';
+import { SceneBackdrop } from './Scenes';
 import { partOf, type Part } from './theme';
 import { MOODS, greetFor } from './moods';
 import { NUDGES, dayNumber, nudgesFor, type NudgeId } from './nudge';
@@ -34,6 +34,7 @@ export function Home() {
   const city = useStore(x => x.eventsCity);
   const month = useMonthData();
   const [swaps, setSwaps] = useState(0);
+  const [scrollY, setScrollY] = useState(0);
   useEffect(() => { void loadToday(); void loadOutside(); void loadJournal(); void loadInsights(); void loadMonthData(); }, []);
 
   const M = mood === null ? null : MOODS[mood];
@@ -73,23 +74,24 @@ export function Home() {
   const ev = events.find(e => !e.interested) ?? events[0];
 
   return (
-    <div className="screen" data-scroll="1" style={{ ...s('overflow:auto;background:var(--page);display:flex;flex-direction:column;padding:56px 24px 128px;gap:20px') }}>
-      <header style={s('display:flex;align-items:center;justify-content:space-between')}>
+    <div className="screen" data-scroll="1" onScroll={e => setScrollY(e.currentTarget.scrollTop)} style={{ ...s('overflow:auto;background:var(--page);display:flex;flex-direction:column;padding:56px 24px 128px;gap:20px') }}>
+      <SceneBackdrop mood={mood} scrollY={scrollY} />
+      <header style={s('position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between')}>
         <button onClick={() => go('you')} aria-label="You" data-track="nav.you" style={s('border:none;background:none;padding:0;width:44px;height:44px;display:grid;place-items:center')}>
           <span style={s('width:40px;height:40px;border-radius:50%;background:var(--card);overflow:hidden;display:grid;place-items:center')}><Companion look={look} size={40} /></span>
         </button>
         <div style={s('display:flex;align-items:center;gap:8px')}><BellButton /><HelpButton /></div>
       </header>
 
-      <div style={s('display:flex;flex-direction:column;gap:6px')}>
+      <div aria-hidden="true" style={s('height:76px;flex:none')} />
+
+      <div style={s('position:relative;z-index:2;display:flex;flex-direction:column;gap:6px')}>
         <h1 className="serif" style={s('font-size:36px;line-height:1.1;margin:0')}>{greet}{nick ? `, ${nick}` : ''}.</h1>
         <div style={s('font-size:17px;color:var(--muted)')}>{LINE[part]}</div>
         <button onClick={() => setV3({ over: 'mood' })} aria-label={M ? `Feeling ${M.label.toLowerCase()}. Change` : 'Not checked in. Check in'} style={s('align-self:flex-start;margin-top:4px;min-height:44px;padding:0;border:none;background:none;display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600')}>
           <Weather mood={mood ?? 2} size={26} />{M ? `Feeling ${M.label.toLowerCase()}` : 'How are you today?'}<span style={s('color:var(--muted);font-weight:500')}>· {M ? 'change' : 'tell me'}</span>
         </button>
       </div>
-
-      <Scene mood={mood} height={140} />
 
       {mood === null ? (
         <section aria-label="Check in" style={s('background:var(--card);border-radius:28px;padding:24px;display:flex;flex-direction:column;gap:6px;box-shadow:0 10px 28px rgba(30,36,48,.05)')}>
