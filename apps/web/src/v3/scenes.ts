@@ -1,27 +1,39 @@
 // The picture on Home is a view, not one fixed garden: a different place each time the app is opened, chosen to suit the hour and
-// how they said they feel. Heavy days get the calmest places (rain, sea, still water, night sky); lighter days get brighter ones.
+// how they said they feel. Heavy days get the calmest places (rain, sea, still water, night sky, a quiet sunrise); lighter days get
+// brighter ones. Sunrise and dawn places belong to the morning, the temple to dusk.
 
-export type SceneId = 'meadow' | 'sea' | 'mountains' | 'forest' | 'backwaters' | 'rain' | 'lotus' | 'stars';
+export type SceneId = 'meadow' | 'sea' | 'mountains' | 'forest' | 'backwaters' | 'rain' | 'lotus' | 'stars' | 'himalaya' | 'desert' | 'temple';
 
 export const SCENE_NAMES: Record<SceneId, string> = {
   meadow: 'A meadow', sea: 'The sea', mountains: 'Mountain lake', forest: 'Forest light',
   backwaters: 'Kerala backwaters', rain: 'Monsoon rain', lotus: 'Lotus pond', stars: 'Starry hills',
+  himalaya: 'Himalayan sunrise', desert: 'Desert at dawn', temple: 'Temple at dusk',
 };
 
+/** Early morning, 5 to 10. */
+const MORNING: SceneId[] = ['himalaya', 'meadow', 'desert', 'sea', 'forest', 'lotus', 'backwaters', 'mountains'];
+/** Daytime, 11 to 4. */
 const DAY: SceneId[] = ['meadow', 'sea', 'mountains', 'forest', 'backwaters', 'rain', 'lotus'];
+/** Evening, 5 to 8. */
+const DUSK: SceneId[] = ['temple', 'sea', 'backwaters', 'lotus', 'rain', 'mountains'];
+/** Late evening and night, 9 to 4. */
 const NIGHT: SceneId[] = ['stars', 'sea', 'mountains', 'backwaters', 'lotus'];
-/** For a rough or anxious day: still, soft and slow. */
-const SOOTHING = new Set<SceneId>(['rain', 'sea', 'backwaters', 'lotus', 'stars', 'mountains']);
+/** For a rough or anxious day: still, soft and slow, or hopeful like a sunrise. */
+const SOOTHING = new Set<SceneId>(['rain', 'sea', 'backwaters', 'lotus', 'stars', 'mountains', 'himalaya', 'desert', 'temple']);
 
 export const isDark = (hour: number) => hour >= 19 || hour < 5;
+export const partOfView = (hour: number): 'morning' | 'day' | 'dusk' | 'night' => (hour >= 5 && hour < 11 ? 'morning' : hour >= 11 && hour < 17 ? 'day' : hour >= 17 && hour < 21 ? 'dusk' : 'night');
 
-/** The places that suit now, in a steady order. `n` is how many times the app has been opened (or the view changed), so it walks on. */
+/** The places that suit now, in a steady order. */
 export function scenesFor(o: { hour: number; mood: number | null }): SceneId[] {
-  const pool = isDark(o.hour) ? NIGHT : DAY;
+  const pool = { morning: MORNING, day: DAY, dusk: DUSK, night: NIGHT }[partOfView(o.hour)];
   return o.mood !== null && o.mood <= 1 ? pool.filter(id => SOOTHING.has(id)) : pool;
 }
 
+/** `n` is how many times the app has been opened (or the view changed), so it walks on. */
 export function sceneFor(o: { hour: number; mood: number | null; n: number }): SceneId {
   const pool = scenesFor(o);
   return pool[((o.n % pool.length) + pool.length) % pool.length];
 }
+
+export const isSceneId = (v: unknown): v is SceneId => typeof v === 'string' && v in SCENE_NAMES;

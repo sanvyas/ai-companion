@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { s } from './css';
-import { SCENE_NAMES, isDark, sceneFor, type SceneId } from './scenes';
+import { SCENE_NAMES, isDark, isSceneId, sceneFor, type SceneId } from './scenes';
 
 // A small illustrated view for Home. A different place each time the app is opened; a tap shows the next one. Each is drawn
 // in the same soft way and moves very slowly (nothing moves for people who ask for that, see v3.css).
@@ -121,9 +121,71 @@ function StarryHills() {
   </>);
 }
 
+function Himalaya() {
+  const flags = ['#E8584A', '#F4C95D', '#FFFFFF', '#4E9F7A', '#3F6FB5'];
+  return (<>
+    <Sky id="sc-h" a="#BBD3EC" b="#F7C79F" />
+    <g className="v3-glow" style={{ transformOrigin: '178px 78px' }}><circle cx="178" cy="78" r="56" fill="#FFE7B8" opacity=".5" /><circle cx="178" cy="78" r="26" fill="#FFF3CF" opacity=".8" /><circle cx="178" cy="80" r="15" fill="#FFD27A" /></g>
+    <path d="M0 92 L48 52 L82 78 L128 36 L176 88 L214 58 L262 30 L312 76 L342 62 V110 H0z" fill="#EAB7A8" />
+    <path d="M128 36 L116 52 L128 46 L138 56z M262 30 L249 48 L262 42 L274 52z M48 52 L40 62 L48 58 L55 64z" fill="#FFFFFF" opacity=".95" />
+    <path d="M0 112 L36 84 L74 104 L120 72 L170 108 L222 78 L270 104 L316 84 L342 100 V124 H0z" fill="#8C8DB8" />
+    <g className="v3-drift" opacity=".55"><ellipse cx="70" cy="108" rx="44" ry="7" fill="#FFFFFF" /></g>
+    <g className="v3-drift2" opacity=".5"><ellipse cx="250" cy="116" rx="50" ry="8" fill="#FFFFFF" /></g>
+    <path d="M0 128 C70 112 130 126 200 122 C260 118 310 112 342 118 V150 H0z" fill="#4C5B7C" />
+    <path d="M14 130 V92 M326 118 V80" stroke="#2F3A55" strokeWidth="2.4" strokeLinecap="round" />
+    <path d="M14 94 Q170 114 326 82" stroke="#2F3A55" strokeWidth="1.2" fill="none" />
+    {flags.map((c, i) => { const t = (i + 0.7) / (flags.length + 0.4); const x = 14 + t * 312; const y = 94 + Math.sin(t * Math.PI) * 14 - t * 12 + 2; return <path key={i} className="v3-sway-tree" d={`M${x} ${y} l9 0 l-1 11 l-8 0z`} fill={c} style={{ animationDelay: `${i * 0.5}s` }} />; })}
+    {[[88, 52], [102, 46], [226, 40]].map(([x, y], i) => <path key={i} d={`M${x} ${y} q3 -3 6 0 q3 -3 6 0`} stroke="#3B4560" strokeWidth="1.3" fill="none" strokeLinecap="round" />)}
+  </>);
+}
+
+function Camel({ x, y, k = 1 }: { x: number; y: number; k?: number }) {
+  return (<g transform={`translate(${x} ${y}) scale(${k})`} fill="#7A4A32" stroke="#7A4A32" strokeLinecap="round">
+    <ellipse cx="0" cy="-12" rx="11" ry="5.5" stroke="none" /><path d="M-4 -16 q3 -9 7 0z M10 -14 q6 -2 8 -12 q1 -4 5 -4 l3 2 l-3 3 q-2 8 -9 16z" stroke="none" />
+    <path d="M-8 -9 V0 M-3 -8 V0 M4 -8 V0 M9 -9 V0" strokeWidth="1.8" fill="none" />
+  </g>);
+}
+
+function Desert() {
+  return (<>
+    <Sky id="sc-d" a="#A9B9DA" b="#F8D9B7" />
+    {[[40, 14], [96, 26], [170, 10], [230, 22], [300, 12], [130, 40]].map(([x, y], i) => <circle key={i} className="v3-twinkle" cx={x} cy={y} r="1.2" fill="#FFFFFF" style={{ animationDelay: `${i * 0.5}s` }} />)}
+    <g className="v3-glow" style={{ transformOrigin: '252px 84px' }}><circle cx="252" cy="84" r="40" fill="#FFE2B0" opacity=".5" /><circle cx="252" cy="84" r="16" fill="#FFD08A" /></g>
+    <path d="M0 96 C60 80 120 96 190 90 C250 84 300 82 342 90 V150 H0z" fill="#EEC399" />
+    <path d="M0 112 C70 92 140 110 210 106 C270 102 310 100 342 104 V150 H0z" fill="#DD9F72" />
+    <Camel x={70} y={100} k={1} /><Camel x={92} y={99} k={0.95} /><Camel x={114} y={100} k={0.9} />
+    <path d="M0 132 C80 112 150 130 220 124 C280 118 320 116 342 120 V150 H0z" fill="#BF7F55" />
+    {[[40, 140], [120, 136], [210, 142], [290, 134]].map(([x, y], i) => <path key={i} d={`M${x} ${y} q10 -4 20 0`} stroke="#9F6342" strokeWidth="1.4" fill="none" strokeLinecap="round" opacity=".7" />)}
+    <path className="v3-drift" d="M10 122 h26 M200 118 h30" stroke="#FFFFFF" strokeWidth="1.2" opacity=".3" strokeLinecap="round" />
+  </>);
+}
+
+function Temple() {
+  const tiers = [0, 1, 2, 3, 4, 5];
+  return (<>
+    <Sky id="sc-p" a="#4B4A86" b="#F5A874" />
+    <circle className="v3-twinkle" cx="40" cy="22" r="1.5" fill="#FFFFFF" /><circle className="v3-twinkle" cx="300" cy="18" r="1.3" fill="#FFFFFF" style={{ animationDelay: '1s' }} />
+    <g className="v3-glow" style={{ transformOrigin: '70px 92px' }}><circle cx="70" cy="92" r="34" fill="#FFD9A0" opacity=".4" /><circle cx="70" cy="92" r="13" fill="#FFC27A" /></g>
+    <g fill="#2E2A55">
+      <path d="M0 108 C60 98 120 106 342 100 V150 H0z" fill="#3A3566" />
+      <rect x="132" y="86" width="96" height="30" /><rect x="124" y="108" width="112" height="8" /><rect x="118" y="114" width="124" height="8" />
+      {tiers.map(i => <path key={i} d={`M${180 - (46 - i * 7)} ${86 - i * 9} H${180 + (46 - i * 7)} L${180 + (40 - i * 7)} ${77 - i * 9} H${180 - (40 - i * 7)}z`} />)}
+      <path d="M170 33 q10 -14 20 0 v6 h-20z" /><rect x="179" y="14" width="2.4" height="20" /><path d="M181 14 l10 3 l-10 3z" fill="#F0A860" />
+      <rect x="92" y="94" width="26" height="22" /><path d="M90 94 L105 76 L120 94z" /><rect x="242" y="94" width="26" height="22" /><path d="M240 94 L255 76 L270 94z" />
+    </g>
+    <path d="M170 116 v-14 q10 -12 20 0 v14z" fill="#F7B65E" />
+    {[104, 150, 210, 256].map((x, i) => <g key={x} className="v3-twinkle" style={{ animationDelay: `${i * 0.4}s` }}><circle cx={x} cy="124" r="6" fill="#FFC96B" opacity=".35" /><ellipse cx={x} cy="124" rx="2" ry="3" fill="#FFD983" /></g>)}
+    <rect y="126" width={W} height="24" fill="#3B3868" />
+    <rect y="126" width={W} height="24" fill="#F4A874" opacity=".22" />
+    {[134, 142].map((y, i) => <path key={y} className={i ? 'v3-drift2' : 'v3-drift'} d={`M${60 + i * 80} ${y} q8 -3 16 0 t16 0`} stroke="#FFD9A0" strokeWidth="1.4" fill="none" opacity=".45" strokeLinecap="round" />)}
+    <g stroke="#2E2A55" strokeWidth="1.2" fill="none" strokeLinecap="round"><path d="M230 40 q3 -3 6 0 q3 -3 6 0" /><path d="M248 50 q2 -2 4 0 q2 -2 4 0" /></g>
+  </>);
+}
+
 export const ART: Record<SceneId, (n: boolean) => React.ReactElement> = {
   meadow: n => <Meadow night={n} />, sea: n => <Sea night={n} />, mountains: n => <Mountains night={n} />, forest: () => <Forest />,
   backwaters: n => <Backwaters night={n} />, rain: () => <Rain />, lotus: n => <Lotus night={n} />, stars: () => <StarryHills />,
+  himalaya: () => <Himalaya />, desert: () => <Desert />, temple: () => <Temple />,
 };
 
 /** The app has been opened this many times on this device. It moves on by one each time and walks through the places. */
@@ -132,7 +194,9 @@ let opens = (() => { try { const n = Number(localStorage.getItem('saathi.v3.view
 export function Scene({ mood, height = 150 }: { mood: number | null; height?: number }) {
   const [extra, setExtra] = useState(0);
   const hour = new Date().getHours();
-  const id = sceneFor({ hour, mood, n: opens + extra });
+  // ?scene=desert shows that place (for trying them out); it still moves on when tapped.
+  const asked = new URLSearchParams(location.search).get('scene');
+  const id = asked && isSceneId(asked) && extra === 0 ? asked : sceneFor({ hour, mood, n: opens + extra });
   const name = SCENE_NAMES[id];
   const night = isDark(hour);
   return (
