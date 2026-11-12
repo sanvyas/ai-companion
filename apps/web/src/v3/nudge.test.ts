@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { NUDGES, dayNumber, nudgesFor, type NudgeId } from './nudge';
+import { NUDGES, dayNumber, nudgeText, nudgesFor, type NudgeId } from './nudge';
 
 const week = (mood: number | null, hour: number) => Array.from({ length: 28 }, (_, day) => nudgesFor({ hour, mood, day })[0]);
 
@@ -39,5 +39,20 @@ describe('what Home offers', () => {
   it('turns a clock into a day number that changes at the person’s midnight', () => {
     const a = dayNumber(new Date(2026, 10, 12, 23, 59)), b = dayNumber(new Date(2026, 10, 13, 0, 1));
     expect(b - a).toBe(1);
+  });
+  it('fits the words to the mood: the chest line is only for a heavy day', () => {
+    expect(nudgeText('talk', 0).title).toMatch(/chest/);
+    expect(nudgeText('talk', 1).title).toMatch(/chest/);
+    for (const mood of [null, 2, 3, 4]) expect(nudgeText('talk', mood).title, `mood ${mood}`).not.toMatch(/chest/);
+    expect(nudgeText('talk', 3).title).toBe('Tell me about your day.');
+    expect(nudgeText('talk', 4).title).toBe('Share the good news?');
+  });
+  it('never asks someone who feels fine to write out a heavy day, or someone who feels rough what went well', () => {
+    for (const mood of [3, 4]) { const w = nudgeText('write', mood); expect(w.title + w.sub).not.toMatch(/write it out|only you/i); }
+    for (const mood of [0, 1]) { const w = nudgeText('write', mood); expect(w.title + w.sub).not.toMatch(/went well|good mood|feeling/i); }
+    expect(nudgeText('speak', 4).title).toMatch(/went well/);
+  });
+  it('keeps every fitted line short, for every suggestion and mood', () => {
+    for (const id of Object.keys(NUDGES) as NudgeId[]) for (const mood of [null, 0, 1, 2, 3, 4]) { const n = nudgeText(id, mood); expect(n.title.split(' ').length, `${id} ${mood}`).toBeLessThanOrEqual(8); expect(n.sub.split(' ').length).toBeLessThanOrEqual(7); expect(n.cta.length).toBeGreaterThan(1); }
   });
 });

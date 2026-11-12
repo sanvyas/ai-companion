@@ -50,3 +50,23 @@ export function nudgesFor(o: { hour: number; mood: number | null; day: number; s
 
 /** A whole number for the calendar day on the person's own clock. */
 export const dayNumber = (d = new Date()) => Math.floor((d.getTime() - d.getTimezoneOffset() * 60_000) / 86_400_000);
+
+/**
+ * The words on the card, fitted to how they said they feel. "Want to get it off your chest?" is for a heavy day; on a good one
+ * the same door opens with "Share the good news?". Short sentences either way.
+ */
+export function nudgeText(id: NudgeId, mood: number | null): NudgeText {
+  const base = NUDGES[id];
+  const heavy = mood !== null && mood <= 1, flat = mood === 2, okay = mood === 3, great = mood === 4;
+  const say = (title: string, sub: string): NudgeText => ({ ...base, title, sub });
+  switch (id) {
+    case 'talk': return heavy ? base : flat ? say('How’s your day going?', 'Tell me, or just chat.') : okay ? say('Tell me about your day.', 'The good and the so-so.') : great ? say('Share the good news?', 'I’d love to hear it.') : say('Want to chat?', 'About anything.');
+    case 'write': return heavy ? say('Want to write it out?', 'Only you will read it.') : okay ? say('What went well today?', 'Even something small.') : great ? say('Keep this feeling.', 'Note what went well.') : base;
+    case 'speak': return okay || great ? say('Say what went well.', 'I’ll write it down.') : base;
+    case 'breathe': return okay || great ? say('A calm minute?', 'Follow the circle.') : base;
+    case 'calm': return heavy || mood === null ? base : say('Five quiet minutes?', 'Just settle in.');
+    case 'sit': return heavy ? base : say('A quiet moment?', 'Sit with me.');
+    case 'walk': return great ? say('Take the good mood outside?', 'I’ll come along.') : base;
+    default: return base;
+  }
+}

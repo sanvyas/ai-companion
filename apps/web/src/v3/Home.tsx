@@ -11,7 +11,7 @@ import { BellButton } from './Inbox';
 import { SceneBackdrop } from './Scenes';
 import { partOf, type Part } from './theme';
 import { MOODS, greetFor } from './moods';
-import { NUDGES, dayNumber, nudgesFor, type NudgeId } from './nudge';
+import { NUDGES, dayNumber, nudgeText, nudgesFor, type NudgeId } from './nudge';
 import { loadMonthData, useMonthData } from './month-data';
 import { setV3 } from './ui';
 
@@ -48,9 +48,8 @@ export function Home() {
   const order = useMemo(() => nudgesFor({ hour, mood, day: dayNumber(), swaps }).filter(id => id !== 'step' || undone.length > 0 || plan.length === 0), [hour, mood, swaps, undone.length, plan.length]);
   const main: NudgeId = order[0];
   const text = useMemo(() => {
-    const t = { ...NUDGES[main] };
+    const t = { ...nudgeText(main, mood) };
     if (main === 'step') { t.sub = undone[0] ? undone[0].label : 'Start with a glass of water.'; t.cta = undone[0] ? 'Done it' : 'Add it'; }
-    if (main === 'write' && mood !== null && mood >= 3) t.sub = 'What went well today?';
     return t;
   }, [main, undone, mood]);
 
