@@ -7,7 +7,7 @@ body{background:#FBF7F0}
   --accent:#245A52; --accent-ink:#245A52; --accent2:#4F9488; --t1:#DCEBE6; --hero1:#2F7A6D; --bg2:#F1EBE0;
   --p-rose:#FBE4DA; --p-mint:#E0EFE5; --p-butter:#FCEFCF; --p-sky:#D5E6F2; --page:linear-gradient(180deg,#F9DFCB 0px,#FBF7F0 440px);
   --tint:#F1EAF8; --wash:#F7F2FB;
-  --serif:'Fraunces Variable','Noto Serif Devanagari',Georgia,serif; --sans:'Plus Jakarta Sans Variable','Noto Sans Devanagari',system-ui,sans-serif;
+  --serif:'Newsreader Variable','Noto Serif Devanagari',Georgia,serif; --sans:'Inter Variable','Noto Sans Devanagari',system-ui,sans-serif;
   font-family:var(--sans); color:var(--ink); -webkit-font-smoothing:antialiased; height:100%;
 }
 .v3 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -27,7 +27,7 @@ body{background:#FBF7F0}
 .v3 .screen{position:absolute;inset:0}
 
 /* Headline type used across screens */
-.v3 .serif{font-family:var(--serif);font-weight:500;font-variation-settings:'SOFT' 100;letter-spacing:-.018em;font-size-adjust:.4;text-wrap:balance}
+.v3 .serif{font-family:var(--serif);font-weight:420;letter-spacing:-.012em;font-optical-sizing:auto;text-wrap:balance}
 .v3 .serif em,.v3 .serif i{font-style:italic}
 .v3 .kicker{font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
 
@@ -79,3 +79,14 @@ html[data-reduce="true"] .v3 *{animation-duration:.001ms!important;animation-ite
   .v3 .wel-b3{display:none}
   .v3 .wel-av{zoom:.8;bottom:40px!important}
 }
+
+/* The weather on the mood screen moves slowly. Stillness for people who ask for it comes from the rules above. */
+.v3 .wx-float,.v3 .wx-wind,.v3 .wx-spin,.v3 .wx-flicker{transform-box:fill-box;transform-origin:center}
+.v3 .wx-float{animation:wxFloat 6s ease-in-out infinite}
+.v3 .wx-wind{animation:wxWind 5s ease-in-out infinite}
+.v3 .wx-spin{animation:wxSpin 90s linear infinite}
+.v3 .wx-flicker{animation:wxFlicker 4.5s steps(1,end) infinite}
+@keyframes wxFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.6px)}}
+@keyframes wxWind{0%,100%{transform:translateX(-1.2px)}50%{transform:translateX(1.6px)}}
+@keyframes wxSpin{to{transform:rotate(360deg)}}
+@keyframes wxFlicker{0%,100%{opacity:1}86%{opacity:.35}90%{opacity:1}94%{opacity:.5}}

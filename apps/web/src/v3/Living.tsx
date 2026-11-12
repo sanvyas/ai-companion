@@ -23,7 +23,8 @@ function Flower({ x, y, k, color, i }: { x: number; y: number; k: number; color:
   );
 }
 
-export function Living() {
+/** `calm` is the quiet version for Home: no butterflies, and a shorter picture. Everything else is the same garden. */
+export function Living({ calm = false, height = 176 }: { calm?: boolean; height?: number } = {}) {
   const mood = useStore(x => x.mood);
   const part = partOf(new Date().getHours());
   const [a, b] = SKY[part];
@@ -40,7 +41,7 @@ export function Living() {
     setTimeout(() => setPetals(p => p.filter(q => q.id !== id)), 1600);
   };
   return (
-    <div role="img" aria-label="A small garden, swaying gently in the light" onPointerDown={touch} style={{ position: 'relative', height: 176, borderRadius: 28, overflow: 'hidden', background: `linear-gradient(180deg,${a},${b})`, boxShadow: '0 12px 30px rgba(30,36,48,.08)', touchAction: 'manipulation' }}>
+    <div role="img" aria-label="A small garden, swaying gently in the light" onPointerDown={touch} style={{ position: 'relative', height, borderRadius: 28, overflow: 'hidden', background: `linear-gradient(180deg,${a},${b})`, boxShadow: '0 12px 30px rgba(30,36,48,.08)', touchAction: 'manipulation' }}>
       <svg viewBox="0 0 342 176" preserveAspectRatio="xMidYMax slice" width="100%" height="100%" aria-hidden="true" focusable="false" style={{ position: 'absolute', inset: 0 }}>
         <defs><radialGradient id="v3sun"><stop offset="0" stopColor="#FFF7D6" stopOpacity="1" /><stop offset="1" stopColor="#FFF7D6" stopOpacity="0" /></radialGradient></defs>
         <g className="v3-glow" style={{ transformOrigin: '270px 44px' }}>
@@ -56,8 +57,8 @@ export function Living() {
         <path d="M0 150 C70 136 140 148 210 146 C270 144 310 140 342 144 V176 H0z" fill="#86BD8F" />
         {blades.map((g, i) => <path key={i} className="v3-sway" d={`M${g.x} 176 q-1 -${g.h / 2} 2 -${g.h}`} stroke="#5E9A66" strokeWidth="1.6" fill="none" strokeLinecap="round" style={{ animationDelay: `${g.d}s` }} />)}
         {SPOTS.map(([x, y, k], i) => <Flower key={i} x={x} y={y + 8} k={k * 0.8} color={FLOWER[i]} i={i} />)}
-        <g className="v3-fly"><g transform="translate(0 0)"><ellipse cx="-4" cy="0" rx="4" ry="5.5" fill="#F2B33D" className="v3-wing" /><ellipse cx="4" cy="0" rx="4" ry="5.5" fill="#E8789B" className="v3-wing" /><rect x="-.8" y="-4" width="1.6" height="8" rx=".8" fill="#2A2E45" /></g></g>
-        {extra && <g className="v3-fly v3-fly2"><g><ellipse cx="-3.4" cy="0" rx="3.4" ry="4.6" fill="#B7A6F0" className="v3-wing" /><ellipse cx="3.4" cy="0" rx="3.4" ry="4.6" fill="#7FD1C3" className="v3-wing" /><rect x="-.7" y="-3.4" width="1.4" height="6.8" rx=".7" fill="#2A2E45" /></g></g>}
+        {!calm && <g className="v3-fly"><g transform="translate(0 0)"><ellipse cx="-4" cy="0" rx="4" ry="5.5" fill="#F2B33D" className="v3-wing" /><ellipse cx="4" cy="0" rx="4" ry="5.5" fill="#E8789B" className="v3-wing" /><rect x="-.8" y="-4" width="1.6" height="8" rx=".8" fill="#2A2E45" /></g></g>}
+        {extra && !calm && <g className="v3-fly v3-fly2"><g><ellipse cx="-3.4" cy="0" rx="3.4" ry="4.6" fill="#B7A6F0" className="v3-wing" /><ellipse cx="3.4" cy="0" rx="3.4" ry="4.6" fill="#7FD1C3" className="v3-wing" /><rect x="-.7" y="-3.4" width="1.4" height="6.8" rx=".7" fill="#2A2E45" /></g></g>}
       </svg>
       {petals.map(p => (
         <span key={p.id} aria-hidden="true" style={{ position: 'absolute', left: `${p.x}%`, bottom: 36, pointerEvents: 'none' }}>

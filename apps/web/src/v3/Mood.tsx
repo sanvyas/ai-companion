@@ -1,4 +1,4 @@
-import { Companion } from '../components/figures';
+import { useRef, useState } from 'react';
 import { go } from '../state/actions';
 import { useStore } from '../state/store';
 import { greetFor, MOODS, WHY } from './moods';
@@ -6,37 +6,62 @@ import { s } from './css';
 import { Svg, I } from './icons';
 import { setMood, skipCheckin } from './actions';
 import { Weather, WEATHER_NAMES } from './weather';
-import { lastMood, setV3, useV3, whenWords } from './ui';
+import { lastMood, setV3, useV3 } from './ui';
 
-/** The first thing when they come back after a while: how are you, right now? One tap, in words and a face, or skip. */
+/** How are you, right now? One calm choice at a time: the weather for each answer is shown large, you move between them, and say "That's me". */
 export function MoodScreen() {
   const nick = useStore(x => x.nick);
-  const comp = useStore(x => x.compName);
-  const look = useStore(x => x.look);
   const now = new Date();
   const last = lastMood();
   const recent = last && Date.now() - last.at < 3 * 86_400_000 ? last : null;
   const greet = greetFor(now.getHours());
+  const [sel, setSel] = useState<number>(recent ? recent.mood : 2);
+  const start = useRef<number | null>(null);
+  const m = MOODS[sel];
+  const move = (d: number) => setSel(v => Math.min(MOODS.length - 1, Math.max(0, v + d)));
+  const confirm = () => { void setMood(sel); setV3({ over: 'why', why: [] }); };
   return (
-    <div className="screen" role="main" aria-label="How are you" style={{ ...s('background:var(--page);display:flex;flex-direction:column;padding:64px 24px 32px;animation:kFade 600ms'), overflow: 'auto' }}>
-      <div style={s('display:flex;align-items:center;gap:12px')}>
-        <div style={s('width:56px;height:56px;border-radius:50%;overflow:hidden;background:var(--card);display:grid;place-items:center;box-shadow:0 8px 20px rgba(30,36,48,.08)')}><Companion look={look} size={56} /></div>
-        <span style={s('font-size:17px;color:var(--muted);font-weight:600')}>{comp}</span>
+    <div className="screen" role="main" aria-label="How are you" style={{ ...s('background:var(--page);display:flex;flex-direction:column;padding:52px 28px 36px;animation:kFade 700ms'), overflow: 'auto' }}>
+      <div style={s('display:flex;align-items:center;justify-content:space-between;min-height:44px')}>
+        <span className="kicker" style={s('letter-spacing:.14em')}>{greet}{nick ? `, ${nick}` : ''}</span>
+        <button onClick={() => { skipCheckin(); setV3({ over: null }); go('today'); }} data-track="mood.skip" style={s('min-height:44px;padding:0 0 0 12px;border:none;background:none;color:var(--muted);font-size:16px;font-weight:500')}>Not now</button>
       </div>
-      <h1 className="serif" style={s('font-size:38px;line-height:1.1;margin:22px 0 0')}>{greet}{nick ? `, ${nick}` : ''}.<br />How are you feeling?</h1>
-      <p style={s('font-size:17px;line-height:1.45;color:var(--muted);margin:12px 0 0')}>
-        {recent ? `${whenWords(recent.at, now) === 'earlier today' ? 'Earlier today' : `Last time, ${whenWords(recent.at, now)},`} you said ${MOODS[recent.mood].label.toLowerCase()}. How is it right now?` : 'Right now, this minute. There’s no wrong answer.'}
-      </p>
-      <div style={s('display:flex;flex-direction:column;gap:10px;margin-top:24px')} role="group" aria-label="How are you feeling">
-        {MOODS.map((m, i) => (
-          <button key={m.label} onClick={() => { void setMood(i); setV3({ over: 'why', why: [] }); }} data-track={`mood.${i}`} style={s('height:68px;border-radius:34px;border:none;background:var(--card);display:flex;align-items:center;gap:16px;padding:0 22px 0 12px;box-shadow:0 8px 22px rgba(30,36,48,.06);text-align:left')}>
-            <Weather mood={i} size={46} />
-            <span style={s('font-size:19px;font-weight:600;flex:1')}>{m.label}</span>
-            <span style={s('font-size:15px;color:var(--muted);text-align:right')}>{WEATHER_NAMES[i]} · {m.hint}</span>
+
+      <h1 className="serif" style={s('font-size:42px;line-height:1.08;margin:18px 0 0;font-weight:400')}>How are you,<br />right now?</h1>
+
+      <div
+        onPointerDown={e => { start.current = e.clientX; }}
+        onPointerUp={e => { if (start.current !== null) { const d = e.clientX - start.current; if (Math.abs(d) > 36) move(d < 0 ? 1 : -1); } start.current = null; }}
+        style={s('flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;touch-action:pan-y')}
+      >
+        <div key={sel} style={s('position:relative;width:236px;height:236px;display:grid;place-items:center;animation:kPop 520ms cubic-bezier(.22,1,.36,1)')}>
+          <svg width="236" height="236" viewBox="0 0 236 236" aria-hidden="true" focusable="false" style={{ position: 'absolute', inset: 0 }}>
+            <circle cx="118" cy="118" r="116" fill="none" stroke="var(--line)" strokeWidth="1" />
+            <circle cx="118" cy="118" r="92" fill="none" stroke="var(--line)" strokeWidth="1" opacity=".7" />
+          </svg>
+          <Weather mood={sel} size={176} live />
+        </div>
+        <div aria-live="polite" style={s('text-align:center;margin-top:10px')}>
+          <div className="serif" style={s('font-size:40px;line-height:1.1;font-weight:400')}>{m.label}</div>
+          <div style={s('font-size:16px;color:var(--muted);margin-top:6px')}>{WEATHER_NAMES[sel]} · {m.hint}</div>
+        </div>
+      </div>
+
+      <div
+        role="radiogroup" aria-label="How are you feeling"
+        onKeyDown={e => { if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); move(1); } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); move(-1); } }}
+        style={s('position:relative;display:flex;justify-content:space-between;align-items:center;margin:8px 4px 0')}
+      >
+        <span aria-hidden="true" style={s('position:absolute;left:24px;right:24px;top:50%;height:1px;background:var(--line)')} />
+        {MOODS.map((x, i) => (
+          <button key={x.label} role="radio" aria-checked={sel === i} aria-label={`${x.label}, ${WEATHER_NAMES[i].toLowerCase()}`} tabIndex={sel === i ? 0 : -1} onClick={() => setSel(i)} data-track={`mood.${i}`} style={s(`position:relative;width:52px;height:52px;border-radius:50%;border:${sel === i ? '1.5px solid var(--accent)' : '1.5px solid transparent'};background:var(--bg);display:grid;place-items:center;padding:0;transition:border-color 200ms`)}>
+            <span style={{ display: 'grid', opacity: sel === i ? 1 : 0.55, transform: sel === i ? 'scale(1.08)' : 'scale(.86)', transition: 'transform 240ms, opacity 240ms' }}><Weather mood={i} size={34} /></span>
           </button>
         ))}
       </div>
-      <button onClick={() => { skipCheckin(); setV3({ over: null }); go('today'); }} data-track="mood.skip" style={s('margin-top:auto;padding-top:12px;height:56px;border:none;background:none;color:var(--muted);font-size:17px;font-weight:600')}>Not now</button>
+      <div aria-hidden="true" style={s('display:flex;justify-content:space-between;margin:8px 0 0;font-size:13px;color:var(--muted);font-weight:500')}><span>Heavy</span><span>Light</span></div>
+
+      <button onClick={confirm} data-track="mood.confirm" style={s('margin-top:24px;height:58px;border-radius:29px;border:none;background:var(--accent);color:#FFFFFF;font-size:18px;font-weight:600;letter-spacing:.01em')}>That’s me</button>
     </div>
   );
 }

@@ -80,7 +80,8 @@ describe('the third design', () => {
     // The first thing is one tap on how you are, and nothing else is asked.
     await page.getByRole('heading', { level: 1 }).filter({ hasText: 'How are you' }).waitFor();
     problems.push(...await scan(page, 'mood'));
-    await page.getByRole('button', { name: /^Anxious/ }).click();
+    await page.getByRole('radio', { name: /^Anxious/ }).click();
+    await page.getByRole('button', { name: 'That’s me' }).click();
     await page.getByRole('heading', { level: 1 }).filter({ hasText: 'What’s making it feel anxious' }).waitFor();
     problems.push(...await scan(page, 'why'));
     await page.getByRole('button', { name: 'Work', exact: true }).click();
@@ -232,10 +233,11 @@ describe('the third design', () => {
     problems.push(...await scan(page, 'consent'));
     await page.getByRole('button', { name: /Say hello/ }).click();
     // The first thing in the app is how they are, by name.
-    await page.getByRole('heading', { level: 1 }).filter({ hasText: 'How are you feeling' }).waitFor({ timeout: 15_000 });
+    await page.getByRole('heading', { level: 1 }).filter({ hasText: 'How are you' }).waitFor({ timeout: 15_000 });
     await page.getByText(/Meera/).first().waitFor();
     problems.push(...await scan(page, 'first mood'));
-    await page.getByRole('button', { name: /^Okay/ }).click();
+    await page.getByRole('radio', { name: /^Okay/ }).click();
+    await page.getByRole('button', { name: 'That’s me' }).click();
     await page.getByRole('button', { name: /^(Continue|Skip this)$/ }).click();
     await page.getByRole('button', { name: /^Feeling okay/ }).waitFor();
     problems.push(...await scan(page, 'first home'));

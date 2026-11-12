@@ -1,8 +1,8 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import '@fontsource-variable/plus-jakarta-sans/wght.css';
-import '@fontsource-variable/fraunces/soft.css';
-import '@fontsource-variable/fraunces/soft-italic.css';
+import '@fontsource-variable/inter/wght.css';
+import '@fontsource-variable/newsreader/opsz.css';
+import '@fontsource-variable/newsreader/opsz-italic.css';
 import { AppV3 } from '../v3/AppV3';
 import '../v3/v3.css';
 

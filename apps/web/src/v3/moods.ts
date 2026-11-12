@@ -12,7 +12,8 @@ export const NO_MOOD = { tint: '#ECE8F8', color: '#D9D2C5', shape: '50%' };
 
 export const WHY = ['Work', 'Sleep', 'Family', 'Friends', 'Love', 'Health', 'Money', 'Studies', 'Not sure'];
 
-export const greetFor = (h: number) => (h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening');
+/** Matches the parts of the day the colours follow: morning 5 to 11, afternoon 11 to 4, evening after that. */
+export const greetFor = (h: number) => (h >= 5 && h < 11 ? 'Good morning' : h >= 11 && h < 16 ? 'Good afternoon' : 'Good evening');
 
 /** The line on the check-in card: gentle, and about how they said they were. */
 export const checkLine = (mood: number | null, nick: string) => {
