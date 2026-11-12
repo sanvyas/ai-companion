@@ -8,7 +8,7 @@ import { I, Svg } from './icons';
 import { HelpButton } from './Chrome';
 import { Weather } from './weather';
 import { BellButton } from './Inbox';
-import { Living } from './Living';
+import { Scene } from './Scenes';
 import { partOf, type Part } from './theme';
 import { MOODS, greetFor } from './moods';
 import { NUDGES, dayNumber, nudgesFor, type NudgeId } from './nudge';
@@ -19,6 +19,8 @@ export const openGame = (game: 'rangoli' | 'balloon' | 'fruit' | 'room') => setV
 
 const LINE: Record<Part, string> = { morning: 'No rush this morning.', afternoon: 'A quiet afternoon is fine.', evening: 'Slow evening. Take your time.', night: 'Late night. I’m here.' };
 
+/** A soft colour for each, so the options read as different things at a glance. */
+const TINT: Record<NudgeId, string> = { talk: 'var(--p-butter)', write: 'var(--p-rose)', speak: 'var(--p-butter)', step: 'var(--p-mint)', story: 'var(--p-sky)', breathe: 'var(--t1)', calm: 'var(--p-mint)', sit: 'var(--t1)', walk: 'var(--p-mint)', play: 'var(--p-rose)' };
 const ICON: Record<NudgeId, string> = { talk: I.mic, write: I.pen, speak: I.mic, step: I.check, story: I.moon, breathe: I.breathe, calm: I.lotus, sit: I.sit, walk: I.walk, play: I.game };
 /** The short name each suggestion has when it is one of the "or" rows. */
 const ROW: Record<NudgeId, string> = { talk: 'Talk to me', write: 'Write it out', speak: 'Speak a journal', step: 'A tiny step', story: 'Rain story', breathe: 'Breathe', calm: 'Calm my mind', sit: 'Sit with me', walk: 'Walk with me', play: 'Play a little' };
@@ -87,6 +89,8 @@ export function Home() {
         </button>
       </div>
 
+      <Scene mood={mood} height={140} />
+
       {mood === null ? (
         <section aria-label="Check in" style={s('background:var(--card);border-radius:28px;padding:24px;display:flex;flex-direction:column;gap:6px;box-shadow:0 10px 28px rgba(30,36,48,.05)')}>
           <h2 className="serif" style={s('font-size:28px;line-height:1.15;margin:0')}>How are you, right now?</h2>
@@ -105,14 +109,13 @@ export function Home() {
         </section>
       )}
 
-      <section aria-label="Other things to try" style={s('display:flex;flex-direction:column;gap:6px')}>
-        <h2 className="kicker" style={s('margin:0 0 2px 4px')}>Or</h2>
-        <div style={s('background:var(--card);border-radius:24px;box-shadow:0 8px 22px rgba(30,36,48,.04);overflow:hidden')}>
-          {order.slice(1, 4).map((id, i) => (
-            <button key={id} onClick={() => run(id)} data-track={`home.more.${id}`} style={s(`width:100%;min-height:64px;padding:8px 18px;border:0 solid var(--line);border-top-width:${i ? 1 : 0}px;background:none;display:flex;align-items:center;gap:14px;text-align:left`)}>
-              <span aria-hidden="true" style={s('width:36px;height:36px;border-radius:50%;background:var(--t1);display:grid;place-items:center;flex:none')}><Svg d={ICON[id]} size={17} stroke="var(--accent-ink)" /></span>
-              <span style={s('flex:1;font-size:17px;font-weight:600')}>{ROW[id]}</span>
-              <span style={s('font-size:15px;color:var(--muted)')}>{NUDGES[id].meta}</span>
+      <section aria-label="Other things to try" style={s('display:flex;flex-direction:column;gap:10px')}>
+        <h2 className="kicker" style={s('margin:0 0 0 4px')}>Or try</h2>
+        <div style={s('display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px')}>
+          {order.slice(1, 4).map(id => (
+            <button key={id} onClick={() => run(id)} data-track={`home.more.${id}`} style={s('min-height:124px;padding:14px 12px 12px;border:none;border-radius:24px;background:var(--card);box-shadow:0 8px 22px rgba(30,36,48,.06);display:flex;flex-direction:column;align-items:flex-start;gap:10px;text-align:left')}>
+              <span aria-hidden="true" style={s(`width:46px;height:46px;border-radius:50%;background:${TINT[id]};display:grid;place-items:center;flex:none`)}><Svg d={ICON[id]} size={21} stroke="#1E2430" /></span>
+              <span style={s('display:flex;flex-direction:column;gap:2px')}><span style={s('font-size:16px;font-weight:600;line-height:1.2')}>{ROW[id]}</span><span style={s('font-size:13px;color:var(--muted)')}>{NUDGES[id].meta}</span></span>
             </button>
           ))}
         </div>
@@ -123,11 +126,11 @@ export function Home() {
           <h2 className="kicker" style={s('margin:0')}>Tiny steps{plan.length ? ` · ${doneN} of ${plan.length}` : ''}</h2>
           <button onClick={() => go('journey')} style={s('border:none;background:none;font-size:15px;font-weight:600;color:var(--accent-ink);padding:0;min-height:44px')}>All steps</button>
         </div>
-        <div style={s('background:var(--card);border-radius:24px;box-shadow:0 8px 22px rgba(30,36,48,.04);overflow:hidden')}>
+        <div style={s('display:flex;flex-direction:column;gap:8px')}>
           {steps.length === 0 ? (
-            <button onClick={() => { void addPlanItem('Drink a glass of water'); }} style={s('width:100%;min-height:64px;padding:8px 18px;border:none;background:none;text-align:left;font-size:17px;font-weight:600;color:var(--muted)')}>+ Add a tiny step</button>
-          ) : steps.map((p, i) => (
-            <button key={p.id} onClick={() => void togglePlan(p.id)} role="checkbox" aria-checked={p.done} aria-label={p.label} data-track="home.step" style={s(`width:100%;min-height:60px;padding:8px 18px;border:0 solid var(--line);border-top-width:${i ? 1 : 0}px;background:none;display:flex;align-items:center;gap:14px;text-align:left`)}>
+            <button onClick={() => { void addPlanItem('Drink a glass of water'); }} style={s('min-height:56px;padding:0 18px;border:1.5px dashed var(--line);border-radius:20px;background:none;text-align:left;font-size:17px;font-weight:600;color:var(--muted)')}>+ Add a tiny step</button>
+          ) : steps.map(p => (
+            <button key={p.id} onClick={() => void togglePlan(p.id)} role="checkbox" aria-checked={p.done} aria-label={p.label} data-track="home.step" style={s(`min-height:56px;padding:0 18px 0 14px;border:none;border-radius:20px;background:${p.done ? 'transparent' : 'var(--card)'};box-shadow:${p.done ? 'none' : '0 6px 16px rgba(30,36,48,.05)'};display:flex;align-items:center;gap:14px;text-align:left`)}>
               <span style={s(`flex:none;width:26px;height:26px;border-radius:50%;border:2px solid ${p.done ? 'var(--accent)' : 'var(--line)'};background:${p.done ? 'var(--accent)' : 'transparent'};display:grid;place-items:center`)}><Svg d={I.check} size={13} stroke="#FFFFFF" sw={3} style={{ opacity: p.done ? 1 : 0 }} /></span>
               <span style={s(`flex:1;font-size:17px;font-weight:500;text-decoration:${p.done ? 'line-through' : 'none'};color:${p.done ? 'var(--muted)' : 'var(--ink)'}`)}>{p.label}</span>
             </button>
@@ -135,19 +138,18 @@ export function Home() {
         </div>
       </section>
 
-      <Living calm height={132} />
-
       {ev && (
-        <button onClick={() => setV3({ sheet: { id: 'event', eventId: ev.id } })} data-track="home.event" style={s('border:none;background:none;padding:0;min-height:56px;display:flex;align-items:center;gap:14px;text-align:left')}>
-          <span aria-hidden="true" style={s('width:36px;height:36px;border-radius:50%;background:var(--p-rose);display:grid;place-items:center;flex:none')}><Svg d={I.pin} size={17} stroke="#1E2430" /></span>
-          <span style={s('flex:1;display:flex;flex-direction:column')}><span style={s('font-size:17px;font-weight:600')}>{ev.title}</span><span style={s('font-size:15px;color:var(--muted)')}>{dayOf(ev.startsAt)}{city ? ` · ${city}` : ''}</span></span>
+        <button onClick={() => setV3({ sheet: { id: 'event', eventId: ev.id } })} data-track="home.event" style={s('border:none;border-radius:24px;background:var(--card);box-shadow:0 8px 22px rgba(30,36,48,.05);padding:14px 16px;min-height:68px;display:flex;align-items:center;gap:14px;text-align:left')}>
+          <span aria-hidden="true" style={s('width:44px;height:44px;border-radius:50%;background:var(--p-rose);display:grid;place-items:center;flex:none')}><Svg d={I.pin} size={19} stroke="#1E2430" /></span>
+          <span style={s('flex:1;display:flex;flex-direction:column')}><span style={s('font-size:13px;color:var(--muted);font-weight:600')}>Near you · {dayOf(ev.startsAt)}{city ? ` · ${city}` : ''}</span><span style={s('font-size:17px;font-weight:600')}>{ev.title}</span></span>
           <Svg d={I.chev} size={16} sw={2} stroke="var(--muted)" />
         </button>
       )}
 
-      <button onClick={() => go('journey')} data-track="home.month" style={s('border:0 solid var(--line);border-top-width:1px;background:none;padding:16px 0 0;min-height:60px;display:flex;align-items:center;gap:14px;text-align:left')}>
-        <span style={s('flex:1;display:flex;flex-direction:column')}><span style={s('font-size:17px;font-weight:600')}>This month</span><span style={s('font-size:15px;color:var(--muted)')}>{today.length ? `Today added ${today.length} thing${today.length > 1 ? 's' : ''}.` : 'One small thing adds to it.'}</span></span>
-        <Svg d={I.chev} size={16} sw={2} stroke="var(--muted)" />
+      <button onClick={() => go('journey')} data-track="home.month" style={s('border:none;border-radius:24px;background:var(--p-mint);padding:14px 16px;min-height:68px;display:flex;align-items:center;gap:14px;text-align:left')}>
+        <span aria-hidden="true" style={s('width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.7);display:grid;place-items:center;flex:none')}><Svg d={I.month} size={19} stroke="#1E2430" /></span>
+        <span style={s('flex:1;display:flex;flex-direction:column')}><span style={s('font-size:17px;font-weight:600')}>This month</span><span style={s('font-size:15px;color:#3F4A57')}>{today.length ? `Today added ${today.length} thing${today.length > 1 ? 's' : ''}.` : 'One small thing adds to it.'}</span></span>
+        <Svg d={I.chev} size={16} sw={2} />
       </button>
     </div>
   );

@@ -17,8 +17,17 @@ export function MoodScreen() {
   const greet = greetFor(now.getHours());
   const [sel, setSel] = useState<number>(recent ? recent.mood : 2);
   const start = useRef<number | null>(null);
+  const track = useRef<HTMLDivElement>(null);
+  const drag = useRef(false);
   const m = MOODS[sel];
   const move = (d: number) => setSel(v => Math.min(MOODS.length - 1, Math.max(0, v + d)));
+  /** From where a finger is on the slider to the nearest of the five. */
+  const pick = (clientX: number) => {
+    const r = track.current?.getBoundingClientRect();
+    if (!r) return;
+    const i = Math.round(((clientX - r.left) / r.width) * MOODS.length - 0.5);
+    setSel(Math.min(MOODS.length - 1, Math.max(0, i)));
+  };
   const confirm = () => { void setMood(sel); setV3({ over: 'why', why: [] }); };
   return (
     <div className="screen" role="main" aria-label="How are you" style={{ ...s('background:var(--page);display:flex;flex-direction:column;padding:52px 28px 36px;animation:kFade 700ms'), overflow: 'auto' }}>
@@ -47,21 +56,39 @@ export function MoodScreen() {
         </div>
       </div>
 
+      <div style={s('text-align:center;font-size:15px;color:var(--muted);font-weight:500;margin:4px 0 6px')}>Slide, or tap one</div>
+
+      <div
+        ref={track}
+        aria-hidden="true"
+        onPointerDown={e => { e.currentTarget.setPointerCapture(e.pointerId); drag.current = true; pick(e.clientX); }}
+        onPointerMove={e => { if (drag.current) pick(e.clientX); }}
+        onPointerUp={() => { drag.current = false; }}
+        onPointerCancel={() => { drag.current = false; }}
+        style={s('position:relative;height:60px;touch-action:none;cursor:grab;margin:0')}
+      >
+        <span style={s('position:absolute;left:10%;right:10%;top:50%;height:8px;margin-top:-4px;border-radius:4px;background:var(--line)')} />
+        <span style={{ position: 'absolute', left: '10%', top: '50%', height: 8, marginTop: -4, borderRadius: 4, background: 'var(--accent)', width: `${(sel / (MOODS.length - 1)) * 80}%`, transition: drag.current ? 'none' : 'width 220ms cubic-bezier(.22,1,.36,1)' }} />
+        {MOODS.map((x, i) => <span key={x.label} style={{ position: 'absolute', left: `${10 + i * 20}%`, top: '50%', width: 10, height: 10, marginLeft: -5, marginTop: -5, borderRadius: '50%', background: i <= sel ? 'var(--accent)' : 'var(--line)', boxShadow: '0 0 0 3px var(--bg)' }} />)}
+        <span style={{ position: 'absolute', left: `${10 + sel * 20}%`, top: '50%', width: 52, height: 52, marginLeft: -26, marginTop: -26, borderRadius: '50%', background: '#FFFFFF', border: '2px solid var(--accent)', boxShadow: '0 8px 20px rgba(30,36,48,.18)', display: 'grid', placeItems: 'center', transition: drag.current ? 'none' : 'left 220ms cubic-bezier(.22,1,.36,1)' }}>
+          <Weather mood={sel} size={34} />
+        </span>
+      </div>
+
       <div
         role="radiogroup" aria-label="How are you feeling"
         onKeyDown={e => { if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); move(1); } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); move(-1); } }}
-        style={s('position:relative;display:flex;justify-content:space-between;align-items:center;margin:8px 4px 0')}
+        style={s('display:grid;grid-template-columns:repeat(5,1fr);margin:0 -6px')}
       >
-        <span aria-hidden="true" style={s('position:absolute;left:24px;right:24px;top:50%;height:1px;background:var(--line)')} />
         {MOODS.map((x, i) => (
-          <button key={x.label} role="radio" aria-checked={sel === i} aria-label={`${x.label}, ${WEATHER_NAMES[i].toLowerCase()}`} tabIndex={sel === i ? 0 : -1} onClick={() => setSel(i)} data-track={`mood.${i}`} style={s(`position:relative;width:52px;height:52px;border-radius:50%;border:${sel === i ? '1.5px solid var(--accent)' : '1.5px solid transparent'};background:var(--bg);display:grid;place-items:center;padding:0;transition:border-color 200ms`)}>
-            <span style={{ display: 'grid', opacity: sel === i ? 1 : 0.55, transform: sel === i ? 'scale(1.08)' : 'scale(.86)', transition: 'transform 240ms, opacity 240ms' }}><Weather mood={i} size={34} /></span>
+          <button key={x.label} role="radio" aria-checked={sel === i} aria-label={`${x.label}, ${WEATHER_NAMES[i].toLowerCase()}`} tabIndex={sel === i ? 0 : -1} onClick={() => setSel(i)} data-track={`mood.${i}`} style={s('min-height:64px;padding:6px 0;border:none;background:none;display:flex;flex-direction:column;align-items:center;gap:6px')}>
+            <span style={{ display: 'grid', opacity: sel === i ? 1 : 0.7, transform: sel === i ? 'scale(1)' : 'scale(.9)', transition: 'transform 220ms, opacity 220ms' }}><Weather mood={i} size={32} /></span>
+            <span style={{ fontSize: 14, lineHeight: 1.1, fontWeight: sel === i ? 700 : 500, color: sel === i ? 'var(--ink)' : 'var(--muted)' }}>{x.label}</span>
           </button>
         ))}
       </div>
-      <div aria-hidden="true" style={s('display:flex;justify-content:space-between;margin:8px 0 0;font-size:13px;color:var(--muted);font-weight:500')}><span>Heavy</span><span>Light</span></div>
 
-      <button onClick={confirm} data-track="mood.confirm" style={s('margin-top:24px;height:58px;border-radius:29px;border:none;background:var(--accent);color:#FFFFFF;font-size:18px;font-weight:600;letter-spacing:.01em')}>That’s me</button>
+      <button onClick={confirm} data-track="mood.confirm" style={s('margin-top:18px;height:58px;border-radius:29px;border:none;background:var(--accent);color:#FFFFFF;font-size:18px;font-weight:600;letter-spacing:.01em')}>That’s me</button>
     </div>
   );
 }

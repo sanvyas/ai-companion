@@ -90,3 +90,13 @@ html[data-reduce="true"] .v3 *{animation-duration:.001ms!important;animation-ite
 @keyframes wxWind{0%,100%{transform:translateX(-1.2px)}50%{transform:translateX(1.6px)}}
 @keyframes wxSpin{to{transform:rotate(360deg)}}
 @keyframes wxFlicker{0%,100%{opacity:1}86%{opacity:.35}90%{opacity:1}94%{opacity:.5}}
+
+/* Motion for the scenes on Home */
+.v3 .v3-bob{animation:kScBob 5s ease-in-out infinite}
+@keyframes kScBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.8px)}}
+.v3 .v3-sway-tree{transform-box:fill-box;transform-origin:50% 100%;animation:kScSway 7s ease-in-out infinite}
+@keyframes kScSway{0%,100%{transform:rotate(-.8deg)}50%{transform:rotate(.8deg)}}
+.v3 .v3-rain{animation:kScRain 1.3s linear infinite}
+@keyframes kScRain{0%{transform:translateY(-6px);opacity:0}20%{opacity:.75}100%{transform:translateY(22px);opacity:0}}
+.v3 .v3-ripple{transform-box:fill-box;transform-origin:center;animation:kScRipple 2.4s ease-out infinite}
+@keyframes kScRipple{0%{transform:scale(.3);opacity:.8}100%{transform:scale(1.5);opacity:0}}
