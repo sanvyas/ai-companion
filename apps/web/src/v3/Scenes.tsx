@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { SCENE_NAMES, isDark, isSceneId, scenesFor, type SceneId } from './scenes';
+import { SCENE_NAMES, TOUCH, isDark, isSceneId, scenesFor, type SceneId, type TouchKind } from './scenes';
 
 // A small illustrated view for Home. A different place each time the app is opened; a tap shows the next one. Each is drawn
 // in the same soft way and moves very slowly (nothing moves for people who ask for that, see v3.css).
@@ -249,6 +249,29 @@ export const ART: Record<SceneId, (n: boolean) => React.ReactElement> = {
 /** The app has been opened this many times on this device. It moves on by one each time and walks through the places. */
 let opens = (() => { try { const n = Number(localStorage.getItem('saathi.v3.view') ?? '-1') + 1; localStorage.setItem('saathi.v3.view', String(n)); return n; } catch { return Math.floor(Math.random() * 100); } })();
 
+
+interface Fx { id: number; kind: TouchKind; x: number; y: number; seed: number }
+const rnd = (seed: number, i: number) => { const v = Math.sin(seed * 12.9898 + i * 78.233) * 43758.5453; return v - Math.floor(v); };
+
+/** What a touch leaves behind. Each lasts about a second and a half, then goes. */
+function Touch({ fx }: { fx: Fx }) {
+  const { kind, x, y, seed } = fx;
+  const dot = (i: number, w: number, bg: string, extra: React.CSSProperties = {}) => <span key={i} aria-hidden="true" style={{ position: 'absolute', left: x - w / 2, top: y - w / 2, width: w, height: w, borderRadius: '50%', background: bg, ...extra }} />;
+  if (kind === 'ripple') return <>{[0, 1, 2].map(i => <span key={i} className="fx-ripple" aria-hidden="true" style={{ position: 'absolute', left: x - 18, top: y - 18, width: 36, height: 36, borderRadius: '50%', border: '2px solid rgba(255,255,255,.9)', animationDelay: `${i * 0.22}s` }} />)}</>;
+  if (kind === 'drizzle') return <>
+    {[0, 1].map(i => <span key={i} className="fx-ripple" aria-hidden="true" style={{ position: 'absolute', left: x - 18, top: y - 18, width: 36, height: 36, borderRadius: '50%', border: '2px solid rgba(255,255,255,.9)', animationDelay: `${i * 0.25}s` }} />)}
+    {Array.from({ length: 14 }, (_, i) => <span key={i} className="fx-drop" aria-hidden="true" style={{ position: 'absolute', left: x - 34 + rnd(seed, i) * 68, top: y - 70, width: 2, height: 11, borderRadius: 1, background: 'rgba(255,255,255,.85)', animationDelay: `${rnd(seed, i + 20) * 0.5}s` }} />)}
+  </>;
+  if (kind === 'petals' || kind === 'leaves') {
+    const cols = kind === 'petals' ? ['#F27C9B', '#F4C95D', '#FFFFFF', '#B7A6F0'] : ['#E7A45B', '#D9803F', '#8FBF6A', '#F0C46B'];
+    return <>{Array.from({ length: 9 }, (_, i) => dot(i, 9, cols[i % cols.length], { borderRadius: '50% 0 50% 50%', ['--dx' as string]: `${(rnd(seed, i) - 0.5) * 120}px`, ['--dy' as string]: `${-30 - rnd(seed, i + 9) * 70}px`, animation: 'fxPetal 1.5s ease-out forwards' }))}</>;
+  }
+  if (kind === 'birds') return <>{[0, 1, 2].map(i => <svg key={i} className="fx-bird" width="18" height="10" viewBox="0 0 18 10" aria-hidden="true" style={{ position: 'absolute', left: x - 9, top: y - 5, ['--dx' as string]: `${(i - 1) * 60 + (rnd(seed, i) - 0.5) * 30}px`, animationDelay: `${i * 0.08}s` }}><path className="m-flap" d="M1 7 q4 -7 8 0 q4 -7 8 0" stroke="#3B4560" strokeWidth="1.6" fill="none" strokeLinecap="round" /></svg>)}</>;
+  if (kind === 'dust') return <>{Array.from({ length: 6 }, (_, i) => dot(i, 26, 'rgba(255,238,205,.7)', { filter: 'blur(3px)', ['--dx' as string]: `${(rnd(seed, i) - 0.5) * 80}px`, ['--dy' as string]: `${-8 - rnd(seed, i + 6) * 26}px`, animation: 'fxDust 1.5s ease-out forwards', animationDelay: `${i * 0.05}s` }))}</>;
+  if (kind === 'lantern') return <>{dot(0, 34, 'radial-gradient(circle,#FFE29A 0,#FFB95E 38%,rgba(255,185,94,0) 72%)', { animation: 'fxLantern 3.2s ease-out forwards' })}{dot(1, 7, '#FFF3C8', { animation: 'fxLantern 3.2s ease-out forwards' })}</>;
+  return <svg width="120" height="60" viewBox="0 0 120 60" aria-hidden="true" className="fx-shoot" style={{ position: 'absolute', left: x - 10, top: y - 6 }}><path d="M2 2 L100 46" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" /><circle cx="2" cy="2" r="3" fill="#FFFFFF" /></svg>;
+}
+
 const mod = (n: number, m: number) => ((n % m) + m) % m;
 const CHANGE_EVERY = 20_000;
 const FADE = 1400;
@@ -284,14 +307,27 @@ export function SceneBackdrop({ mood, scrollY = 0, height = 210 }: { mood: numbe
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pool.join(',')]);
   const current = layers[layers.length - 1].id;
+  const [fxs, setFxs] = useState<Fx[]>([]);
+  const last = useRef({ at: 0 });
+  const fxId = useRef(0);
+  const touch = (e: React.PointerEvent<HTMLDivElement>, move: boolean) => {
+    const now = Date.now();
+    if (move && now - last.current.at < 150) return;
+    last.current.at = now;
+    const r = e.currentTarget.getBoundingClientRect();
+    const id = ++fxId.current;
+    setFxs(f => [...f.slice(-9), { id, kind: TOUCH[current], x: e.clientX - r.left, y: e.clientY - r.top, seed: id + 1 }]);
+    setTimeout(() => setFxs(f => f.filter(q => q.id !== id)), 3300);
+  };
   const night = isDark(hour);
   const away = Math.min(1, Math.max(0, scrollY / 170));
   return (
     <>
-      <div role="img" aria-label={`${SCENE_NAMES[current]}, a view that changes by itself`} style={{ position: 'absolute', left: 0, right: 0, top: 0, height, pointerEvents: 'none', transform: `translateY(${scrollY * 0.45}px)`, opacity: 1 - away, WebkitMaskImage: 'linear-gradient(#000 0, #000 52%, transparent 100%)', maskImage: 'linear-gradient(#000 0, #000 52%, transparent 100%)', zIndex: 0 }}>
+      <div role="img" aria-label={`${SCENE_NAMES[current]}, a view that changes by itself. Touch it.`} onPointerDown={e => touch(e, false)} onPointerMove={e => { if (e.buttons || e.pointerType === 'touch') touch(e, true); }} style={{ position: 'absolute', left: 0, right: 0, top: 0, height, touchAction: 'pan-y', userSelect: 'none', transform: `translateY(${scrollY * 0.45}px)`, opacity: 1 - away, WebkitMaskImage: 'linear-gradient(#000 0, #000 52%, transparent 100%)', maskImage: 'linear-gradient(#000 0, #000 52%, transparent 100%)', zIndex: 0 }}>
         {layers.map((l, i) => (
           <svg key={l.key} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" width="100%" height="100%" aria-hidden="true" focusable="false" style={{ position: 'absolute', inset: 0, animation: i > 0 ? `kFade ${FADE}ms ease-in-out` : undefined }}>{ART[l.id](night)}</svg>
         ))}
+        {fxs.map(f => <Touch key={f.id} fx={f} />)}
       </div>
       <span style={{ position: 'absolute', right: 24, top: height - 62, transform: `translateY(${scrollY * 0.45}px)`, opacity: 1 - away, padding: '4px 11px', borderRadius: 12, background: 'rgba(255,255,255,.86)', color: '#1E2430', fontSize: 12, fontWeight: 600, pointerEvents: 'none', zIndex: 1 }}>{SCENE_NAMES[current]}</span>
     </>

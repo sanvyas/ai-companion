@@ -177,7 +177,7 @@ describe('the third design', () => {
     await page.getByRole('dialog', { name: 'For you' }).waitFor();
     problems.push(...await scan(page, 'for you'));
     await page.keyboard.press('Escape');
-    await page.getByRole('button', { name: 'You', exact: true }).click();
+    await page.getByRole('button', { name: 'Account and settings' }).click();
     await page.getByRole('region', { name: 'Your companion' }).waitFor();
     problems.push(...await scan(page, 'you'));
 

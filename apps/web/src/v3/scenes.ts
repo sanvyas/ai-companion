@@ -37,3 +37,10 @@ export function sceneFor(o: { hour: number; mood: number | null; n: number }): S
 }
 
 export const isSceneId = (v: unknown): v is SceneId => typeof v === 'string' && v in SCENE_NAMES;
+
+/** What a touch does in each place: ripples on water, petals in the meadow, falling leaves in the forest, and so on. */
+export type TouchKind = 'ripple' | 'petals' | 'leaves' | 'birds' | 'dust' | 'lantern' | 'shoot' | 'drizzle';
+export const TOUCH: Record<SceneId, TouchKind> = {
+  meadow: 'petals', sea: 'ripple', mountains: 'birds', forest: 'leaves', backwaters: 'ripple', rain: 'drizzle',
+  lotus: 'ripple', stars: 'shoot', himalaya: 'birds', desert: 'dust', temple: 'lantern',
+};

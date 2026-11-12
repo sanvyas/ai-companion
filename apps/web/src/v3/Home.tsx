@@ -77,8 +77,9 @@ export function Home() {
     <div className="screen" data-scroll="1" onScroll={e => setScrollY(e.currentTarget.scrollTop)} style={{ ...s('overflow:auto;background:var(--page);display:flex;flex-direction:column;padding:56px 24px 128px;gap:20px') }}>
       <SceneBackdrop mood={mood} scrollY={scrollY} />
       <header style={s('position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between')}>
-        <button onClick={() => go('you')} aria-label="You" data-track="nav.you" style={s('border:none;background:none;padding:0;width:44px;height:44px;display:grid;place-items:center')}>
-          <span style={s('width:40px;height:40px;border-radius:50%;background:var(--card);overflow:hidden;display:grid;place-items:center')}><Companion look={look} size={40} /></span>
+        <button onClick={() => go('you')} aria-label="Account and settings" data-track="nav.you" style={s('display:flex;align-items:center;gap:8px;height:44px;padding:0 16px 0 5px;border:none;border-radius:22px;background:var(--card);box-shadow:0 4px 14px rgba(30,36,48,.14);font-size:15px;font-weight:700;color:var(--ink)')}>
+          <span style={s('width:34px;height:34px;border-radius:50%;background:var(--soft);overflow:hidden;display:grid;place-items:center;flex:none')}><Companion look={look} size={34} /></span>
+          Account
         </button>
         <div style={s('display:flex;align-items:center;gap:8px')}><BellButton /><HelpButton /></div>
       </header>
