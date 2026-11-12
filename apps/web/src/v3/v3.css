@@ -100,3 +100,50 @@ html[data-reduce="true"] .v3 *{animation-duration:.001ms!important;animation-ite
 @keyframes kScRain{0%{transform:translateY(-6px);opacity:0}20%{opacity:.75}100%{transform:translateY(22px);opacity:0}}
 .v3 .v3-ripple{transform-box:fill-box;transform-origin:center;animation:kScRipple 2.4s ease-out infinite}
 @keyframes kScRipple{0%{transform:scale(.3);opacity:.8}100%{transform:scale(1.5);opacity:0}}
+
+/* Livelier motion for the Home views: birds cross, waves roll, boats drift, flags flutter, lights flicker. */
+.v3 .m-fly{animation:mFly 20s linear infinite}
+@keyframes mFly{from{transform:translateX(-30px)}to{transform:translateX(372px)}}
+.v3 .m-flap{transform-box:fill-box;transform-origin:50% 100%;animation:mFlap .5s ease-in-out infinite alternate}
+@keyframes mFlap{from{transform:scaleY(1)}to{transform:scaleY(.35)}}
+.v3 .m-cloud{animation:mCloud 52s linear infinite}
+.v3 .m-cloud2{animation-duration:78s;animation-delay:-30s}
+.v3 .m-cloud3{animation-duration:64s;animation-delay:-14s}
+@keyframes mCloud{from{transform:translateX(0)}to{transform:translateX(480px)}}
+.v3 .m-wave{animation:mWave 6s linear infinite}
+.v3 .m-wave2{animation-duration:9s;animation-direction:reverse}
+@keyframes mWave{from{transform:translateX(0)}to{transform:translateX(-32px)}}
+.v3 .m-shimmer{animation:mShimmer 2.6s ease-in-out infinite}
+@keyframes mShimmer{0%,100%{opacity:.15}50%{opacity:.85}}
+.v3 .m-glide{animation:mGlide 16s ease-in-out infinite alternate}
+.v3 .m-glide2{animation-duration:22s}
+@keyframes mGlide{from{transform:translateX(-26px)}to{transform:translateX(70px)}}
+.v3 .m-walk{animation:mWalk 70s linear infinite}
+@keyframes mWalk{from{transform:translateX(-80px)}to{transform:translateX(400px)}}
+.v3 .m-treesway{transform-box:fill-box;transform-origin:50% 100%;animation:mTree 5s ease-in-out infinite}
+@keyframes mTree{0%,100%{transform:rotate(-1.8deg)}50%{transform:rotate(1.8deg)}}
+.v3 .m-frond{transform-box:fill-box;transform-origin:15% 100%;animation:mFrond 5.5s ease-in-out infinite}
+@keyframes mFrond{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3.5deg)}}
+.v3 .m-flag{transform-box:fill-box;transform-origin:0% 50%;animation:mFlag 1.3s ease-in-out infinite alternate}
+@keyframes mFlag{from{transform:skewY(-9deg) scaleX(1)}to{transform:skewY(9deg) scaleX(.86)}}
+.v3 .m-flicker{transform-box:fill-box;transform-origin:50% 100%;animation:mFlicker 1.7s ease-in-out infinite}
+@keyframes mFlicker{0%,100%{transform:scale(1);opacity:1}30%{transform:scale(1.18,1.3);opacity:.85}60%{transform:scale(.92,.9);opacity:1}80%{transform:scale(1.1,1.2);opacity:.9}}
+.v3 .m-smoke{animation:mSmoke 5s ease-out infinite}
+@keyframes mSmoke{from{transform:translateY(8px);opacity:0}30%{opacity:1}to{transform:translateY(-14px) translateX(6px);opacity:0}}
+.v3 .m-bloom{transform-box:fill-box;transform-origin:50% 100%;animation:mBloom 6s ease-in-out infinite}
+@keyframes mBloom{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+.v3 .m-firefly{animation:mFirefly 6s ease-in-out infinite alternate}
+@keyframes mFirefly{0%{transform:translate(0,0);opacity:.3}50%{opacity:1}100%{transform:translate(12px,-9px);opacity:.4}}
+.v3 .m-leaf{animation:mLeaf 9s linear infinite;opacity:0}
+@keyframes mLeaf{0%{transform:translate(0,0) rotate(0);opacity:0}10%{opacity:1}100%{transform:translate(-34px,162px) rotate(300deg);opacity:0}}
+.v3 .m-beam{animation:mBeam 7s ease-in-out infinite}
+@keyframes mBeam{0%,100%{opacity:.08}50%{opacity:.24}}
+.v3 .m-rays{animation:mRays 80s linear infinite}
+@keyframes mRays{to{transform:rotate(360deg)}}
+.v3 .m-shoot{opacity:0;animation:mShoot 9s ease-out infinite;transform:translate(60px,14px)}
+.v3 .m-shoot2{animation-delay:-4.5s;transform:translate(250px,30px)}
+@keyframes mShoot{0%{opacity:0;transform:translate(60px,14px)}4%{opacity:1}14%{opacity:0;transform:translate(150px,58px)}100%{opacity:0}}
+.v3 .m-slide-next{animation:mSlideNext 480ms cubic-bezier(.22,1,.36,1)}
+.v3 .m-slide-prev{animation:mSlidePrev 480ms cubic-bezier(.22,1,.36,1)}
+@keyframes mSlideNext{from{transform:translateX(36px);opacity:0}to{transform:none;opacity:1}}
+@keyframes mSlidePrev{from{transform:translateX(-36px);opacity:0}to{transform:none;opacity:1}}
