@@ -29,7 +29,6 @@ export function Talk() {
       <div className="stg">
         <Mode big icon="mic" title="Talk out loud" sub="Voice call. Just speak, and I listen." onClick={() => void startCall('voice')} track="talk.voice" />
         <Mode icon="chat" bg="var(--t-lilac)" title={`Type to ${compName}`} sub="Chat at your own pace." onClick={() => void openChat()} track="talk.text" />
-        <Mode icon="cam" bg="var(--t-rose)" title={`See ${compName}`} sub="Video call, a face to talk to." onClick={() => void startCall('video')} track="talk.video" />
       </div>
 
       <div className="sec">

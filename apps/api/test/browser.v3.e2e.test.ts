@@ -146,6 +146,9 @@ describe('the third design', () => {
     await tab('Talk');
     await page.getByRole('heading', { level: 1 }).filter({ hasText: 'Talk' }).waitFor();
     problems.push(...await scan(page, 'talk'));
+    // Voice and Text are the two ways to talk. There is no video call option.
+    await page.getByRole('button', { name: 'Voice' }).first().waitFor();
+    if (await page.getByText('Video', { exact: true }).count()) problems.push('Talk still offers Video');
     await page.getByRole('button', { name: 'Text', exact: true }).click();
     await page.getByRole('textbox', { name: 'Message' }).fill('I am a little tired today.');
     await page.getByRole('button', { name: 'Send', exact: true }).click();

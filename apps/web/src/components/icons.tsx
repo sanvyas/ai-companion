@@ -24,7 +24,6 @@ export const P = {
   play: 'M8 5l11 7-11 7z',
   pauseSolid: 'M7 5h3.5v14H7zM13.5 5H17v14h-3.5z',
   text: 'M4 5h16v11H9l-5 4z',
-  video: 'M3 7h12v10H3zM15 10.5l6-3.5v10l-6-3.5',
   person: 'M12 3.5a3 3 0 1 0 0 .01M5.5 20c0-4 2.9-6.5 6.5-6.5s6.5 2.5 6.5 6.5',
   send: 'M12 19V5M6 11l6-6 6 6',
   prev: 'M11 7l-5 5 5 5M18 7l-5 5 5 5',

@@ -1,6 +1,6 @@
 // The icons the third design draws, as paths in a 24 x 24 box.
 export const I = {
-  mic: 'M9 3h6v8a3 3 0 0 1-6 0V3zM5 11a7 7 0 0 0 14 0M12 18v3', video: 'M3 7h12v10H3zM15 10.5l6-3.5v10l-6-3.5', chat: 'M4 5h16v11H9l-5 4V5z',
+  mic: 'M9 3h6v8a3 3 0 0 1-6 0V3zM5 11a7 7 0 0 0 14 0M12 18v3', chat: 'M4 5h16v11H9l-5 4V5z',
   sit: 'M12 4a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM6 20c0-4 2.7-7 6-7s6 3 6 7', walk: 'M13 3.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM10 21l2-6 3 3v3M8 11l4-3 3 3 3 1M12 8v5l-3 4',
   breathe: 'M3 12c3-4 6-4 9 0s6 4 9 0', pen: 'M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4', moon: 'M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z',
   game: 'M6 9h12a3 3 0 0 1 3 3v2a3 3 0 0 1-5.2 2L14 14h-4l-1.8 2A3 3 0 0 1 3 14v-2a3 3 0 0 1 3-3zM8 11v3M6.5 12.5h3', home: 'M4 11l8-7 8 7v9h-5v-6H9v6H4z',

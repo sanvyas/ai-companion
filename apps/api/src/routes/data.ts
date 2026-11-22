@@ -128,7 +128,7 @@ export function dataRoutes(app: FastifyInstance, ctx: Ctx) {
   // ---- billing: not connected ---------------------------------------------------------------------------
   const plans = Plan.array().parse([
     { id: 'basic', name: 'Basic', priceInr: 0, features: ['Text chat', 'Limited voice each day', 'Journal and mood', 'Core calm sessions', 'Safety features, always free'] },
-    { id: 'plus', name: 'Plus', priceInr: 499, features: ['Unlimited voice and video', 'All calm content and downloads', 'Avatar looks', 'Weekly letter', 'Deeper insights'] },
+    { id: 'plus', name: 'Plus', priceInr: 499, features: ['Unlimited voice', 'All calm content and downloads', 'Avatar looks', 'Weekly letter', 'Deeper insights'] },
   ]);
   app.get('/billing/plans', auth, async () => ({ items: plans }));
   app.post('/billing/verify', auth, async () => { throw new AppError(501, 'billing_unavailable', 'Plus isn’t available to start yet.'); });

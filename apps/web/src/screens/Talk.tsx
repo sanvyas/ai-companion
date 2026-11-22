@@ -24,12 +24,10 @@ function RowCard({ rows, label }: { rows: Row[]; label: string }) {
 
 export function Talk() {
   const tod = useTimeOfDay();
-  const compName = useStore(s => s.compName);
   const recent = useStore(s => s.recent);
   useEffect(() => { void loadTalk(); }, []);
   const now: Row[] = [
     { label: 'Voice call', desc: 'Like a phone call. Captions on.', tint: C.tealSoft, icon: P.mic, onTap: () => void startCall('voice') },
-    { label: 'Video call', desc: `See ${compName} while you talk.`, tint: C.lavender, icon: P.video, onTap: () => void startCall('video') },
     { label: 'Text', desc: 'Type, at your own pace.', tint: C.peach, icon: P.text, onTap: () => void openChat() },
   ];
   const quiet: Row[] = [

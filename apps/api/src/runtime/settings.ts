@@ -66,7 +66,7 @@ export function settingDefs(cfg: Pick<Config, 'MODEL_COMPANION' | 'MODEL_SAFETY'
     { key: 'access.signups_open', group: 'Access', label: 'New sign-ups open', description: 'Off stops new accounts. People who already have one can still sign in.', kind: 'bool', schema: z.boolean(), default: true },
     { key: 'access.maintenance', group: 'Access', label: 'Maintenance mode', description: 'Pauses the app for everyone except helplines and the safety screens.', kind: 'bool', schema: z.boolean(), default: false },
     { key: 'access.maintenance_message', group: 'Access', label: 'Maintenance message', description: 'Shown to people while maintenance mode is on.', kind: 'long', schema: z.string().trim().min(1).max(280), default: 'Flint is taking a short break and will be back soon. Helplines and breathing exercises still work.' },
-    { key: 'kill.voice', group: 'Access', label: 'Pause voice and video calls', description: 'Emergency switch if a voice vendor is failing. Text chat keeps working.', kind: 'bool', schema: z.boolean(), default: false },
+    { key: 'kill.voice', group: 'Access', label: 'Pause voice calls', description: 'Emergency switch if a voice vendor is failing. Text chat keeps working.', kind: 'bool', schema: z.boolean(), default: false },
 
     { key: 'cost.monthly_budget_inr', group: 'Cost', label: 'Monthly budget (₹)', description: 'The Cost page warns as you approach it. 0 turns the warning off.', kind: 'int', schema: z.number().int().min(0).max(100_000_000), default: 0 },
     { key: 'cost.usd_inr', group: 'Cost', label: 'US dollar in rupees', description: 'Used to turn dollar prices into rupees.', kind: 'number', schema: z.number().min(50).max(200), default: 87 },

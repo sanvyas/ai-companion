@@ -1,6 +1,6 @@
 # Flint
 
-An AI companion for adults in India who feel lonely, stressed or low: talk by voice, video or text, journal privately, calm down, and take small steps outside. **A wellness companion, not a therapist, doctor or crisis service.**
+An AI companion for adults in India who feel lonely, stressed or low: talk by voice or text, journal privately, calm down, and take small steps outside. **A wellness companion, not a therapist, doctor or crisis service.**
 
 Product spec: [`docs/PRD.md`](docs/PRD.md). Design source: `design/`.
 

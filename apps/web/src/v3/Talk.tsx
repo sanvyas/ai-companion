@@ -17,7 +17,7 @@ export function TalkTab() {
   const look = useStore(x => x.look);
   const comp = useStore(x => x.compName);
   useEffect(() => { void loadTalk(); }, []);
-  const modes: [string, string, () => void, boolean][] = [['Voice', I.mic, () => void startCall('voice'), true], ['Video', I.video, () => void startCall('video'), false], ['Text', I.chat, () => void openChat(), false]];
+  const modes: [string, string, () => void, boolean][] = [['Voice', I.mic, () => void startCall('voice'), true], ['Text', I.chat, () => void openChat(), false]];
   const be: [string, string, string, string, () => void, React.ReactNode][] = [['Sit with me', 'Quiet company', I.sit, 'var(--hero1)', () => void startCall('sit'), <SitArt key="sit" />], ['Walk with me', 'In your ear', I.walk, '#3A7A49', () => void startWalkFlow(), <WalkArt key="walk" />]];
   return (
     <div className="screen" data-scroll="1" style={{ ...s('overflow:auto;background:var(--page);display:flex;flex-direction:column;padding:56px 24px 128px;gap:16px') }}>
@@ -27,10 +27,10 @@ export function TalkTab() {
         <p className="serif" style={s('font-size:34px;line-height:1.12;text-align:center;margin:0')}>Talk to me<br />about anything.</p>
         <p style={s('font-size:17px;line-height:1.4;color:var(--muted);text-align:center;margin:0')}>I listen, and I talk back. No judging.</p>
       </div>
-      <div style={s('display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px')}>
+      <div style={s('display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px')}>
         {modes.map(([label, icon, run, primary]) => (
           <button key={label} onClick={run} data-track={`talk.${label.toLowerCase()}`} style={s(`border:none;border-radius:26px;padding:16px 8px 14px;background:${primary ? 'linear-gradient(160deg,var(--accent2),var(--accent))' : 'var(--card)'};color:${primary ? '#FFFFFF' : 'var(--ink)'};display:flex;flex-direction:column;align-items:center;gap:10px;box-shadow:0 10px 24px rgba(30,36,48,.08);min-height:104px`)}>
-            <span aria-hidden="true" style={s(`width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:${primary ? 'rgba(255,255,255,.2)' : label === 'Video' ? 'var(--p-rose)' : 'var(--p-mint)'}`)}><Svg d={icon} size={24} stroke={primary ? '#FFFFFF' : 'var(--ink)'} /></span>
+            <span aria-hidden="true" style={s(`width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:${primary ? 'rgba(255,255,255,.2)' : 'var(--p-mint)'}`)}><Svg d={icon} size={24} stroke={primary ? '#FFFFFF' : 'var(--ink)'} /></span>
             <span style={s('font-size:17px;font-weight:700')}>{label}</span>
           </button>
         ))}
@@ -50,7 +50,7 @@ export function TalkTab() {
   );
 }
 
-// ------------------------------------------------------------------------------------------------ a call: voice, video, check-in, or sitting together
+// ------------------------------------------------------------------------------------------------ a call: voice, check-in, or sitting together
 export function CallScreen() {
   const mode = useStore(x => x.callMode);
   const phase0 = useStore(x => x.callPhase);
@@ -69,7 +69,6 @@ export function CallScreen() {
   const sit = mode === 'sit';
   const phase: CallPhase = paused ? 'paused' : phase0;
   const avatar = phase === 'connecting' || phase === 'error' ? 'idle' : phase;
-  const figureLook = mode === 'video' && look === 'orb' ? 'asha' : look;
   const label = ({ connecting: 'Connecting…', paused: 'Paused. Take your time.', thinking: 'Thinking…', speaking: `${comp} is speaking`, listening: muted ? 'Muted' : 'Listening… take your time', idle: sit ? 'Here with you. No need to talk.' : 'Not connected', error: 'Not connected' } as const)[phase];
   const SIT = ['I’m here.', 'No need to say anything.', 'Breathe as slow as you like.', 'Still here with you.', 'Take all the time you need.'];
   const sitLine = line?.who === 'ai' ? line.text : SIT[Math.floor(tick / 12) % SIT.length];
@@ -81,7 +80,7 @@ export function CallScreen() {
       <div className="screen dark" role="main" aria-label="Sitting together" style={{ ...s('background:linear-gradient(180deg,#2B2858 0%,#463F7E 60%,#7A6BA8 100%);color:#FFFFFF;display:flex;flex-direction:column;align-items:center;padding:70px 24px 40px') }}>
         <span style={s('font-size:14px;color:#F0EEFF;font-weight:600')}>Sitting together · {mmss(secs)}</span>
         <div style={s('flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px')}>
-          <div style={s('width:230px;height:230px;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 50% 40%,rgba(255,255,255,.25),rgba(255,255,255,.05));display:flex;justify-content:center;align-items:flex-end')}><Companion look={figureLook} size={230} mode="listening" /></div>
+          <div style={s('width:230px;height:230px;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 50% 40%,rgba(255,255,255,.25),rgba(255,255,255,.05));display:flex;justify-content:center;align-items:flex-end')}><Companion look={look} size={230} mode="listening" /></div>
           <p className="serif" role="status" aria-live="polite" style={s('font-size:30px;line-height:1.15;text-align:center;min-height:70px;margin:0')}>{sitLine}</p>
         </div>
         <div style={s('display:flex;gap:10px;align-self:stretch')}>
@@ -99,17 +98,16 @@ export function CallScreen() {
       <span style={s('font-size:13px')}>{text}</span>
     </button>
   );
-  const video = mode === 'video';
   return (
     <div className="screen dark" role="main" aria-label="Conversation" style={{ ...s('background:radial-gradient(120% 70% at 50% 30%,#3B3577 0%,#221F45 55%,#15132C 100%);color:#FFFFFF;display:flex;flex-direction:column;padding:56px 20px 36px') }}>
       <div style={s('display:flex;align-items:center;justify-content:space-between')}>
-        <span style={s('font-size:14px;color:#F0EEFF;font-weight:600')}>{video ? 'Video call' : mode === 'checkin' ? 'Check-in' : 'Voice call'} · {mmss(secs)}</span>
+        <span style={s('font-size:14px;color:#F0EEFF;font-weight:600')}>{mode === 'checkin' ? 'Check-in' : 'Voice call'} · {mmss(secs)}</span>
         <HelpButton dark />
       </div>
       <div style={s('flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px')}>
-        <div style={s(`position:relative;width:${video ? 300 : 210}px;height:${video ? 360 : 210}px;border-radius:${video ? '32px' : '50%'};display:flex;justify-content:center;align-items:flex-end`)}>
-          {!video && phase === 'speaking' && <span aria-hidden="true" style={s('position:absolute;inset:0;border-radius:50%;border:2px solid #B7B1E6;animation:kRing 1.6s ease-out infinite')} />}
-          <div style={s(`position:relative;width:100%;height:100%;border-radius:${video ? '32px' : '50%'};overflow:hidden;background:radial-gradient(circle at 50% 40%,#5A54A0,var(--accent));display:flex;justify-content:center;align-items:flex-end`)}><Companion look={figureLook} size={video ? 300 : 210} mode={avatar} /></div>
+        <div style={s(`position:relative;width:210px;height:210px;border-radius:50%;display:flex;justify-content:center;align-items:flex-end`)}>
+          {phase === 'speaking' && <span aria-hidden="true" style={s('position:absolute;inset:0;border-radius:50%;border:2px solid #B7B1E6;animation:kRing 1.6s ease-out infinite')} />}
+          <div style={s(`position:relative;width:100%;height:100%;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 50% 40%,#5A54A0,var(--accent));display:flex;justify-content:center;align-items:flex-end`)}><Companion look={look} size={210} mode={avatar} /></div>
         </div>
         <div role="status" aria-live="polite" style={s('font-size:14px;color:#F0EEFF;font-weight:600;min-height:20px')}>{label}</div>
         {captions && (

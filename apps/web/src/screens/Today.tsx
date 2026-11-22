@@ -68,7 +68,7 @@ export function Today() {
             <div style={{ flex: 'none', width: 96, height: 96, display: 'grid', placeItems: 'center', overflow: 'hidden', borderRadius: '50%' }}><Companion look={look} size={88} /></div>
             <div style={{ flex: 1, ...flex('column', 2) }}>
               <span style={{ fontFamily: serif, fontSize: 22 }}>{compName} is here</span>
-              <span style={{ fontSize: 15, color: C.muted, lineHeight: 1.4 }}>Your AI companion. Voice, video or text.</span>
+              <span style={{ fontSize: 15, color: C.muted, lineHeight: 1.4 }}>Your AI companion. Voice or text.</span>
             </div>
           </div>
           <div style={flex('row', 8)}>

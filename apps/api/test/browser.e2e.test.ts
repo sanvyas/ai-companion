@@ -369,11 +369,6 @@ describe('every screen and flow, with no errors on the way', () => {
     await nav('journal'); await page.getByText('Recent entries').waitFor();
     await nav('you'); await page.getByText('What Flint remembers').waitFor();
 
-    // Video call
-    await nav('talk'); await page.getByText('Video call').first().click(); await allow();
-    await page.getByText('Listening', { exact: true }).waitFor();
-    await page.getByRole('button', { name: 'End' }).first().click(); await dismiss();
-
     // Just sit with me
     await nav('talk'); await page.getByText('Just sit with me').first().click();
     await page.getByText('Here with you. No need to talk.').waitFor();

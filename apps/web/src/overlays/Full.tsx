@@ -18,7 +18,7 @@ export function Paywall() {
   return (
     <div ref={ref} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Flint Plus" style={{ position: 'absolute', inset: 0, zIndex: 50, background: 'linear-gradient(180deg,#DCEBE6 0%,#FBF7F0 55%)', ...flex('column'), padding: 'calc(var(--sa-top) + 80px) 24px calc(var(--sa-bottom) + 32px)', animation: 'sIn 500ms', outline: 'none' }}>
       <h1 style={{ fontFamily: serif, fontSize: 34, lineHeight: 1.15, fontWeight: 400, margin: 0 }}>Flint Plus</h1>
-      <div style={{ fontSize: 17, lineHeight: 1.6, color: C.muted, marginTop: 16, textWrap: 'pretty' }}>Unlimited voice and video, full memory you can edit, and calls from {compName} when you’d like them.</div>
+      <div style={{ fontSize: 17, lineHeight: 1.6, color: C.muted, marginTop: 16, textWrap: 'pretty' }}>Unlimited voice, full memory you can edit, and calls from {compName} when you’d like them.</div>
       <div style={{ marginTop: 28, background: C.white, borderRadius: 28, padding: 20, ...flex('column', 6) }}>
         <span style={{ fontSize: 22, fontWeight: 600 }}>₹499 a month</span>
         <span style={{ fontSize: 15, color: C.muted, lineHeight: 1.45 }}>Free for 7 days. We’ll remind you two days before the trial ends. Cancel or pause in the app.</span>
