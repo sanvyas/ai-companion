@@ -36,7 +36,7 @@ export async function buildApp(cfg: Config, opts: BuildOpts = {}): Promise<{ app
       // Never log credentials or content. Handlers log ids and codes, not text.
       redact: { paths: ['req.headers.authorization', 'req.headers.cookie', 'req.body', 'res.headers["set-cookie"]'], censor: '[redacted]' },
     },
-    trustProxy: true,
+    trustProxy: cfg.TRUST_PROXY.trim().toLowerCase() === 'false' ? false : cfg.TRUST_PROXY,
     bodyLimit: 256 * 1024,
     disableRequestLogging: false,
   });
@@ -52,7 +52,9 @@ export async function buildApp(cfg: Config, opts: BuildOpts = {}): Promise<{ app
   // (Cross-Origin-Opener-Policy: same-origin) cuts that link, so the popup is left on a blank white page and the app never
   // hears back. "same-origin-allow-popups" keeps the protection against other sites while letting our own popups talk to us.
   // The referrer policy is also relaxed from "no-referrer": Google's sign-in needs to see where it was opened from.
-  await app.register(helmet, { contentSecurityPolicy: false, crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' }, referrerPolicy: { policy: 'strict-origin-when-cross-origin' } });
+  // API responses are data, never pages: the strictest policy. The two front ends set their own, looser policy on their HTML (static.ts).
+  await app.register(helmet, { contentSecurityPolicy: { useDefaults: false, directives: { 'default-src': ["'none'"], 'frame-ancestors': ["'none'"], 'base-uri': ["'none'"], 'form-action': ["'none'"] } }, crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' }, referrerPolicy: { policy: 'strict-origin-when-cross-origin' } });
+  app.addHook('onSend', async (_req, reply) => { reply.header('Permissions-Policy', 'camera=(), microphone=(self), geolocation=(self), payment=(), usb=(), interest-cohort=()'); });
   await app.register(cookie);
   // The app and the admin portal are different origins with different rules: the portal may send its session
   // cookie, the app never does.

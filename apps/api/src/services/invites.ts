@@ -2,6 +2,7 @@ import { randomInt, randomUUID } from 'node:crypto';
 import type { Ctx } from '../context.js';
 import { withSystem, type Db } from '../db/pool.js';
 import { hmacHex, safeEqualHex } from '../crypto/envelope.js';
+import { badRequest } from '../errors.js';
 import { parsePhone } from './otp.js';
 
 // People the founders have let in. Until an SMS vendor is connected, the code the owner gives them is how they sign in.
@@ -12,7 +13,29 @@ const LOCK_MINUTES = 15;
 
 // Keyed on the invite's id, not the number, so a code can be reset without knowing the phone again.
 const codeHash = (ctx: Pick<Ctx, 'cfg'>, inviteId: string, code: string) => hmacHex(ctx.cfg.OTP_PEPPER, `invite:${inviteId}:${code}`);
-export const newInviteCode = () => String(randomInt(0, 1_000_000)).padStart(6, '0');
+/**
+ * Guessable codes: the same digit, runs like 123456 or 654321, repeated pairs or triples (121212, 123123), and a few famous ones.
+ * With a known phone number, someone who tries 123456 first gets in. These are refused in production and flagged in the portal.
+ */
+export function isWeakCode(code: string): boolean {
+  if (!/^\d{6}$/.test(code)) return true;
+  if (/^(\d)\1{5}$/.test(code) || /^(\d\d)\1\1$/.test(code) || /^(\d\d\d)\1$/.test(code)) return true;
+  const d = [...code].map(Number), step = d.slice(1).map((x, i) => (x - d[i] + 10) % 10);
+  if (step.every(x => x === 1) || step.every(x => x === 9)) return true;
+  return ['123321', '112233', '696969', '159753', '147258', '246810', '121314', '101010', '007007', '112211', '000001', '999000', '123654', '654123'].includes(code);
+}
+export const newInviteCode = () => { for (;;) { const c = String(randomInt(0, 1_000_000)).padStart(6, '0'); if (!isWeakCode(c)) return c; } };
+
+let weakCache: string[] | null = null;
+const weakCodes = () => (weakCache ??= Array.from({ length: 1_000_000 }, (_, n) => String(n).padStart(6, '0')).filter(isWeakCode));
+
+/** Active invites whose code is one of the guessable ones (checked by hash, so no code is ever read back). */
+export async function weakInviteCount(ctx: Pick<Ctx, 'cfg' | 'db'>): Promise<number> {
+  const rows = await withSystem(ctx.db, tx => tx.query<{ id: string; code_hash: string }>('SELECT id, code_hash FROM invited_logins WHERE revoked_at IS NULL'));
+  let n = 0;
+  for (const r of rows.rows) if (weakCodes().some(c => safeEqualHex(r.code_hash, codeHash(ctx, r.id, c)))) n++;
+  return n;
+}
 
 export interface InviteRow { id: string; phone_last4: string; label: string; created_by: string; created_at: Date; last_used_at: Date | null; revoked_at: Date | null; locked_until: Date | null; signed_in: boolean }
 
@@ -25,6 +48,7 @@ export async function hasInvite(ctx: Ctx, phone: string): Promise<boolean> {
 /** Create (or re-activate with a new code) an invite. Returns the code, which is shown once and never stored in clear. */
 export async function createInvite(ctx: Pick<Ctx, 'cfg' | 'crypto' | 'db'>, input: { phone: string; label?: string; code?: string; by: string }) {
   const phone = parsePhone(input.phone);
+  if (input.code && ctx.cfg.isProd && isWeakCode(input.code)) throw badRequest('weak_code', 'That code is too easy to guess. Use a random six-digit code (leave it blank and one is made for you).');
   const code = input.code ?? newInviteCode();
   const target = ctx.crypto.lookupHash('phone', phone);
   const id = await withSystem(ctx.db, async tx => {
@@ -68,7 +92,7 @@ export async function listInvites(ctx: Pick<Ctx, 'db'>): Promise<InviteRow[]> {
   return r.rows;
 }
 
-/** BETA_LOGINS_BOOTSTRAP="9876543210:123456,9123456780:654321": adds invites that don't exist yet. Never overwrites. */
+/** BETA_LOGINS_BOOTSTRAP="<phone>:<random six digits>,...": adds invites that don't exist yet. Never overwrites. */
 export async function bootstrapInvites(ctx: Pick<Ctx, 'cfg' | 'crypto' | 'db'>, log: (m: string) => void, env: string | undefined = process.env.BETA_LOGINS_BOOTSTRAP) {
   if (!env?.trim()) return;
   for (const pair of env.split(',').map(s => s.trim()).filter(Boolean)) {

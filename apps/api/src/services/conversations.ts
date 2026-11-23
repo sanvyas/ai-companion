@@ -6,7 +6,7 @@ import { withUser, type Tx } from '../db/pool.js';
 import { AppError, forbidden, notFound } from '../errors.js';
 import { LlmFailure, LlmRefusal, LlmUnavailable, type LlmMessage } from '../providers/llm.js';
 import { checkinExtractSystem, dynamicSystem, memoryProposalSystem, stableSystem, summarySystem } from './prompts.js';
-import { assessTone, blendMood, openingTone, SOFT_FALLBACK_LINE, type MoodReading, type Stance, type Tone } from '@saathi/domain';
+import { assessTone, blendMood, LEAK_FALLBACK_LINE, openingTone, SOFT_FALLBACK_LINE, type MoodReading, type Stance, type Tone } from '@saathi/domain';
 import { allClean, keepClean } from './guard.js';
 import { recordTurnTiming, reportLlmFailure, type TurnTiming } from './llmHealth.js';
 import { readAffect, wordReading } from './affect.js';
@@ -337,6 +337,10 @@ export async function handleTurn(ctx: Ctx, s: LiveSession, text: string, rawEmit
         if (finalLevel >= 2) {
           const again = await strictReply(ctx, s, c, text, 2, new AbortController().signal, tone);
           for (const sent of again) { sentences.push(sent); emit({ type: 'sentence', text: sent, index: s.sentenceIndex++ }); }
+        } else if (heldBack === 'leak') {
+          // Someone is trying to pull out our hidden instructions, keys or code, and the model started to go along.
+          // The held-back words never leave the server; a fixed line closes the turn kindly.
+          sentences.push(LEAK_FALLBACK_LINE); emit({ type: 'sentence', text: LEAK_FALLBACK_LINE, index: s.sentenceIndex++ });
         } else if (heldBack === 'unsafe_language') {
           // A slip of wording, not a safety event. If nothing has reached the person yet, write the reply again plainly;
           // otherwise close gently. Either way the held-back words never leave the server.
@@ -389,7 +393,7 @@ async function strictReply(ctx: Ctx, s: LiveSession, c: Awaited<ReturnType<typeo
     await logSafetyEvent(ctx, s.userId, level, s.mode, 'output_check');
   }
   // A wording slip at ordinary risk gets the gentle line; anything else gets the reviewed safety line.
-  return [level < 2 && reason === 'unsafe_language' ? SOFT_FALLBACK_LINE : SAFE_FALLBACK_LINE];
+  return [reason === 'leak' ? LEAK_FALLBACK_LINE : level < 2 && reason === 'unsafe_language' ? SOFT_FALLBACK_LINE : SAFE_FALLBACK_LINE];
 }
 
 const splitForEmit = (t: string) => { const sp = new SentenceSplitter(); return [...sp.push(t + ' '), ...sp.end()]; };

@@ -5,7 +5,7 @@ import { migrate } from './db/migrate.js';
 import { seedReference } from './db/seed.js';
 import { startWorker } from './jobs/worker.js';
 import { bootstrapAdmin } from './admin/bootstrap.js';
-import { bootstrapInvites } from './services/invites.js';
+import { bootstrapInvites, weakInviteCount } from './services/invites.js';
 
 const cfg = loadConfig();
 const db = createPool(cfg);
@@ -22,6 +22,7 @@ await bootstrapAdmin(db, console.log);
 
 const { app, ctx } = await buildApp(cfg, { db });
 await bootstrapInvites(ctx, console.log);
+if (ctx.cfg.isProd) { const weak = await weakInviteCount(ctx).catch(() => 0); if (weak) console.warn(`SECURITY: ${weak} active invited sign-in(s) use an easy-to-guess code. Reset them in the admin portal (Invites) and remove BETA_LOGINS_BOOTSTRAP.`); }
 const stopWorker = cfg.RUN_WORKER ? startWorker(ctx) : () => undefined;
 await app.listen({ port: cfg.PORT, host: cfg.HOST });
 app.log.info({ llm: ctx.llm.name, otp: ctx.otp.name, push: ctx.push.enabled, stt: !!ctx.stt?.configured, tts: !!ctx.tts?.configured, calls: !!ctx.telephony }, 'Flint API ready');

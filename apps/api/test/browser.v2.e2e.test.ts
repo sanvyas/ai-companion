@@ -53,7 +53,7 @@ async function open(user: Auth | null, query = '?ui=2'): Promise<{ page: Page; c
 
 /** Serious and critical problems only, with a name for where they were found. */
 async function scan(page: Page, where: string): Promise<string[]> {
-  await page.addScriptTag({ content: axeSource });
+  await page.evaluate(axeSource); // evaluated over the debugging protocol, so the app's Content-Security-Policy stays switched on
   const res = await page.evaluate(async () => {
     type Node = { target: string[]; any: { data?: { contrastRatio?: number; fgColor?: string; bgColor?: string } }[] };
     const axe = (window as unknown as { axe: { run: (c: unknown, o: unknown) => Promise<{ violations: { id: string; impact: string; nodes: Node[] }[] }> } }).axe;

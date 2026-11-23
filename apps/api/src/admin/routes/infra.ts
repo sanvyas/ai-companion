@@ -13,6 +13,10 @@ import { buildInfo } from './overview.js';
 export function infraRoutes(app: FastifyInstance, ctx: Ctx) {
   const q = <T = Record<string, unknown>>(sql: string, params: unknown[] = []) => withSystem(ctx.db, tx => tx.query(sql, params)).then(r => r.rows as T[]);
 
+  // Which address does the server think a request came from? Check this after any change to the hosting setup: if it shows
+  // a private address, TRUST_PROXY is too narrow; if it shows an address you did not use, it is too wide.
+  app.get('/diag/ip', guard(ctx, 'infra.read'), async req => ({ seenAs: req.ip, forwardedFor: req.headers['x-forwarded-for'] ?? null, trustProxy: ctx.cfg.TRUST_PROXY }));
+
   app.get('/infra', guard(ctx, 'infra.read'), async () => {
     const t0 = Date.now();
     await q('SELECT 1');

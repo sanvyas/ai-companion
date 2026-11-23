@@ -110,7 +110,7 @@ Owners apply their own changes directly, because there is no one above them. The
 
 While no SMS vendor is connected, phone sign-in works only for people an owner has added under **People → Add a person**. Give each person their six-digit code (shown once; “New code” makes another, “Remove” stops it). Five wrong codes lock that person for 15 minutes. Only keyed hashes of the phone and code are stored. Once an SMS vendor exists, invited codes keep working until you remove them.
 
-`BETA_LOGINS_BOOTSTRAP="9876543210:123456"` (comma-separated `phone:code` pairs) adds invites at startup if they don't exist yet. It never overwrites. Remove the variable once real people are added in the portal.
+`BETA_LOGINS_BOOTSTRAP="<phone>:<random six digits>"` (comma-separated `phone:code` pairs; production refuses easy codes such as 123456) adds invites at startup if they don't exist yet. It never overwrites. Remove the variable once real people are added in the portal.
 
 ## Choosing models
 

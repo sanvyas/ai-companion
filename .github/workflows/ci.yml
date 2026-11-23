@@ -42,8 +42,8 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
       - run: npm ci
-      # Fails the build on high or critical advisories in anything that ships.
-      - run: npm audit --omit=dev --audit-level=high
+      # Fails the build on high or critical advisories in anything that ships (scripts/audit-gate.mjs lists the one accepted exception and why).
+      - run: node scripts/audit-gate.mjs
       - name: Scan for committed secrets
         uses: gitleaks/gitleaks-action@v2
         env:

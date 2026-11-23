@@ -75,6 +75,14 @@ const schema = z.object({
   RUN_WORKER: bool.default('true'),
   /** Multiplies every HTTP rate limit. Leave at 1 outside tests. */
   RATE_LIMIT_SCALE: z.coerce.number().min(1).default(1),
+  /**
+   * Which addresses are trusted reverse proxies: comma-separated IPs/CIDRs, or 'false'. The client address is the first
+   * address in X-Forwarded-For (read from the right) that is NOT one of these. The default trusts private networks, which is
+   * where Render's load balancer connects from. Never trust everything: Render appends to a header the client can send,
+   * so a spoofed first entry would let anyone dodge every per-IP rate limit (OTP guessing, SMS pumping, login).
+   * Check the result in the admin portal: GET /admin/api/diag/ip shows the address the server sees for you.
+   */
+  TRUST_PROXY: z.string().default('loopback,linklocal,uniquelocal'),
 });
 
 export type Config = z.infer<typeof schema> & {
@@ -93,6 +101,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   }
   const c = parsed.data;
   const isProd = c.NODE_ENV === 'production';
+  if (['true', '1', '*', 'all'].includes(c.TRUST_PROXY.trim().toLowerCase())) throw new Error("TRUST_PROXY must list the proxy addresses to trust (or 'false'). 'true' trusts everyone, which lets anyone fake their address and dodge every rate limit.");
   const otpProvider = c.OTP_PROVIDER ?? (isProd ? 'none' : 'console');
   if (isProd && otpProvider === 'console') throw new Error('OTP_PROVIDER=console is development only and refused in production');
   const llmProvider = c.LLM_PROVIDER ?? (c.ANTHROPIC_API_KEY ? 'anthropic' : 'none');

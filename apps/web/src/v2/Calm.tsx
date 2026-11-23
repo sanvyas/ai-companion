@@ -17,10 +17,13 @@ const COVER = [
   '<ellipse cx="60" cy="40" rx="50" ry="16" fill="#fff" opacity=".45"/><ellipse cx="140" cy="70" rx="44" ry="13" fill="#fff" opacity=".35"/>',
 ];
 
+// The colour comes from the content catalogue. Only a plain hex colour may go into the picture's markup.
+const safeTint = (v: string) => (/^#[0-9a-f]{3,8}$/i.test(v) ? v : '#E6E4F5');
+
 function Cover({ it, k, forYou, why }: { it: CalmItem; k: number; forYou: boolean; why?: string }) {
   return (
     <button className="cover" data-track={`calm.${it.id}`} onClick={() => playCalmById(it.id)} aria-label={`${it.title}, ${it.mins} minutes${forYou ? ', picked for you' : ''}`}>
-      <svg className="bg" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true" dangerouslySetInnerHTML={{ __html: `<rect width="200" height="200" fill="${it.tint}"/>${COVER[k % 3]}` }} />
+      <svg className="bg" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true" dangerouslySetInnerHTML={{ __html: `<rect width="200" height="200" fill="${safeTint(it.tint)}"/>${COVER[k % 3]}` }} />
       {forYou && <span className="tag">For you</span>}
       <span className="pl"><Ic n="play" color="#1F2A44" /></span>
       <b className="h3">{it.title}</b>

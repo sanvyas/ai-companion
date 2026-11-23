@@ -6,6 +6,7 @@ import { PROMPT_DEFS } from '../../runtime/promptDefs.js';
 import { liveSessionCount } from '../../services/conversations.js';
 import { vendorsOf } from '../../services/voices.js';
 import { guard } from './util.js';
+import { weakInviteCount } from '../../services/invites.js';
 
 const started = Date.now();
 /** Set APP_VERSION, GIT_SHA and BUILD_TIME at build time (the Docker image and CI do). */
@@ -19,7 +20,9 @@ export const buildInfo = () => ({
 export type Status = 'ok' | 'warn' | 'down' | 'off';
 export interface SystemCard { group: 'Backend' | 'AI' | 'UI' | 'Infrastructure'; name: string; status: Status; detail: string; link: string }
 
-export async function systemCards(ctx: Ctx): Promise<SystemCard[]> {
+const PRIVATE_ADDRESS = /^(10\.|127\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|::1$|fc|fd|fe80|::ffff:(10|127|192\.168|172\.(1[6-9]|2\d|3[01]))\.)/i;
+
+export async function systemCards(ctx: Ctx, seen?: { ip: string; forwardedFor: string | null }): Promise<SystemCard[]> {
   const q = <T = Record<string, unknown>>(sql: string, params: unknown[] = []) => withSystem(ctx.db, tx => tx.query(sql, params)).then(r => r.rows as T[]);
   const cards: SystemCard[] = [];
 
@@ -77,11 +80,19 @@ export async function systemCards(ctx: Ctx): Promise<SystemCard[]> {
   cards.push({ group: 'Infrastructure', name: 'Integrations', status: configured ? 'ok' : 'warn', detail: `${configured} of ${INTEGRATIONS.length} connected`, link: 'integrations' });
   cards.push({ group: 'Infrastructure', name: 'Push notifications', status: ctx.push.enabled ? 'ok' : 'off', detail: ctx.push.enabled ? 'Keys set' : 'No VAPID keys. Reminders stay in the app.', link: 'integrations' });
   cards.push({ group: 'Infrastructure', name: 'Sign-in codes', status: ctx.otp.canSend ? (ctx.otp.name === 'console' ? 'warn' : 'ok') : 'off', detail: ctx.otp.canSend ? (ctx.otp.name === 'console' ? 'Development mode: codes print in the log' : ctx.otp.name) : 'No SMS provider. Phone sign-in is off.', link: 'integrations' });
+  const weak = dbOk ? await weakInviteCount(ctx).catch(() => 0) : 0;
+  cards.push({ group: 'Infrastructure', name: 'Invite code strength', status: weak ? 'down' : 'ok', detail: weak ? `${weak} active invite${weak === 1 ? '' : 's'} use an easy-to-guess code (like 123456). Reset the code under Invites now.` : 'No easy-to-guess codes', link: 'invites' });
+  // Rate limits are per client address. If the server only ever sees the load balancer's private address, everyone shares one
+  // allowance (sign-ins would start failing for everyone at once). Checked with the request the portal itself just made.
+  if (seen?.forwardedFor) {
+    const shared = PRIVATE_ADDRESS.test(seen.ip);
+    cards.push({ group: 'Infrastructure', name: 'Client address check', status: shared ? 'down' : 'ok', detail: shared ? `The server sees ${seen.ip} for your request, a private address. Everyone would share one rate limit. Set TRUST_PROXY on the host to the load balancer's address range.` : 'Each visitor is told apart by their real address', link: 'infrastructure' });
+  }
   return cards;
 }
 
 export function overviewRoutes(app: FastifyInstance, ctx: Ctx) {
-  app.get('/overview', guard(ctx, 'overview.read'), async () => {
+  app.get('/overview', guard(ctx, 'overview.read'), async req => {
     const q = <T = Record<string, unknown>>(sql: string, params: unknown[] = []) => withSystem(ctx.db, tx => tx.query(sql, params)).then(r => r.rows as T[]);
     const IST = `AT TIME ZONE 'Asia/Kolkata'`;
     const [users, consent, convs, modes, today, safety, cost, series, systems] = await Promise.all([
@@ -112,7 +123,7 @@ export function overviewRoutes(app: FastifyInstance, ctx: Ctx) {
                 (SELECT count(DISTINCT c.user_id)::int FROM conversations c WHERE (c.started_at ${IST})::date = d.day) AS talkers,
                 (SELECT COALESCE(sum(e.cost_inr),0)::float FROM usage_events e WHERE (e.created_at ${IST})::date = d.day) AS cost
            FROM d ORDER BY d.day`),
-      systemCards(ctx),
+      systemCards(ctx, { ip: req.ip, forwardedFor: (req.headers['x-forwarded-for'] as string | undefined) ?? null }),
     ]);
     const budget = ctx.rt.settings.num('cost.monthly_budget_inr');
     const nowIst = new Date(Date.now() + 5.5 * 3600_000);
@@ -124,5 +135,5 @@ export function overviewRoutes(app: FastifyInstance, ctx: Ctx) {
     };
   });
 
-  app.get('/systems', guard(ctx, 'overview.read'), async () => ({ systems: await systemCards(ctx), build: buildInfo() }));
+  app.get('/systems', guard(ctx, 'overview.read'), async req => ({ systems: await systemCards(ctx, { ip: req.ip, forwardedFor: (req.headers['x-forwarded-for'] as string | undefined) ?? null }), build: buildInfo() }));
 }
